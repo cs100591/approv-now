@@ -1,17 +1,17 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/utils/app_logger.dart';
 import 'core/widgets/error_boundary.dart';
-import 'firebase_options.dart';
+import 'core/services/supabase_service.dart';
 
 // Auth Module
 import 'modules/auth/auth_provider.dart';
 import 'modules/auth/auth_service.dart';
+import 'modules/auth/auth_ui/auth_wrapper.dart';
 
 // Workspace Module
 import 'modules/workspace/workspace_provider.dart';
@@ -60,32 +60,22 @@ import 'modules/analytics/analytics_service.dart';
 // Plan Enforcement Module
 import 'modules/plan_enforcement/plan_guard_service.dart';
 
-// Auth Wrapper
-import 'modules/auth/auth_ui/auth_wrapper.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Setup global error handling
   setupErrorHandling();
 
-  // Initialize Firebase for all platforms
+  // Initialize Supabase
   try {
-    if (kIsWeb) {
-      // Web platform - use explicit options
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    } else {
-      // Mobile platforms - use native config files
-      await Firebase.initializeApp();
-    }
-    AppLogger.info('✅ Firebase initialized successfully');
-    AppLogger.info('📱 Firebase App: ${Firebase.app().name}');
-    AppLogger.info('🔥 Project ID: ${Firebase.app().options.projectId}');
+    final supabaseService = SupabaseService();
+    await supabaseService.initialize();
+    AppLogger.info('✅ Supabase initialized successfully');
+    AppLogger.info(
+        '📱 Project: ${supabaseService.currentUserId ?? "Not logged in"}');
   } catch (e) {
-    AppLogger.error('❌ Firebase initialization failed: $e');
-    AppLogger.warning('⚠️ Continuing without Firebase...');
+    AppLogger.error('❌ Supabase initialization failed: $e');
+    AppLogger.warning('⚠️ Continuing without Supabase...');
   }
 
   // Catch async errors

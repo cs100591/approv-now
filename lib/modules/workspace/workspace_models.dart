@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import '../../core/utils/firestore_parser.dart';
 import 'workspace_member.dart';
 
 /// Workspace model representing an approval workspace
@@ -143,24 +142,30 @@ class Workspace extends Equatable {
     final memberIdsJson = json['memberIds'] as List<dynamic>? ?? [];
 
     return Workspace(
-      id: FirestoreParser.parseString(json['id']),
-      name: FirestoreParser.parseString(json['name']),
-      description: json['description'] as String?,
-      logoUrl: json['logoUrl'] as String?,
-      companyName: json['companyName'] as String?,
-      address: json['address'] as String?,
-      footerText: json['footerText'] as String?,
-      createdBy: FirestoreParser.parseString(json['createdBy']),
-      ownerId: json['ownerId'] as String?,
-      createdAt: FirestoreParser.parseDateTime(json['createdAt']),
-      updatedAt: FirestoreParser.parseDateTime(json['updatedAt']),
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString(),
+      logoUrl: json['logoUrl']?.toString(),
+      companyName: json['companyName']?.toString(),
+      address: json['address']?.toString(),
+      footerText: json['footerText']?.toString(),
+      createdBy: json['createdBy']?.toString() ?? '',
+      ownerId: json['ownerId']?.toString(),
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTime(json['updatedAt']),
       members: membersJson
           .map((m) => WorkspaceMember.fromJson(m as Map<String, dynamic>))
           .toList(),
-      memberIds: FirestoreParser.parseStringList(memberIdsJson),
-      plan: FirestoreParser.parseString(json['plan'], 'free'),
+      memberIds: memberIdsJson.map((e) => e.toString()).toList(),
+      plan: json['plan']?.toString() ?? 'free',
       settings: json['settings'] as Map<String, dynamic>? ?? {},
     );
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) return DateTime.parse(value);
+    return DateTime.now();
   }
 
   @override

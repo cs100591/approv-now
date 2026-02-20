@@ -1,6 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../core/utils/firestore_parser.dart';
-
 /// Workspace member role definitions
 enum WorkspaceRole {
   owner, // Full permissions + can delete workspace
@@ -181,25 +178,48 @@ class WorkspaceMember {
   /// Create from JSON
   factory WorkspaceMember.fromJson(Map<String, dynamic> json) {
     return WorkspaceMember(
-      userId: FirestoreParser.parseString(json['userId']),
-      email: FirestoreParser.parseString(json['email']),
-      displayName: json['displayName'] as String?,
-      photoUrl: json['photoUrl'] as String?,
-      role: FirestoreParser.parseEnumWithDefault(
-        json['role'],
-        WorkspaceRole.values,
-        WorkspaceRole.viewer,
-      ),
-      status: FirestoreParser.parseEnumWithDefault(
-        json['status'],
-        MemberStatus.values,
-        MemberStatus.pending,
-      ),
-      invitedAt: FirestoreParser.parseDateTime(json['invitedAt']),
-      joinedAt: FirestoreParser.parseDateTimeNullable(json['joinedAt']),
-      invitedBy: FirestoreParser.parseString(json['invitedBy']),
-      inviteToken: json['inviteToken'] as String?,
+      userId: json['userId']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      displayName: json['displayName']?.toString(),
+      photoUrl: json['photoUrl']?.toString(),
+      role: _parseRole(json['role']),
+      status: _parseStatus(json['status']),
+      invitedAt: _parseDateTime(json['invitedAt']),
+      joinedAt:
+          json['joinedAt'] != null ? _parseDateTime(json['joinedAt']) : null,
+      invitedBy: json['invitedBy']?.toString() ?? '',
+      inviteToken: json['inviteToken']?.toString(),
     );
+  }
+
+  static WorkspaceRole _parseRole(dynamic value) {
+    if (value == null) return WorkspaceRole.viewer;
+    if (value is String) {
+      try {
+        return WorkspaceRole.values.byName(value);
+      } catch (_) {
+        return WorkspaceRole.viewer;
+      }
+    }
+    return WorkspaceRole.viewer;
+  }
+
+  static MemberStatus _parseStatus(dynamic value) {
+    if (value == null) return MemberStatus.pending;
+    if (value is String) {
+      try {
+        return MemberStatus.values.byName(value);
+      } catch (_) {
+        return MemberStatus.pending;
+      }
+    }
+    return MemberStatus.pending;
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) return DateTime.parse(value);
+    return DateTime.now();
   }
 
   @override

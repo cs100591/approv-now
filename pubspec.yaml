@@ -70,14 +70,13 @@ dependencies:
   device_info_plus: ^10.0.0
   rxdart: ^0.28.0
   
-  # Firebase - 使用兼容的稳定版本
+  # Supabase - 替换 Firebase
+  supabase_flutter: ^2.8.0
+  
+  # Firebase - 仅保留 Analytics 和 Push Notifications（可选）
   firebase_core: ^3.12.1
-  firebase_auth: ^5.5.1
-  cloud_firestore: ^5.6.5
   firebase_messaging: ^15.2.4
   firebase_analytics: ^11.4.4
-  firebase_storage: ^12.3.2
-  # cloud_functions: ^4.6.0  # Disabled - emails not active
   
   # File operations
   share_plus: ^10.0.0

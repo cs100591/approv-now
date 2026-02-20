@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../core/utils/firestore_parser.dart';
+import '../../core/utils/data_parser.dart';
 
 /// Field types available in templates
 enum FieldType {
@@ -74,19 +74,19 @@ class TemplateField extends Equatable {
       };
 
   factory TemplateField.fromJson(Map<String, dynamic> json) => TemplateField(
-        id: FirestoreParser.parseString(json['id']),
-        name: FirestoreParser.parseString(json['name']),
-        label: FirestoreParser.parseString(json['label']),
-        type: FirestoreParser.parseEnumWithDefault(
+        id: DataParser.parseString(json['id']),
+        name: DataParser.parseString(json['name']),
+        label: DataParser.parseString(json['label']),
+        type: DataParser.parseEnumWithDefault(
           json['type'],
           FieldType.values,
           FieldType.text,
         ),
-        required: FirestoreParser.parseBool(json['required'], false),
-        order: FirestoreParser.parseInt(json['order'], 0),
+        required: DataParser.parseBool(json['required'], false),
+        order: DataParser.parseInt(json['order'], 0),
         placeholder: json['placeholder'] as String?,
         options: json['options'] != null
-            ? FirestoreParser.parseStringList(json['options'])
+            ? DataParser.parseStringList(json['options'])
             : null,
         validation: json['validation'] as Map<String, dynamic>? ?? {},
       );
@@ -151,11 +151,11 @@ class ApprovalStep extends Equatable {
       };
 
   factory ApprovalStep.fromJson(Map<String, dynamic> json) => ApprovalStep(
-        id: FirestoreParser.parseString(json['id']),
-        level: FirestoreParser.parseInt(json['level'], 1),
-        name: FirestoreParser.parseString(json['name']),
-        approvers: FirestoreParser.parseStringList(json['approvers']),
-        requireAll: FirestoreParser.parseBool(json['requireAll'], false),
+        id: DataParser.parseString(json['id']),
+        level: DataParser.parseInt(json['level'], 1),
+        name: DataParser.parseString(json['name']),
+        approvers: DataParser.parseStringList(json['approvers']),
+        requireAll: DataParser.parseBool(json['requireAll'], false),
         condition: json['condition'] as String?,
       );
 
@@ -230,9 +230,9 @@ class Template extends Equatable {
       };
 
   factory Template.fromJson(Map<String, dynamic> json) => Template(
-        id: FirestoreParser.parseString(json['id']),
-        workspaceId: FirestoreParser.parseString(json['workspaceId']),
-        name: FirestoreParser.parseString(json['name']),
+        id: DataParser.parseString(json['id']),
+        workspaceId: DataParser.parseString(json['workspaceId']),
+        name: DataParser.parseString(json['name']),
         description: json['description'] as String?,
         fields: (json['fields'] as List?)
                 ?.map((f) => TemplateField.fromJson(f as Map<String, dynamic>))
@@ -242,10 +242,10 @@ class Template extends Equatable {
                 ?.map((s) => ApprovalStep.fromJson(s as Map<String, dynamic>))
                 .toList() ??
             [],
-        isActive: FirestoreParser.parseBool(json['isActive'], true),
-        createdBy: FirestoreParser.parseString(json['createdBy']),
-        createdAt: FirestoreParser.parseDateTime(json['createdAt']),
-        updatedAt: FirestoreParser.parseDateTime(json['updatedAt']),
+        isActive: DataParser.parseBool(json['isActive'], true),
+        createdBy: DataParser.parseString(json['createdBy']),
+        createdAt: DataParser.parseDateTime(json['createdAt']),
+        updatedAt: DataParser.parseDateTime(json['updatedAt']),
       );
 
   int get maxApprovalLevel => approvalSteps.isEmpty

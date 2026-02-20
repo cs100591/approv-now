@@ -1,36 +1,26 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:rxdart/rxdart.dart';
-import '../../core/repositories/firestore_repository.dart';
+import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
 import 'workspace_models.dart';
+import 'workspace_member.dart';
 
-/// WorkspaceRepository - Handles workspace data with Firestore
-///
-/// Data Structure in Firestore:
-/// Collection: workspaces
-/// Document: {workspaceId}
-///
-/// Workspace ownership is determined by the `ownerId` field.
-/// Members can access workspaces they are part of via the `members` array.
-class WorkspaceRepository extends FirestoreRepository {
-  static const String _collectionPath = 'workspaces';
+/// WorkspaceRepository - Supabase implementation
+class WorkspaceRepository {
+  final SupabaseService _supabase;
 
-  WorkspaceRepository({FirebaseFirestore? firestore})
-      : super(firestore: firestore);
+  WorkspaceRepository({SupabaseService? supabase})
+      : _supabase = supabase ?? SupabaseService();
 
   /// Create a new workspace
   Future<Workspace> createWorkspace(Workspace workspace) async {
     try {
-      final data = workspace.toJson();
-      data['createdAt'] = FieldValue.serverTimestamp();
-      data['updatedAt'] = FieldValue.serverTimestamp();
+      final response = await _supabase.createWorkspace(
+        name: workspace.name,
+        description: workspace.description,
+        companyName: workspace.companyName,
+      );
 
-      final docRef = firestore.collection(_collectionPath).doc(workspace.id);
-      await docRef.set(data);
-
-      AppLogger.info('Created workspace: ${workspace.id}');
-      return workspace;
+      return _mapToWorkspace(response);
     } catch (e) {
       AppLogger.error('Error creating workspace', e);
       rethrow;
@@ -40,104 +30,60 @@ class WorkspaceRepository extends FirestoreRepository {
   /// Get workspace by ID
   Future<Workspace?> getWorkspace(String workspaceId) async {
     try {
-      final doc =
-          await firestore.collection(_collectionPath).doc(workspaceId).get();
+      final response = await _supabase.client
+          .from('workspaces')
+          .select()
+          .eq('id', workspaceId)
+          .maybeSingle();
 
-      if (doc.exists && doc.data() != null) {
-        return Workspace.fromJson(doc.data()!);
-      }
-      return null;
+      if (response == null) return null;
+      return _mapToWorkspace(response);
     } catch (e) {
-      AppLogger.error('Error getting workspace: $workspaceId', e);
-      return null;
+      AppLogger.error('Error getting workspace', e);
+      rethrow;
     }
   }
 
-  /// Get all workspaces for a user (owned or member)
+  /// Get all workspaces for a user
   Future<List<Workspace>> getWorkspacesForUser(String userId) async {
     try {
-      // Get workspaces where user is owner
-      final ownerQuery = await firestore
-          .collection(_collectionPath)
-          .where('ownerId', isEqualTo: userId)
-          .get();
-
-      // Get workspaces where user is a member
-      final memberQuery = await firestore
-          .collection(_collectionPath)
-          .where('memberIds', arrayContains: userId)
-          .get();
-
-      // Combine results
-      final Map<String, Workspace> workspaceMap = {};
-
-      for (final doc in ownerQuery.docs) {
-        final workspace = Workspace.fromJson(doc.data());
-        workspaceMap[workspace.id] = workspace;
-      }
-
-      for (final doc in memberQuery.docs) {
-        final workspace = Workspace.fromJson(doc.data());
-        workspaceMap[workspace.id] = workspace;
-      }
-
-      final workspaces = workspaceMap.values.toList();
-      workspaces.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      return workspaces;
+      final workspaces = await _supabase.getWorkspaces();
+      return workspaces.map(_mapToWorkspace).toList();
     } catch (e) {
-      AppLogger.error('Error getting workspaces for user: $userId', e);
-      return [];
+      AppLogger.error('Error getting workspaces for user', e);
+      rethrow;
     }
   }
 
-  /// Get all workspaces (for admin purposes)
-  Future<List<Workspace>> getAllWorkspaces() async {
+  /// Check if user has any workspace
+  Future<bool> hasWorkspace(String userId) async {
     try {
-      final snapshot = await firestore.collection(_collectionPath).get();
-      return snapshot.docs
-          .map((doc) => Workspace.fromJson(doc.data()))
-          .toList();
+      final workspaces = await getWorkspacesForUser(userId);
+      return workspaces.isNotEmpty;
     } catch (e) {
-      AppLogger.error('Error getting all workspaces', e);
-      return [];
+      AppLogger.error('Error checking workspace existence', e);
+      return false;
     }
   }
 
   /// Update workspace
   Future<void> updateWorkspace(Workspace workspace) async {
     try {
-      final data = workspace.toJson();
-      data['updatedAt'] = FieldValue.serverTimestamp();
-
-      await firestore
-          .collection(_collectionPath)
-          .doc(workspace.id)
-          .update(data);
-
-      AppLogger.info('Updated workspace: ${workspace.id}');
+      await _supabase.updateWorkspace(
+        workspace.id,
+        {
+          'name': workspace.name,
+          'description': workspace.description,
+          'logo_url': workspace.logoUrl,
+          'company_name': workspace.companyName,
+          'address': workspace.address,
+          'footer_text': workspace.footerText,
+          'plan': workspace.plan,
+          'settings': workspace.settings,
+        },
+      );
     } catch (e) {
-      AppLogger.error('Error updating workspace: ${workspace.id}', e);
-      rethrow;
-    }
-  }
-
-  /// Update specific fields in workspace
-  Future<void> updateWorkspaceFields(
-    String workspaceId,
-    Map<String, dynamic> fields,
-  ) async {
-    try {
-      fields['updatedAt'] = FieldValue.serverTimestamp();
-
-      await firestore
-          .collection(_collectionPath)
-          .doc(workspaceId)
-          .update(fields);
-
-      AppLogger.info('Updated workspace fields: $workspaceId');
-    } catch (e) {
-      AppLogger.error('Error updating workspace fields: $workspaceId', e);
+      AppLogger.error('Error updating workspace', e);
       rethrow;
     }
   }
@@ -145,24 +91,76 @@ class WorkspaceRepository extends FirestoreRepository {
   /// Delete workspace
   Future<void> deleteWorkspace(String workspaceId) async {
     try {
-      await firestore.collection(_collectionPath).doc(workspaceId).delete();
-      AppLogger.info('Deleted workspace: $workspaceId');
+      await _supabase.deleteWorkspace(workspaceId);
     } catch (e) {
-      AppLogger.error('Error deleting workspace: $workspaceId', e);
+      AppLogger.error('Error deleting workspace', e);
       rethrow;
     }
   }
 
+  /// Stream workspaces for user
+  Stream<List<Workspace>> streamWorkspacesForUser(String userId) {
+    // For Supabase, we'll use a periodic fetch with timer
+    // Real realtime can be added later if needed
+    final controller = StreamController<List<Workspace>>();
+
+    // Initial fetch
+    getWorkspacesForUser(userId).then((workspaces) {
+      controller.add(workspaces);
+    }).catchError((error) {
+      controller.addError(error);
+    });
+
+    // Refresh every 30 seconds
+    Timer.periodic(const Duration(seconds: 30), (timer) async {
+      try {
+        final workspaces = await getWorkspacesForUser(userId);
+        if (!controller.isClosed) {
+          controller.add(workspaces);
+        }
+      } catch (e) {
+        if (!controller.isClosed) {
+          controller.addError(e);
+        }
+      }
+    });
+
+    return controller.stream;
+  }
+
   /// Add member to workspace
-  Future<void> addMember(String workspaceId, String userId) async {
+  Future<void> addMember(String workspaceId, dynamic memberOrUserId) async {
     try {
-      await firestore.collection(_collectionPath).doc(workspaceId).update({
-        'memberIds': FieldValue.arrayUnion([userId]),
-        'updatedAt': FieldValue.serverTimestamp(),
+      WorkspaceMember member;
+      if (memberOrUserId is String) {
+        // If just userId is passed, create a basic member
+        member = WorkspaceMember(
+          userId: memberOrUserId,
+          email: '',
+          role: WorkspaceRole.viewer,
+          status: MemberStatus.active,
+          invitedAt: DateTime.now(),
+          invitedBy: '',
+        );
+      } else if (memberOrUserId is WorkspaceMember) {
+        member = memberOrUserId;
+      } else {
+        throw ArgumentError('memberOrUserId must be String or WorkspaceMember');
+      }
+
+      await _supabase.client.from('workspace_members').insert({
+        'workspace_id': workspaceId,
+        'user_id': member.userId,
+        'email': member.email,
+        'display_name': member.displayName,
+        'photo_url': member.photoUrl,
+        'role': member.role.name,
+        'status': member.status.name,
+        'invited_by': member.invitedBy,
+        'invite_token': member.inviteToken,
       });
-      AppLogger.info('Added member $userId to workspace $workspaceId');
     } catch (e) {
-      AppLogger.error('Error adding member to workspace', e);
+      AppLogger.error('Error adding member', e);
       rethrow;
     }
   }
@@ -170,112 +168,117 @@ class WorkspaceRepository extends FirestoreRepository {
   /// Remove member from workspace
   Future<void> removeMember(String workspaceId, String userId) async {
     try {
-      await firestore.collection(_collectionPath).doc(workspaceId).update({
-        'memberIds': FieldValue.arrayRemove([userId]),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      AppLogger.info('Removed member $userId from workspace $workspaceId');
+      await _supabase.client
+          .from('workspace_members')
+          .delete()
+          .eq('workspace_id', workspaceId)
+          .eq('user_id', userId);
     } catch (e) {
-      AppLogger.error('Error removing member from workspace', e);
+      AppLogger.error('Error removing member', e);
       rethrow;
     }
   }
 
-  /// Stream workspaces for user (real-time updates)
-  Stream<List<Workspace>> streamWorkspacesForUser(String userId) {
-    // Combine two streams: owner and member
-    final ownerStream = firestore
-        .collection(_collectionPath)
-        .where('ownerId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Workspace.fromJson(doc.data()))
-            .toList());
+  /// Get members of workspace
+  Future<List<WorkspaceMember>> getMembers(String workspaceId) async {
+    try {
+      final response = await _supabase.client
+          .from('workspace_members')
+          .select()
+          .eq('workspace_id', workspaceId);
 
-    final memberStream = firestore
-        .collection(_collectionPath)
-        .where('memberIds', arrayContains: userId)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Workspace.fromJson(doc.data()))
-            .toList());
+      return response.map<WorkspaceMember>(_mapToMember).toList();
+    } catch (e) {
+      AppLogger.error('Error getting members', e);
+      rethrow;
+    }
+  }
 
-    // Combine streams
-    return Rx.combineLatest2<List<Workspace>, List<Workspace>, List<Workspace>>(
-      ownerStream,
-      memberStream,
-      (ownerWorkspaces, memberWorkspaces) {
-        final Map<String, Workspace> workspaceMap = {};
+  /// Update member role
+  Future<void> updateMemberRole(
+      String workspaceId, String userId, WorkspaceRole role) async {
+    try {
+      await _supabase.client
+          .from('workspace_members')
+          .update({'role': role.name})
+          .eq('workspace_id', workspaceId)
+          .eq('user_id', userId);
+    } catch (e) {
+      AppLogger.error('Error updating member role', e);
+      rethrow;
+    }
+  }
 
-        for (final workspace in ownerWorkspaces) {
-          workspaceMap[workspace.id] = workspace;
-        }
+  /// Map Supabase response to Workspace model
+  Workspace _mapToWorkspace(Map<String, dynamic> json) {
+    final memberIds = (json['member_ids'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
 
-        for (final workspace in memberWorkspaces) {
-          workspaceMap[workspace.id] = workspace;
-        }
-
-        final workspaces = workspaceMap.values.toList();
-        workspaces.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        return workspaces;
-      },
+    return Workspace(
+      id: json['id'].toString(),
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString(),
+      logoUrl: json['logo_url']?.toString(),
+      companyName: json['company_name']?.toString(),
+      address: json['address']?.toString(),
+      footerText: json['footer_text']?.toString(),
+      createdBy: json['created_by']?.toString() ?? '',
+      ownerId: json['owner_id']?.toString(),
+      createdAt: _parseDateTime(json['created_at']),
+      updatedAt: _parseDateTime(json['updated_at']),
+      members: [], // Members are in separate table
+      memberIds: memberIds,
+      plan: json['plan']?.toString() ?? 'free',
+      settings: Map<String, dynamic>.from(json['settings'] as Map? ?? {}),
     );
   }
 
-  /// Stream single workspace (real-time updates)
-  Stream<Workspace?> streamWorkspace(String workspaceId) {
-    return firestore
-        .collection(_collectionPath)
-        .doc(workspaceId)
-        .snapshots()
-        .map((doc) {
-      if (doc.exists && doc.data() != null) {
-        return Workspace.fromJson(doc.data()!);
+  /// Map Supabase response to WorkspaceMember model
+  WorkspaceMember _mapToMember(Map<String, dynamic> json) {
+    return WorkspaceMember(
+      userId: json['user_id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      displayName: json['display_name']?.toString(),
+      photoUrl: json['photo_url']?.toString(),
+      role: _parseRole(json['role']),
+      status: _parseStatus(json['status']),
+      invitedAt: _parseDateTime(json['invited_at']),
+      joinedAt:
+          json['joined_at'] != null ? _parseDateTime(json['joined_at']) : null,
+      invitedBy: json['invited_by']?.toString() ?? '',
+      inviteToken: json['invite_token']?.toString(),
+    );
+  }
+
+  DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) return DateTime.parse(value);
+    return DateTime.now();
+  }
+
+  WorkspaceRole _parseRole(dynamic value) {
+    if (value == null) return WorkspaceRole.viewer;
+    if (value is String) {
+      try {
+        return WorkspaceRole.values.byName(value);
+      } catch (_) {
+        return WorkspaceRole.viewer;
       }
-      return null;
-    });
-  }
-
-  /// Check if workspace exists for user
-  Future<bool> hasWorkspace(String userId) async {
-    try {
-      final query = await firestore
-          .collection(_collectionPath)
-          .where('ownerId', isEqualTo: userId)
-          .limit(1)
-          .get();
-
-      return query.docs.isNotEmpty;
-    } catch (e) {
-      AppLogger.error('Error checking workspace existence', e);
-      return false;
     }
+    return WorkspaceRole.viewer;
   }
 
-  /// Get workspace count for user
-  Future<int> getWorkspaceCount(String userId) async {
-    try {
-      final workspaces = await getWorkspacesForUser(userId);
-      return workspaces.length;
-    } catch (e) {
-      AppLogger.error('Error getting workspace count', e);
-      return 0;
+  MemberStatus _parseStatus(dynamic value) {
+    if (value == null) return MemberStatus.pending;
+    if (value is String) {
+      try {
+        return MemberStatus.values.byName(value);
+      } catch (_) {
+        return MemberStatus.pending;
+      }
     }
-  }
-
-  // Legacy methods for backward compatibility (using local storage)
-  // These will be removed after migration is complete
-
-  Future<void> saveCurrentWorkspaceLocal(Workspace workspace) async {
-    // Keep for local caching if needed
-  }
-
-  Future<Workspace?> getCurrentWorkspaceLocal() async {
-    // Keep for local caching if needed
-    return null;
-  }
-
-  Future<void> clearCurrentWorkspaceLocal() async {
-    // Keep for local caching if needed
+    return MemberStatus.pending;
   }
 }

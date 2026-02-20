@@ -12,7 +12,6 @@ import '../../modules/request/request_ui/create_request_screen.dart';
 import '../../modules/request/request_ui/approval_view_screen.dart';
 import '../../modules/notification/notification_ui/notifications_screen.dart';
 import '../../modules/analytics/analytics_ui/analytics_screen.dart';
-import '../../modules/auth/firebase_test_screen.dart';
 import 'route_names.dart';
 
 /// AppRouter - Handles all app routing
@@ -108,13 +107,6 @@ class AppRouter {
       case RouteNames.teamMembers:
         return MaterialPageRoute(
           builder: (_) => const TeamMembersScreen(),
-          settings: settings,
-        );
-
-      // Firebase Test Route - Temporary
-      case '/firebase-test':
-        return MaterialPageRoute(
-          builder: (_) => const FirebaseTestScreen(),
           settings: settings,
         );
 

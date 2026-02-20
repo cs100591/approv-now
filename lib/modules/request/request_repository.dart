@@ -1,34 +1,28 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../core/repositories/firestore_repository.dart';
+import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
-import 'request_models.dart' hide FieldValue;
+import '../template/template_models.dart';
+import 'request_models.dart';
 
-/// RequestRepository - Handles approval request data with Firestore
-///
-/// Data Structure in Firestore:
-/// Collection: requests
-/// Document: {requestId}
-///
-/// Requests are associated with workspaces via the `workspaceId` field.
-/// Access is controlled by workspace membership.
-class RequestRepository extends FirestoreRepository {
-  static const String _collectionPath = 'requests';
+/// RequestRepository - Supabase implementation
+class RequestRepository {
+  final SupabaseService _supabase;
 
-  RequestRepository({FirebaseFirestore? firestore})
-      : super(firestore: firestore);
+  RequestRepository({SupabaseService? supabase})
+      : _supabase = supabase ?? SupabaseService();
 
   /// Create a new request
   Future<ApprovalRequest> createRequest(ApprovalRequest request) async {
     try {
-      final data = request.toJson();
-      data['createdAt'] = FieldValue.serverTimestamp();
-      data['updatedAt'] = FieldValue.serverTimestamp();
+      final response = await _supabase.createRequest(
+        workspaceId: request.workspaceId,
+        templateId: request.templateId,
+        templateName: request.templateName,
+        fieldValues: request.fieldValues.map((f) => f.toJson()).toList(),
+        approvalSteps: [], // TODO: Get from template
+      );
 
-      await firestore.collection(_collectionPath).doc(request.id).set(data);
-
-      AppLogger.info('Created request: ${request.id}');
-      return request;
+      return _mapToRequest(response);
     } catch (e) {
       AppLogger.error('Error creating request', e);
       rethrow;
@@ -38,16 +32,12 @@ class RequestRepository extends FirestoreRepository {
   /// Get request by ID
   Future<ApprovalRequest?> getRequest(String requestId) async {
     try {
-      final doc =
-          await firestore.collection(_collectionPath).doc(requestId).get();
-
-      if (doc.exists && doc.data() != null) {
-        return ApprovalRequest.fromJson(doc.data()!);
-      }
-      return null;
+      final response = await _supabase.getRequest(requestId);
+      if (response == null) return null;
+      return _mapToRequest(response);
     } catch (e) {
-      AppLogger.error('Error getting request: $requestId', e);
-      return null;
+      AppLogger.error('Error getting request', e);
+      rethrow;
     }
   }
 
@@ -55,202 +45,25 @@ class RequestRepository extends FirestoreRepository {
   Future<List<ApprovalRequest>> getRequestsByWorkspace(
       String workspaceId) async {
     try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => ApprovalRequest.fromJson(doc.data()))
-          .toList();
+      final requests = await _supabase.getRequests(workspaceId);
+      return requests.map(_mapToRequest).toList();
     } catch (e) {
-      AppLogger.error('Error getting requests for workspace: $workspaceId', e);
-      return [];
+      AppLogger.error('Error getting requests', e);
+      rethrow;
     }
   }
 
-  /// Get requests submitted by a user
-  Future<List<ApprovalRequest>> getRequestsBySubmitter(String userId) async {
-    try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('submittedBy', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => ApprovalRequest.fromJson(doc.data()))
-          .toList();
-    } catch (e) {
-      AppLogger.error('Error getting requests for submitter: $userId', e);
-      return [];
-    }
-  }
-
-  /// Get pending requests for an approver
+  /// Get pending requests for approver
   Future<List<ApprovalRequest>> getPendingRequestsForApprover(
     String workspaceId,
     String approverId,
   ) async {
     try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .where('status', isEqualTo: 'pending')
-          .where('currentApproverIds', arrayContains: approverId)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => ApprovalRequest.fromJson(doc.data()))
-          .toList();
+      final requests = await _supabase.getPendingRequests(workspaceId);
+      return requests.map(_mapToRequest).toList();
     } catch (e) {
-      AppLogger.error(
-          'Error getting pending requests for approver: $approverId', e);
-      return [];
-    }
-  }
-
-  /// Get requests by status
-  Future<List<ApprovalRequest>> getRequestsByStatus(
-    String workspaceId,
-    RequestStatus status,
-  ) async {
-    try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .where('status', isEqualTo: status.name)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => ApprovalRequest.fromJson(doc.data()))
-          .toList();
-    } catch (e) {
-      AppLogger.error('Error getting requests by status', e);
-      return [];
-    }
-  }
-
-  /// Get requests by template
-  Future<List<ApprovalRequest>> getRequestsByTemplate(String templateId) async {
-    try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('templateId', isEqualTo: templateId)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => ApprovalRequest.fromJson(doc.data()))
-          .toList();
-    } catch (e) {
-      AppLogger.error('Error getting requests for template: $templateId', e);
-      return [];
-    }
-  }
-
-  /// Update request
-  Future<void> updateRequest(ApprovalRequest request) async {
-    try {
-      final data = request.toJson();
-      data['updatedAt'] = FieldValue.serverTimestamp();
-
-      await firestore.collection(_collectionPath).doc(request.id).update(data);
-
-      AppLogger.info('Updated request: ${request.id}');
-    } catch (e) {
-      AppLogger.error('Error updating request: ${request.id}', e);
+      AppLogger.error('Error getting pending requests', e);
       rethrow;
-    }
-  }
-
-  /// Update request status
-  Future<void> updateRequestStatus(
-    String requestId,
-    RequestStatus status, {
-    int? currentLevel,
-    String? approvedBy,
-    String? rejectionReason,
-  }) async {
-    try {
-      final updates = <String, dynamic>{
-        'status': status.name,
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      if (currentLevel != null) {
-        updates['currentLevel'] = currentLevel;
-      }
-
-      if (approvedBy != null) {
-        updates['approvedBy'] = FieldValue.arrayUnion([approvedBy]);
-      }
-
-      if (rejectionReason != null) {
-        updates['rejectionReason'] = rejectionReason;
-      }
-
-      await firestore
-          .collection(_collectionPath)
-          .doc(requestId)
-          .update(updates);
-
-      AppLogger.info('Updated request status: $requestId -> ${status.name}');
-    } catch (e) {
-      AppLogger.error('Error updating request status: $requestId', e);
-      rethrow;
-    }
-  }
-
-  /// Delete request
-  Future<void> deleteRequest(String requestId) async {
-    try {
-      await firestore.collection(_collectionPath).doc(requestId).delete();
-      AppLogger.info('Deleted request: $requestId');
-    } catch (e) {
-      AppLogger.error('Error deleting request: $requestId', e);
-      rethrow;
-    }
-  }
-
-  /// Delete all requests for a workspace
-  Future<void> deleteRequestsForWorkspace(String workspaceId) async {
-    try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .get();
-
-      final batch = firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
-
-      AppLogger.info(
-          'Deleted ${snapshot.docs.length} requests for workspace: $workspaceId');
-    } catch (e) {
-      AppLogger.error('Error deleting requests for workspace: $workspaceId', e);
-      rethrow;
-    }
-  }
-
-  /// Get request count for workspace
-  Future<int> getRequestCount(String workspaceId) async {
-    try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .count()
-          .get();
-
-      return snapshot.count ?? 0;
-    } catch (e) {
-      AppLogger.error('Error getting request count', e);
-      return 0;
     }
   }
 
@@ -258,61 +71,143 @@ class RequestRepository extends FirestoreRepository {
   Future<int> getPendingRequestCount(
       String workspaceId, String approverId) async {
     try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .where('status', isEqualTo: 'pending')
-          .where('currentApproverIds', arrayContains: approverId)
-          .count()
-          .get();
-
-      return snapshot.count ?? 0;
+      final requests =
+          await getPendingRequestsForApprover(workspaceId, approverId);
+      return requests.length;
     } catch (e) {
       AppLogger.error('Error getting pending request count', e);
       return 0;
     }
   }
 
-  /// Stream requests for workspace (real-time updates)
+  /// Update request
+  Future<void> updateRequest(ApprovalRequest request) async {
+    try {
+      await _supabase.updateRequest(
+        request.id,
+        {
+          'status': request.status.name,
+          'current_level': request.currentLevel,
+          'field_values': request.fieldValues.map((f) => f.toJson()).toList(),
+          'approval_actions':
+              request.approvalActions.map((a) => a.toJson()).toList(),
+          'revision_number': request.revisionNumber,
+        },
+      );
+    } catch (e) {
+      AppLogger.error('Error updating request', e);
+      rethrow;
+    }
+  }
+
+  /// Delete request
+  Future<void> deleteRequest(String requestId) async {
+    try {
+      await _supabase.deleteRequest(requestId);
+    } catch (e) {
+      AppLogger.error('Error deleting request', e);
+      rethrow;
+    }
+  }
+
+  /// Stream requests for workspace
   Stream<List<ApprovalRequest>> streamRequestsByWorkspace(String workspaceId) {
-    return firestore
-        .collection(_collectionPath)
-        .where('workspaceId', isEqualTo: workspaceId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ApprovalRequest.fromJson(doc.data()))
-            .toList());
-  }
+    final controller = StreamController<List<ApprovalRequest>>();
 
-  /// Stream single request (real-time updates)
-  Stream<ApprovalRequest?> streamRequest(String requestId) {
-    return firestore
-        .collection(_collectionPath)
-        .doc(requestId)
-        .snapshots()
-        .map((doc) {
-      if (doc.exists && doc.data() != null) {
-        return ApprovalRequest.fromJson(doc.data()!);
-      }
-      return null;
+    getRequestsByWorkspace(workspaceId).then((requests) {
+      controller.add(requests);
+    }).catchError((error) {
+      controller.addError(error);
     });
+
+    Timer.periodic(const Duration(seconds: 30), (timer) async {
+      try {
+        final requests = await getRequestsByWorkspace(workspaceId);
+        if (!controller.isClosed) {
+          controller.add(requests);
+        }
+      } catch (e) {
+        if (!controller.isClosed) {
+          controller.addError(e);
+        }
+      }
+    });
+
+    return controller.stream;
   }
 
-  /// Stream pending requests for approver (real-time updates)
+  /// Stream pending requests for approver
   Stream<List<ApprovalRequest>> streamPendingRequestsForApprover(
     String workspaceId,
     String approverId,
   ) {
-    return firestore
-        .collection(_collectionPath)
-        .where('workspaceId', isEqualTo: workspaceId)
-        .where('status', isEqualTo: 'pending')
-        .where('currentApproverIds', arrayContains: approverId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ApprovalRequest.fromJson(doc.data()))
-            .toList());
+    final controller = StreamController<List<ApprovalRequest>>();
+
+    getPendingRequestsForApprover(workspaceId, approverId).then((requests) {
+      controller.add(requests);
+    }).catchError((error) {
+      controller.addError(error);
+    });
+
+    Timer.periodic(const Duration(seconds: 30), (timer) async {
+      try {
+        final requests =
+            await getPendingRequestsForApprover(workspaceId, approverId);
+        if (!controller.isClosed) {
+          controller.add(requests);
+        }
+      } catch (e) {
+        if (!controller.isClosed) {
+          controller.addError(e);
+        }
+      }
+    });
+
+    return controller.stream;
+  }
+
+  /// Map Supabase response to ApprovalRequest model
+  ApprovalRequest _mapToRequest(Map<String, dynamic> json) {
+    final fieldValuesJson = json['field_values'] as List<dynamic>? ?? [];
+    final approvalActionsJson =
+        json['approval_actions'] as List<dynamic>? ?? [];
+
+    return ApprovalRequest(
+      id: json['id'].toString(),
+      workspaceId: json['workspace_id']?.toString() ?? '',
+      templateId: json['template_id']?.toString() ?? '',
+      templateName: json['template_name']?.toString() ?? '',
+      submittedBy: json['submitted_by']?.toString() ?? '',
+      submittedByName: json['submitted_by_name']?.toString() ?? '',
+      submittedAt: _parseDateTime(json['created_at']),
+      status: _parseStatus(json['status']),
+      currentLevel: json['current_level'] as int? ?? 1,
+      revisionNumber: json['revision_number'] as int? ?? 0,
+      fieldValues: fieldValuesJson
+          .map((f) => FieldValue.fromJson(f as Map<String, dynamic>))
+          .toList(),
+      approvalActions: approvalActionsJson
+          .map((a) => ApprovalAction.fromJson(a as Map<String, dynamic>))
+          .toList(),
+      revisions: [],
+    );
+  }
+
+  RequestStatus _parseStatus(dynamic value) {
+    if (value == null) return RequestStatus.draft;
+    if (value is String) {
+      try {
+        return RequestStatus.values.byName(value);
+      } catch (_) {
+        return RequestStatus.draft;
+      }
+    }
+    return RequestStatus.draft;
+  }
+
+  DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) return DateTime.parse(value);
+    return DateTime.now();
   }
 }

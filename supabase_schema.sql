@@ -1,0 +1,316 @@
+-- ============================================
+-- Approve Now - Supabase Database Schema
+-- Run this in Supabase SQL Editor
+-- ============================================
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================
+-- PROFILES TABLE (User profiles)
+-- ============================================
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  display_name TEXT,
+  photo_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for profiles
+CREATE POLICY "Users can view own profile" ON profiles
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Trigger to create profile on user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, display_name)
+  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'display_name');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================
+-- WORKSPACES TABLE
+-- ============================================
+CREATE TABLE workspaces (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  description TEXT,
+  logo_url TEXT,
+  company_name TEXT,
+  address TEXT,
+  footer_text TEXT,
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  member_ids UUID[] DEFAULT '{}',
+  plan TEXT DEFAULT 'free',
+  settings JSONB DEFAULT '{}',
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for workspaces
+CREATE POLICY "Users can view workspaces they own or are members of" ON workspaces
+  FOR SELECT USING (
+    auth.uid() = owner_id OR 
+    auth.uid() = ANY(member_ids)
+  );
+
+CREATE POLICY "Users can create workspaces" ON workspaces
+  FOR INSERT WITH CHECK (auth.uid() = owner_id);
+
+CREATE POLICY "Owners can update workspaces" ON workspaces
+  FOR UPDATE USING (auth.uid() = owner_id);
+
+CREATE POLICY "Owners can delete workspaces" ON workspaces
+  FOR DELETE USING (auth.uid() = owner_id);
+
+-- Index for workspace queries
+CREATE INDEX idx_workspaces_owner_id ON workspaces(owner_id);
+CREATE INDEX idx_workspaces_member_ids ON workspaces USING GIN(member_ids);
+
+-- ============================================
+-- WORKSPACE MEMBERS TABLE (Detailed member info)
+-- ============================================
+CREATE TABLE workspace_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  display_name TEXT,
+  photo_url TEXT,
+  role TEXT DEFAULT 'viewer', -- owner, admin, editor, viewer
+  status TEXT DEFAULT 'pending', -- pending, active, inactive
+  invited_by UUID REFERENCES auth.users(id),
+  invited_at TIMESTAMPTZ DEFAULT NOW(),
+  joined_at TIMESTAMPTZ,
+  invite_token TEXT,
+  UNIQUE(workspace_id, user_id)
+);
+
+-- Enable RLS
+ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for workspace_members
+CREATE POLICY "Users can view members of their workspaces" ON workspace_members
+  FOR SELECT USING (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+CREATE POLICY "Workspace owners can manage members" ON workspace_members
+  FOR ALL USING (
+    workspace_id IN (SELECT id FROM workspaces WHERE auth.uid() = owner_id)
+  );
+
+-- Indexes
+CREATE INDEX idx_workspace_members_workspace_id ON workspace_members(workspace_id);
+CREATE INDEX idx_workspace_members_user_id ON workspace_members(user_id);
+
+-- ============================================
+-- TEMPLATES TABLE
+-- ============================================
+CREATE TABLE templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  fields JSONB DEFAULT '[]',
+  approval_steps JSONB DEFAULT '[]',
+  is_active BOOLEAN DEFAULT true,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for templates
+CREATE POLICY "Users can view templates of their workspaces" ON templates
+  FOR SELECT USING (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+CREATE POLICY "Users can create templates in their workspaces" ON templates
+  FOR INSERT WITH CHECK (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+CREATE POLICY "Users can update templates in their workspaces" ON templates
+  FOR UPDATE USING (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+CREATE POLICY "Users can delete templates in their workspaces" ON templates
+  FOR DELETE USING (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+-- Indexes
+CREATE INDEX idx_templates_workspace_id ON templates(workspace_id);
+CREATE INDEX idx_templates_is_active ON templates(is_active);
+CREATE INDEX idx_templates_created_at ON templates(created_at DESC);
+
+-- ============================================
+-- REQUESTS TABLE
+-- ============================================
+CREATE TABLE requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  template_id UUID REFERENCES templates(id) ON DELETE SET NULL,
+  template_name TEXT,
+  submitted_by UUID NOT NULL REFERENCES auth.users(id),
+  submitted_by_name TEXT,
+  status TEXT DEFAULT 'draft', -- draft, pending, approved, rejected, revised
+  current_level INTEGER DEFAULT 1,
+  field_values JSONB DEFAULT '[]',
+  approval_actions JSONB DEFAULT '[]',
+  current_approver_ids UUID[] DEFAULT '{}',
+  revision_number INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for requests
+CREATE POLICY "Users can view requests of their workspaces" ON requests
+  FOR SELECT USING (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+CREATE POLICY "Users can create requests in their workspaces" ON requests
+  FOR INSERT WITH CHECK (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+CREATE POLICY "Users can update requests in their workspaces" ON requests
+  FOR UPDATE USING (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+CREATE POLICY "Users can delete requests in their workspaces" ON requests
+  FOR DELETE USING (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+-- Indexes
+CREATE INDEX idx_requests_workspace_id ON requests(workspace_id);
+CREATE INDEX idx_requests_status ON requests(status);
+CREATE INDEX idx_requests_submitted_by ON requests(submitted_by);
+CREATE INDEX idx_requests_current_approver_ids ON requests USING GIN(current_approver_ids);
+CREATE INDEX idx_requests_created_at ON requests(created_at DESC);
+
+-- Composite index for common query pattern
+CREATE INDEX idx_requests_workspace_status ON requests(workspace_id, status);
+
+-- ============================================
+-- STORAGE BUCKETS
+-- ============================================
+-- Create storage buckets for file uploads
+INSERT INTO storage.buckets (id, name, public) VALUES ('attachments', 'attachments', false);
+INSERT INTO storage.buckets (id, name, public) VALUES ('logos', 'logos', false);
+
+-- Storage policies for attachments
+CREATE POLICY "Users can upload attachments to their workspaces"
+  ON storage.objects FOR INSERT WITH CHECK (
+    bucket_id = 'attachments' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+CREATE POLICY "Users can view attachments from their workspaces"
+  ON storage.objects FOR SELECT USING (
+    bucket_id = 'attachments' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Storage policies for logos
+CREATE POLICY "Users can upload logos"
+  ON storage.objects FOR INSERT WITH CHECK (
+    bucket_id = 'logos' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+CREATE POLICY "Users can view logos"
+  ON storage.objects FOR SELECT USING (bucket_id = 'logos');
+
+-- ============================================
+-- FUNCTIONS AND TRIGGERS
+-- ============================================
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Apply triggers for updated_at
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_workspaces_updated_at BEFORE UPDATE ON workspaces
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_templates_updated_at BEFORE UPDATE ON templates
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_requests_updated_at BEFORE UPDATE ON requests
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- DONE! 
+-- ============================================
+-- After running this schema:
+-- 1. Go to Authentication > Providers and enable Email provider
+-- 2. Check that all tables are created in Table Editor
+-- 3. Verify RLS policies are working

@@ -1,34 +1,27 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../core/repositories/firestore_repository.dart';
+import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
-import 'template_models.dart';
+import '../template/template_models.dart';
 
-/// TemplateRepository - Handles template data with Firestore
-///
-/// Data Structure in Firestore:
-/// Collection: templates
-/// Document: {templateId}
-///
-/// Templates are associated with workspaces via the `workspaceId` field.
-/// Access is controlled by workspace membership.
-class TemplateRepository extends FirestoreRepository {
-  static const String _collectionPath = 'templates';
+/// TemplateRepository - Supabase implementation
+class TemplateRepository {
+  final SupabaseService _supabase;
 
-  TemplateRepository({FirebaseFirestore? firestore})
-      : super(firestore: firestore);
+  TemplateRepository({SupabaseService? supabase})
+      : _supabase = supabase ?? SupabaseService();
 
   /// Create a new template
   Future<Template> createTemplate(Template template) async {
     try {
-      final data = template.toJson();
-      data['createdAt'] = FieldValue.serverTimestamp();
-      data['updatedAt'] = FieldValue.serverTimestamp();
+      final response = await _supabase.createTemplate(
+        workspaceId: template.workspaceId,
+        name: template.name,
+        description: template.description,
+        fields: template.fields.map((f) => f.toJson()).toList(),
+        approvalSteps: template.approvalSteps.map((s) => s.toJson()).toList(),
+      );
 
-      await firestore.collection(_collectionPath).doc(template.id).set(data);
-
-      AppLogger.info('Created template: ${template.id}');
-      return template;
+      return _mapToTemplate(response);
     } catch (e) {
       AppLogger.error('Error creating template', e);
       rethrow;
@@ -38,129 +31,22 @@ class TemplateRepository extends FirestoreRepository {
   /// Get template by ID
   Future<Template?> getTemplate(String templateId) async {
     try {
-      final doc =
-          await firestore.collection(_collectionPath).doc(templateId).get();
-
-      if (doc.exists && doc.data() != null) {
-        return Template.fromJson(doc.data()!);
-      }
-      return null;
+      final response = await _supabase.getTemplate(templateId);
+      if (response == null) return null;
+      return _mapToTemplate(response);
     } catch (e) {
-      AppLogger.error('Error getting template: $templateId', e);
-      return null;
+      AppLogger.error('Error getting template', e);
+      rethrow;
     }
   }
 
   /// Get all templates for a workspace
   Future<List<Template>> getTemplatesByWorkspace(String workspaceId) async {
     try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs.map((doc) => Template.fromJson(doc.data())).toList();
+      final templates = await _supabase.getTemplates(workspaceId);
+      return templates.map(_mapToTemplate).toList();
     } catch (e) {
-      AppLogger.error('Error getting templates for workspace: $workspaceId', e);
-      return [];
-    }
-  }
-
-  /// Get templates by creator
-  Future<List<Template>> getTemplatesByCreator(String userId) async {
-    try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('createdBy', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs.map((doc) => Template.fromJson(doc.data())).toList();
-    } catch (e) {
-      AppLogger.error('Error getting templates for creator: $userId', e);
-      return [];
-    }
-  }
-
-  /// Get active templates for a workspace
-  Future<List<Template>> getActiveTemplates(String workspaceId) async {
-    try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .where('isActive', isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs.map((doc) => Template.fromJson(doc.data())).toList();
-    } catch (e) {
-      AppLogger.error(
-          'Error getting active templates for workspace: $workspaceId', e);
-      return [];
-    }
-  }
-
-  /// Update template
-  Future<void> updateTemplate(Template template) async {
-    try {
-      final data = template.toJson();
-      data['updatedAt'] = FieldValue.serverTimestamp();
-
-      await firestore.collection(_collectionPath).doc(template.id).update(data);
-
-      AppLogger.info('Updated template: ${template.id}');
-    } catch (e) {
-      AppLogger.error('Error updating template: ${template.id}', e);
-      rethrow;
-    }
-  }
-
-  /// Update template status
-  Future<void> updateTemplateStatus(String templateId, bool isActive) async {
-    try {
-      await firestore.collection(_collectionPath).doc(templateId).update({
-        'isActive': isActive,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      AppLogger.info('Updated template status: $templateId -> $isActive');
-    } catch (e) {
-      AppLogger.error('Error updating template status: $templateId', e);
-      rethrow;
-    }
-  }
-
-  /// Delete template
-  Future<void> deleteTemplate(String templateId) async {
-    try {
-      await firestore.collection(_collectionPath).doc(templateId).delete();
-      AppLogger.info('Deleted template: $templateId');
-    } catch (e) {
-      AppLogger.error('Error deleting template: $templateId', e);
-      rethrow;
-    }
-  }
-
-  /// Delete all templates for a workspace
-  Future<void> deleteTemplatesForWorkspace(String workspaceId) async {
-    try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .get();
-
-      final batch = firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
-
-      AppLogger.info(
-          'Deleted ${snapshot.docs.length} templates for workspace: $workspaceId');
-    } catch (e) {
-      AppLogger.error(
-          'Error deleting templates for workspace: $workspaceId', e);
+      AppLogger.error('Error getting templates', e);
       rethrow;
     }
   }
@@ -168,53 +54,98 @@ class TemplateRepository extends FirestoreRepository {
   /// Get template count for workspace
   Future<int> getTemplateCount(String workspaceId) async {
     try {
-      final snapshot = await firestore
-          .collection(_collectionPath)
-          .where('workspaceId', isEqualTo: workspaceId)
-          .count()
-          .get();
-
-      return snapshot.count ?? 0;
+      final templates = await getTemplatesByWorkspace(workspaceId);
+      return templates.length;
     } catch (e) {
       AppLogger.error('Error getting template count', e);
       return 0;
     }
   }
 
-  /// Stream templates for workspace (real-time updates)
+  /// Update template
+  Future<void> updateTemplate(Template template) async {
+    try {
+      await _supabase.updateTemplate(
+        template.id,
+        {
+          'name': template.name,
+          'description': template.description,
+          'fields': template.fields.map((f) => f.toJson()).toList(),
+          'approval_steps':
+              template.approvalSteps.map((s) => s.toJson()).toList(),
+          'is_active': template.isActive,
+        },
+      );
+    } catch (e) {
+      AppLogger.error('Error updating template', e);
+      rethrow;
+    }
+  }
+
+  /// Delete template
+  Future<void> deleteTemplate(String templateId) async {
+    try {
+      await _supabase.deleteTemplate(templateId);
+    } catch (e) {
+      AppLogger.error('Error deleting template', e);
+      rethrow;
+    }
+  }
+
+  /// Stream templates for workspace
   Stream<List<Template>> streamTemplatesByWorkspace(String workspaceId) {
-    return firestore
-        .collection(_collectionPath)
-        .where('workspaceId', isEqualTo: workspaceId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Template.fromJson(doc.data())).toList());
-  }
+    final controller = StreamController<List<Template>>();
 
-  /// Stream single template (real-time updates)
-  Stream<Template?> streamTemplate(String templateId) {
-    return firestore
-        .collection(_collectionPath)
-        .doc(templateId)
-        .snapshots()
-        .map((doc) {
-      if (doc.exists && doc.data() != null) {
-        return Template.fromJson(doc.data()!);
-      }
-      return null;
+    // Initial fetch
+    getTemplatesByWorkspace(workspaceId).then((templates) {
+      controller.add(templates);
+    }).catchError((error) {
+      controller.addError(error);
     });
+
+    // Refresh every 30 seconds
+    Timer.periodic(const Duration(seconds: 30), (timer) async {
+      try {
+        final templates = await getTemplatesByWorkspace(workspaceId);
+        if (!controller.isClosed) {
+          controller.add(templates);
+        }
+      } catch (e) {
+        if (!controller.isClosed) {
+          controller.addError(e);
+        }
+      }
+    });
+
+    return controller.stream;
   }
 
-  /// Stream active templates for workspace (real-time updates)
-  Stream<List<Template>> streamActiveTemplates(String workspaceId) {
-    return firestore
-        .collection(_collectionPath)
-        .where('workspaceId', isEqualTo: workspaceId)
-        .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Template.fromJson(doc.data())).toList());
+  /// Map Supabase response to Template model
+  Template _mapToTemplate(Map<String, dynamic> json) {
+    final fieldsJson = json['fields'] as List<dynamic>? ?? [];
+    final stepsJson = json['approval_steps'] as List<dynamic>? ?? [];
+
+    return Template(
+      id: json['id'].toString(),
+      workspaceId: json['workspace_id'].toString(),
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString(),
+      fields: fieldsJson
+          .map((f) => TemplateField.fromJson(f as Map<String, dynamic>))
+          .toList(),
+      approvalSteps: stepsJson
+          .map((s) => ApprovalStep.fromJson(s as Map<String, dynamic>))
+          .toList(),
+      isActive: json['is_active'] as bool? ?? true,
+      createdBy: json['created_by']?.toString() ?? '',
+      createdAt: _parseDateTime(json['created_at']),
+      updatedAt: _parseDateTime(json['updated_at']),
+    );
+  }
+
+  DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) return DateTime.parse(value);
+    return DateTime.now();
   }
 }
