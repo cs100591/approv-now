@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/utils/firestore_parser.dart';
+
 /// Workspace member role definitions
 enum WorkspaceRole {
   owner, // Full permissions + can delete workspace
@@ -178,17 +181,23 @@ class WorkspaceMember {
   /// Create from JSON
   factory WorkspaceMember.fromJson(Map<String, dynamic> json) {
     return WorkspaceMember(
-      userId: json['userId'] as String,
-      email: json['email'] as String,
+      userId: FirestoreParser.parseString(json['userId']),
+      email: FirestoreParser.parseString(json['email']),
       displayName: json['displayName'] as String?,
       photoUrl: json['photoUrl'] as String?,
-      role: WorkspaceRole.values.byName(json['role'] as String),
-      status: MemberStatus.values.byName(json['status'] as String),
-      invitedAt: DateTime.parse(json['invitedAt'] as String),
-      joinedAt: json['joinedAt'] != null
-          ? DateTime.parse(json['joinedAt'] as String)
-          : null,
-      invitedBy: json['invitedBy'] as String,
+      role: FirestoreParser.parseEnumWithDefault(
+        json['role'],
+        WorkspaceRole.values,
+        WorkspaceRole.viewer,
+      ),
+      status: FirestoreParser.parseEnumWithDefault(
+        json['status'],
+        MemberStatus.values,
+        MemberStatus.pending,
+      ),
+      invitedAt: FirestoreParser.parseDateTime(json['invitedAt']),
+      joinedAt: FirestoreParser.parseDateTimeNullable(json['joinedAt']),
+      invitedBy: FirestoreParser.parseString(json['invitedBy']),
       inviteToken: json['inviteToken'] as String?,
     );
   }

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../core/utils/firestore_parser.dart';
 import 'workspace_member.dart';
 
 /// Workspace model representing an approval workspace
@@ -140,23 +141,24 @@ class Workspace extends Equatable {
   factory Workspace.fromJson(Map<String, dynamic> json) {
     final membersJson = json['members'] as List<dynamic>? ?? [];
     final memberIdsJson = json['memberIds'] as List<dynamic>? ?? [];
+
     return Workspace(
-      id: json['id'] as String,
-      name: json['name'] as String,
+      id: FirestoreParser.parseString(json['id']),
+      name: FirestoreParser.parseString(json['name']),
       description: json['description'] as String?,
       logoUrl: json['logoUrl'] as String?,
       companyName: json['companyName'] as String?,
       address: json['address'] as String?,
       footerText: json['footerText'] as String?,
-      createdBy: json['createdBy'] as String,
+      createdBy: FirestoreParser.parseString(json['createdBy']),
       ownerId: json['ownerId'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: FirestoreParser.parseDateTime(json['createdAt']),
+      updatedAt: FirestoreParser.parseDateTime(json['updatedAt']),
       members: membersJson
           .map((m) => WorkspaceMember.fromJson(m as Map<String, dynamic>))
           .toList(),
-      memberIds: memberIdsJson.cast<String>().toList(),
-      plan: json['plan'] as String? ?? 'free',
+      memberIds: FirestoreParser.parseStringList(memberIdsJson),
+      plan: FirestoreParser.parseString(json['plan'], 'free'),
       settings: json['settings'] as Map<String, dynamic>? ?? {},
     );
   }
