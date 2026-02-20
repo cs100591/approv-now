@@ -45,5 +45,15 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Privacy Permissions -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to photos to allow users to upload attachments and documents for approval requests.</string>
+	
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to allow users to take photos for approval request attachments.</string>
+	
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs microphone access for recording audio attachments in approval requests.</string>
 </dict>
 </plist>
