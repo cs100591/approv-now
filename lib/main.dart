@@ -17,6 +17,7 @@ import 'modules/auth/auth_service.dart';
 import 'modules/workspace/workspace_provider.dart';
 import 'modules/workspace/workspace_service.dart';
 import 'modules/workspace/workspace_repository.dart';
+import 'modules/workspace/workspace_ui/dashboard_screen.dart';
 
 // Template Module
 import 'modules/template/template_provider.dart';
@@ -58,6 +59,9 @@ import 'modules/analytics/analytics_service.dart';
 
 // Plan Enforcement Module
 import 'modules/plan_enforcement/plan_guard_service.dart';
+
+// Auth Wrapper
+import 'modules/auth/auth_ui/auth_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -188,7 +192,9 @@ class MyApp extends StatelessWidget {
         title: 'Approv Now',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        initialRoute: AppRouter.initialRoute,
+        home: AuthWrapper(
+          child: const DashboardScreen(),
+        ),
         onGenerateRoute: AppRouter.onGenerateRoute,
       ),
     );

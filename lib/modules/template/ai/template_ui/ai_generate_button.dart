@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
-/// AI 生成按钮
-/// 根据匹配状态显示不同样式
 class AiGenerateButton extends StatelessWidget {
   final bool isEnabled;
   final bool isLoading;
@@ -94,18 +92,18 @@ class AiGenerateButton extends StatelessWidget {
   }
 
   String _getLabel() {
-    if (isLoading) return '生成中...';
+    if (isLoading) return 'Generating...';
 
     switch (matchStatus) {
       case MatchStatus.matched:
-        return '已匹配';
+        return 'Matched';
       case MatchStatus.suggested:
-        return '智能推荐';
+        return 'Suggested';
       case MatchStatus.generating:
-        return 'AI 生成';
+        return 'AI Generate';
       case MatchStatus.none:
       default:
-        return 'AI 生成';
+        return 'AI Generate';
     }
   }
 
@@ -159,10 +157,9 @@ class AiGenerateButton extends StatelessWidget {
   }
 }
 
-/// 匹配状态
 enum MatchStatus {
-  none, // 无匹配
-  matched, // 高匹配（绿色）
-  suggested, // 中等匹配（黄色）
-  generating, // 生成中
+  none, // No match
+  matched, // High match (green)
+  suggested, // Medium match (yellow)
+  generating, // Generating
 }

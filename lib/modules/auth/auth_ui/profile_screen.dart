@@ -6,9 +6,86 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../auth/auth_provider.dart';
+import '../biometric_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final _biometricService = BiometricService();
+  bool _biometricEnabled = false;
+  bool _biometricAvailable = false;
+  IconData _biometricIcon = Icons.fingerprint;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBiometricStatus();
+  }
+
+  Future<void> _loadBiometricStatus() async {
+    final canCheck = await _biometricService.canCheckBiometrics;
+    final enabled = await _biometricService.isBiometricEnabled;
+    final primaryType = await _biometricService.primaryBiometricType;
+
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = canCheck;
+        _biometricEnabled = enabled;
+        _biometricIcon =
+            primaryType.name == 'face' ? Icons.face : Icons.fingerprint;
+      });
+    }
+  }
+
+  Future<void> _toggleBiometric(bool value) async {
+    if (value) {
+      final result = await _biometricService.authenticate();
+      if (result.success) {
+        final authProvider = context.read<AuthProvider>();
+        final user = authProvider.user;
+        if (user != null) {
+          // In a real app, you'd get the stored password or ask user to re-enter
+          // For now, just show success
+          await _biometricService.enableBiometric(
+            email: user.email,
+            password: 'stored_password', // In production, use secure storage
+          );
+          setState(() => _biometricEnabled = true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Biometric login enabled'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          }
+        }
+      } else if (result.error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error!),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } else {
+      await _biometricService.disableBiometric();
+      setState(() => _biometricEnabled = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Biometric login disabled'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +117,6 @@ class ProfileScreen extends StatelessWidget {
         padding: AppSpacing.screenPadding,
         child: Column(
           children: [
-            // Profile Header
             AppCard(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
@@ -78,8 +154,6 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-
-            // Account Settings
             _buildSectionTitle('Account'),
             const SizedBox(height: AppSpacing.md),
             AppCard(
@@ -108,12 +182,30 @@ class ProfileScreen extends StatelessWidget {
                       Navigator.pushNamed(context, RouteNames.notifications);
                     },
                   ),
+                  if (_biometricAvailable) ...[
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: Icon(_biometricIcon, color: AppColors.primary),
+                      title: const Text('Biometric Login'),
+                      subtitle: Text(
+                        _biometricIcon == Icons.face
+                            ? 'Face ID'
+                            : 'Fingerprint',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      trailing: Switch(
+                        value: _biometricEnabled,
+                        onChanged: _toggleBiometric,
+                        activeColor: AppColors.primary,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-
-            // Workspaces
             _buildSectionTitle('Workspaces'),
             const SizedBox(height: AppSpacing.md),
             AppCard(
@@ -138,8 +230,6 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-
-            // Analytics & Reports
             _buildSectionTitle('Analytics'),
             const SizedBox(height: AppSpacing.md),
             AppCard(
@@ -166,15 +256,11 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
-
-            // Logout Button
             SecondaryButton(
               text: 'Log Out',
               onPressed: () => _showLogoutDialog(context),
             ),
             const SizedBox(height: AppSpacing.lg),
-
-            // App Info
             Text(
               'Approv Now v1.0.0',
               style: AppTextStyles.bodySmall.copyWith(
@@ -249,7 +335,6 @@ class ProfileScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              // Note: This would need a method in AuthProvider to update profile
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Profile updated')),

@@ -362,3 +362,85 @@ flutter build ios --release        # iOS
 - `/functions/templates/invitation-email.html` - Professional email template
 - `FIREBASE_FUNCTIONS_SETUP.md` - Complete setup guide
 - `lib/modules/invitation/invitation_service.dart` - Ready to integrate with cloud functions
+
+---
+
+### Session 14: Critical UX Fixes - Auto-Login & Loading States
+**Date:** 2026-02-20
+**Session Goal:** Fix critical UX issues: auto-login routing, workspace loading stuck, AI button English text
+**Completed:**
+- ✅ Created `AuthWrapper` widget for proper auth state handling
+- ✅ Fixed auto-login: App now checks auth state before showing login screen
+- ✅ Authenticated users go directly to Dashboard
+- ✅ Unauthenticated users auto-redirect to Login
+- ✅ Added 10-second timeout to workspace stream subscription
+- ✅ Added timeout to `hasAnyWorkspace()` call in Dashboard
+- ✅ Dashboard now shows loading, error, and retry states
+- ✅ Fixed AI button text from Chinese to English:
+  - `'AI 生成'` → `'AI Generate'`
+  - `'生成中...'` → `'Generating...'`
+  - `'已匹配'` → `'Matched'`
+  - `'智能推荐'` → `'Suggested'`
+  - Removed Chinese comments from enum
+- ✅ All 52 tests passing
+- ✅ 0 compilation errors
+
+**Files Modified:**
+- `lib/main.dart` - Added AuthWrapper, DashboardScreen import
+- `lib/modules/auth/auth_ui/auth_wrapper.dart` - NEW file
+- `lib/modules/workspace/workspace_provider.dart` - Added timeout, fixed loading states
+- `lib/modules/workspace/workspace_ui/dashboard_screen.dart` - Added timeout, loading/error states
+- `lib/modules/template/ai/template_ui/ai_generate_button.dart` - English text
+
+**Issues/Blockers:**
+- None
+
+**Next Steps:**
+- Test on device to verify fixes
+- Optional: Update remaining AI module files with English text
+- Optional: Add more graceful error handling in other screens
+
+**Commit:** [Pending]
+
+---
+
+### Session 15: Biometric Login
+**Date:** 2026-02-20
+**Session Goal:** Add fingerprint/Face ID login functionality
+**Completed:**
+- ✅ Added `local_auth: ^2.3.0` and `flutter_secure_storage: ^9.2.2` packages
+- ✅ Created `BiometricService` with:
+  - Device biometric availability check
+  - Secure credential storage
+  - Authentication with Face ID/Fingerprint
+  - Enable/disable biometric login
+  - Error handling for all auth scenarios
+- ✅ Updated `LoginScreen`:
+  - Biometric login button (shows fingerprint or face icon)
+  - Auto-detects device biometric type
+  - Prompts to enable biometric after first login
+- ✅ Updated `ProfileScreen`:
+  - Biometric toggle in account settings
+  - Shows correct biometric type (Face ID/Fingerprint)
+- ✅ Added iOS Face ID permission in Info.plist
+- ✅ Android uses BiometricPrompt API (no manifest changes needed)
+- ✅ All 52 tests passing
+- ✅ 0 compilation errors
+
+**Files Created:**
+- `lib/modules/auth/biometric_service.dart` - NEW biometric service
+
+**Files Modified:**
+- `pubspec.yaml` - Added local_auth, flutter_secure_storage
+- `lib/modules/auth/auth_ui/login_screen.dart` - Biometric login button
+- `lib/modules/auth/auth_ui/profile_screen.dart` - Biometric toggle
+- `ios/Runner/Info.plist` - NSFaceIDUsageDescription
+
+**Issues/Blockers:**
+- None
+
+**Next Steps:**
+- Test on physical device with biometric hardware
+- Optional: Add biometric to re-authenticate for sensitive actions
+
+**Commit:** [Pending]

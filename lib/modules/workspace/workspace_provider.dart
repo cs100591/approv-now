@@ -67,7 +67,6 @@ class WorkspaceProvider extends ChangeNotifier {
       (workspaces) {
         Workspace? currentWs;
 
-        // Try to keep the same workspace selected
         if (_state.currentWorkspace != null) {
           currentWs = workspaces.firstWhere(
             (w) => w.id == _state.currentWorkspace!.id,
@@ -82,6 +81,8 @@ class WorkspaceProvider extends ChangeNotifier {
         _state = _state.copyWith(
           workspaces: workspaces,
           currentWorkspace: currentWs,
+          isLoading: false,
+          error: null,
         );
         notifyListeners();
 
@@ -90,10 +91,24 @@ class WorkspaceProvider extends ChangeNotifier {
       },
       onError: (error) {
         AppLogger.error('Error loading workspaces', error);
-        _state = _state.copyWith(error: error.toString());
+        _state = _state.copyWith(
+          error: error.toString(),
+          isLoading: false,
+        );
         notifyListeners();
       },
     );
+
+    Future.delayed(const Duration(seconds: 10), () {
+      if (_state.isLoading && _state.workspaces.isEmpty) {
+        AppLogger.warning('Workspace loading timeout - showing empty state');
+        _state = _state.copyWith(
+          isLoading: false,
+          error: 'Unable to load workspaces. Please check your connection.',
+        );
+        notifyListeners();
+      }
+    });
   }
 
   /// Load workspaces for current user (manual refresh)

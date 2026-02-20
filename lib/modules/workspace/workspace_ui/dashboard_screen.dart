@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/routing/route_names.dart';
+import '../../../core/utils/app_logger.dart';
 import '../../auth/auth_provider.dart';
 import '../../request/request_provider.dart';
 import '../../request/request_models.dart';
@@ -22,6 +23,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isCreatingDefaultWorkspace = false;
+  bool _isLoadingWorkspaces = true;
+  String? _loadingError;
 
   @override
   void initState() {
@@ -38,93 +41,103 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final requestProvider = context.read<RequestProvider>();
     final templateProvider = context.read<TemplateProvider>();
 
-    // Set current user ID in workspace provider to load their workspaces
     final user = authProvider.user;
     if (user == null) return;
 
-    // Set current user in providers
     workspaceProvider.setCurrentUser(user.id);
 
-    // Wait a moment for data to load
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final hasWorkspace = await workspaceProvider
+          .hasAnyWorkspace()
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        AppLogger.warning('Timeout checking workspace existence');
+        return false;
+      });
 
-    // Check if user already has a workspace (from Firestore)
-    final hasWorkspace = await workspaceProvider.hasAnyWorkspace();
+      if (!mounted) return;
 
-    if (!hasWorkspace) {
-      // Check plan limit before creating default workspace
-      final currentPlan = subscriptionProvider.currentPlan;
-      final canCreate = PlanGuardService.canCreateWorkspace(
-        currentPlan: currentPlan,
-        currentWorkspaceCount: 0,
-      );
-
-      if (!canCreate) {
-        // Show upgrade dialog if user can't create workspace
-        if (mounted) {
-          await PlanUpgradeDialog.show(
-            context: context,
-            title: 'Workspace Limit Reached',
-            message: 'You need to upgrade your plan to create a workspace.',
-            currentPlan: currentPlan,
-          );
-        }
-        return;
-      }
-
-      setState(() => _isCreatingDefaultWorkspace = true);
-
-      try {
-        final userName = user.displayName ?? user.email ?? 'User';
-
-        final workspace = await workspaceProvider.createWorkspace(
-          name: "$userName's Workspace",
-          description: 'Default workspace created automatically',
-          createdBy: user.id,
-          creatorEmail: user.email,
+      if (!hasWorkspace) {
+        final currentPlan = subscriptionProvider.currentPlan;
+        final canCreate = PlanGuardService.canCreateWorkspace(
+          currentPlan: currentPlan,
+          currentWorkspaceCount: 0,
         );
 
-        if (workspace != null) {
-          await workspaceProvider.switchWorkspace(workspace.id);
+        if (!canCreate) {
+          if (mounted) {
+            await PlanUpgradeDialog.show(
+              context: context,
+              title: 'Workspace Limit Reached',
+              message: 'You need to upgrade your plan to create a workspace.',
+              currentPlan: currentPlan,
+            );
+          }
+          return;
+        }
 
-          // Set current workspace for other providers
-          templateProvider.setCurrentWorkspace(workspace.id);
-          requestProvider.setCurrentWorkspace(workspace.id,
-              approverId: user.id);
+        setState(() => _isCreatingDefaultWorkspace = true);
 
+        try {
+          final userName = user.displayName ?? user.email ?? 'User';
+
+          final workspace = await workspaceProvider.createWorkspace(
+            name: "$userName's Workspace",
+            description: 'Default workspace created automatically',
+            createdBy: user.id,
+            creatorEmail: user.email,
+          );
+
+          if (workspace != null) {
+            await workspaceProvider.switchWorkspace(workspace.id);
+
+            templateProvider.setCurrentWorkspace(workspace.id);
+            requestProvider.setCurrentWorkspace(workspace.id,
+                approverId: user.id);
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content:
+                      Text('Welcome! Default workspace created successfully.'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            }
+          }
+        } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content:
-                    Text('Welcome! Default workspace created successfully.'),
-                backgroundColor: AppColors.success,
+              SnackBar(
+                content: Text('Failed to create workspace: $e'),
+                backgroundColor: AppColors.error,
               ),
             );
           }
+        } finally {
+          if (mounted) {
+            setState(() => _isCreatingDefaultWorkspace = false);
+          }
         }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to create workspace: $e'),
-              backgroundColor: AppColors.error,
-            ),
+      } else {
+        if (workspaceProvider.currentWorkspace != null) {
+          templateProvider
+              .setCurrentWorkspace(workspaceProvider.currentWorkspace!.id);
+          requestProvider.setCurrentWorkspace(
+            workspaceProvider.currentWorkspace!.id,
+            approverId: user.id,
           );
         }
-      } finally {
-        if (mounted) {
-          setState(() => _isCreatingDefaultWorkspace = false);
-        }
       }
-    } else {
-      // User has workspace(es), set up the current workspace context
-      if (workspaceProvider.currentWorkspace != null) {
-        templateProvider
-            .setCurrentWorkspace(workspaceProvider.currentWorkspace!.id);
-        requestProvider.setCurrentWorkspace(
-          workspaceProvider.currentWorkspace!.id,
-          approverId: user.id,
-        );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingError = 'Failed to load workspace: $e';
+          _isLoadingWorkspaces = false;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingWorkspaces = false);
       }
     }
   }
@@ -197,7 +210,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             )
-          : const _DashboardContent(),
+          : _isLoadingWorkspaces
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Loading your workspace...'),
+                    ],
+                  ),
+                )
+              : _loadingError != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _loadingError!,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _isLoadingWorkspaces = true;
+                                _loadingError = null;
+                              });
+                              _checkAndCreateDefaultWorkspace();
+                            },
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : const _DashboardContent(),
     );
   }
 
