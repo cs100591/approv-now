@@ -10,6 +10,7 @@ class PlanEntitlements {
   final int maxTemplates;
   final int maxApprovalLevels;
   final int maxWorkspaces;
+  final int maxTeamMembers;
   final bool customHeader;
   final bool watermark;
   final bool analytics;
@@ -18,6 +19,7 @@ class PlanEntitlements {
     required this.maxTemplates,
     required this.maxApprovalLevels,
     required this.maxWorkspaces,
+    required this.maxTeamMembers,
     required this.customHeader,
     required this.watermark,
     required this.analytics,
@@ -30,6 +32,7 @@ class PlanEntitlements {
           maxTemplates: 3,
           maxApprovalLevels: 2,
           maxWorkspaces: 1,
+          maxTeamMembers: 3,
           customHeader: false,
           watermark: true,
           analytics: false,
@@ -39,6 +42,7 @@ class PlanEntitlements {
           maxTemplates: 10,
           maxApprovalLevels: 5,
           maxWorkspaces: 3,
+          maxTeamMembers: 10,
           customHeader: false,
           watermark: false,
           analytics: true,
@@ -48,12 +52,20 @@ class PlanEntitlements {
           maxTemplates: 100,
           maxApprovalLevels: 10,
           maxWorkspaces: 10,
+          maxTeamMembers: 50,
           customHeader: true,
           watermark: false,
           analytics: true,
         );
     }
   }
+
+  /// Check if plan has unlimited team members
+  bool get hasUnlimitedTeamMembers => maxTeamMembers >= 1000;
+
+  /// Get display string for team member limit
+  String get teamMembersDisplay =>
+      hasUnlimitedTeamMembers ? 'Unlimited' : '$maxTeamMembers';
 }
 
 /// Subscription model

@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' show Consumer2;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/routing/route_names.dart';
 import '../../../core/widgets/app_widgets.dart';
+import '../../../core/widgets/plan_limit_widgets.dart';
 import '../../auth/auth_provider.dart';
+import '../../subscription/subscription_provider.dart';
+import '../../subscription/subscription_models.dart';
+import '../../subscription/plan_upgrade_dialog.dart';
+import '../../plan_enforcement/plan_guard_service.dart';
 import '../workspace_provider.dart';
 import '../workspace_models.dart';
 
@@ -36,14 +41,20 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
       appBar: AppBar(
         title: const Text('Switch Workspace'),
       ),
-      body: Consumer<WorkspaceProvider>(
-        builder: (context, workspaceProvider, child) {
+      body: Consumer2<WorkspaceProvider, SubscriptionProvider>(
+        builder: (context, workspaceProvider, subscriptionProvider, child) {
           if (workspaceProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
           final workspaces = workspaceProvider.workspaces;
           final currentWorkspace = workspaceProvider.currentWorkspace;
+          final currentPlan = subscriptionProvider.currentPlan;
+          final workspaceCount = workspaces.length;
+          final canCreate = PlanGuardService.canCreateWorkspace(
+            currentPlan: currentPlan,
+            currentWorkspaceCount: workspaceCount,
+          );
 
           if (workspaces.isEmpty) {
             return EmptyState(
@@ -52,7 +63,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
               subMessage: 'Create your first workspace to get started',
               action: PrimaryButton(
                 text: 'Create Workspace',
-                onPressed: () => _showCreateWorkspaceDialog(),
+                onPressed: () => _handleCreatePressed(),
               ),
             );
           }
@@ -61,19 +72,44 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
             onRefresh: _loadWorkspaces,
             child: ListView.builder(
               padding: AppSpacing.screenPadding,
-              itemCount: workspaces.length + 1,
+              itemCount:
+                  workspaces.length + 2, // +2 for header and create button
               itemBuilder: (context, index) {
-                if (index == workspaces.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.lg),
-                    child: SecondaryButton(
-                      text: 'Create New Workspace',
-                      onPressed: () => _showCreateWorkspaceDialog(),
-                    ),
+                if (index == 0) {
+                  // Plan limit indicator at the top
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      PlanLimitIndicator(
+                        currentPlan: currentPlan,
+                        action: PlanAction.createWorkspace,
+                        currentCount: workspaceCount,
+                        label: 'Workspaces',
+                        showUpgradeButton: true,
+                        onUpgradePressed: () => _showUpgradeDialog(context),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
                   );
                 }
 
-                final workspace = workspaces[index];
+                if (index == workspaces.length + 1) {
+                  // Create workspace button at the bottom
+                  return Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.lg),
+                    child: canCreate
+                        ? SecondaryButton(
+                            text: 'Create New Workspace',
+                            onPressed: () => _showCreateWorkspaceDialog(),
+                          )
+                        : PlanLimitReachedWidget(
+                            resourceName: 'Workspace',
+                            onUpgrade: () => _showUpgradeDialog(context),
+                          ),
+                  );
+                }
+
+                final workspace = workspaces[index - 1];
                 final isSelected = currentWorkspace?.id == workspace.id;
 
                 return _buildWorkspaceCard(workspace, isSelected);
@@ -82,6 +118,36 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
           );
         },
       ),
+    );
+  }
+
+  Future<void> _handleCreatePressed() async {
+    final workspaceProvider = context.read<WorkspaceProvider>();
+    final subscriptionProvider = context.read<SubscriptionProvider>();
+
+    final currentPlan = subscriptionProvider.currentPlan;
+    final workspaceCount = workspaceProvider.workspaces.length;
+
+    final canCreate = PlanGuardService.canCreateWorkspace(
+      currentPlan: currentPlan,
+      currentWorkspaceCount: workspaceCount,
+    );
+
+    if (!canCreate) {
+      await _showUpgradeDialog(context);
+      return;
+    }
+
+    _showCreateWorkspaceDialog();
+  }
+
+  Future<void> _showUpgradeDialog(BuildContext context) async {
+    await PlanUpgradeDialog.show(
+      context: context,
+      title: 'Workspace Limit Reached',
+      message:
+          'You\'ve reached the maximum number of workspaces for your current plan.',
+      currentPlan: context.read<SubscriptionProvider>().currentPlan,
     );
   }
 
@@ -275,6 +341,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                       ? null
                       : descriptionController.text.trim(),
                   createdBy: authProvider.user!.id,
+                  creatorEmail: authProvider.user!.email,
                 );
 
                 if (mounted) {

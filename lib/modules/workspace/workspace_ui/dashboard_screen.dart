@@ -7,6 +7,9 @@ import '../../../core/routing/route_names.dart';
 import '../../auth/auth_provider.dart';
 import '../../request/request_provider.dart';
 import '../../request/request_models.dart';
+import '../../subscription/subscription_provider.dart';
+import '../../subscription/plan_upgrade_dialog.dart';
+import '../../plan_enforcement/plan_guard_service.dart';
 import '../workspace_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -30,8 +33,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _checkAndCreateDefaultWorkspace() async {
     final workspaceProvider = context.read<WorkspaceProvider>();
     final authProvider = context.read<AuthProvider>();
+    final subscriptionProvider = context.read<SubscriptionProvider>();
 
     if (workspaceProvider.workspaces.isEmpty && authProvider.user != null) {
+      // Check plan limit before creating default workspace
+      final currentPlan = subscriptionProvider.currentPlan;
+      final canCreate = PlanGuardService.canCreateWorkspace(
+        currentPlan: currentPlan,
+        currentWorkspaceCount: 0,
+      );
+
+      if (!canCreate) {
+        // Show upgrade dialog if user can't create workspace
+        if (mounted) {
+          await PlanUpgradeDialog.show(
+            context: context,
+            title: 'Workspace Limit Reached',
+            message: 'You need to upgrade your plan to create a workspace.',
+            currentPlan: currentPlan,
+          );
+        }
+        return;
+      }
+
       setState(() => _isCreatingDefaultWorkspace = true);
 
       try {
@@ -42,6 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           name: "$userName's Workspace",
           description: 'Default workspace created automatically',
           createdBy: user.id,
+          creatorEmail: user.email,
         );
 
         if (workspaceProvider.workspaces.isNotEmpty) {

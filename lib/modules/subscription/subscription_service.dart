@@ -36,6 +36,11 @@ class SubscriptionService {
     return currentLevelCount < entitlements.maxApprovalLevels;
   }
 
+  /// Validate if user can invite a team member
+  bool canInviteTeamMember(int currentMemberCount) {
+    return currentMemberCount < entitlements.maxTeamMembers;
+  }
+
   /// Check if custom header is available
   bool get canUseCustomHeader => entitlements.customHeader;
 

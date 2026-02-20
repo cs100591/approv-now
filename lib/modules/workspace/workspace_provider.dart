@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'workspace_models.dart';
 import 'workspace_service.dart';
 import 'workspace_repository.dart';
+import 'workspace_member.dart';
 
 class WorkspaceProvider extends ChangeNotifier {
   final WorkspaceService _workspaceService;
@@ -51,6 +52,7 @@ class WorkspaceProvider extends ChangeNotifier {
     String? companyName,
     String? address,
     required String createdBy,
+    required String creatorEmail,
   }) async {
     _setLoading(true);
 
@@ -61,6 +63,7 @@ class WorkspaceProvider extends ChangeNotifier {
         companyName: companyName,
         address: address,
         createdBy: createdBy,
+        creatorEmail: creatorEmail,
       );
 
       await _workspaceRepository.addWorkspace(workspace);
@@ -130,6 +133,163 @@ class WorkspaceProvider extends ChangeNotifier {
     }
 
     _setLoading(false);
+  }
+
+  // Invite a new member to the current workspace
+  Future<WorkspaceMember?> inviteMember({
+    required String email,
+    required WorkspaceRole role,
+  }) async {
+    if (_state.currentWorkspace == null) {
+      _state = _state.copyWith(error: 'No workspace selected');
+      notifyListeners();
+      return null;
+    }
+
+    _setLoading(true);
+
+    try {
+      // TODO: Get current user ID from AuthProvider
+      const currentUserId = 'current-user-id';
+
+      final member = await _workspaceService.inviteMember(
+        workspaceId: _state.currentWorkspace!.id,
+        email: email,
+        role: role,
+        invitedBy: currentUserId,
+      );
+
+      // Update local state
+      final updatedWorkspace = _state.currentWorkspace!.copyWith(
+        members: [..._state.currentWorkspace!.members, member],
+      );
+
+      final workspaces = _state.workspaces
+          .map((w) => w.id == updatedWorkspace.id ? updatedWorkspace : w)
+          .toList();
+
+      _state = _state.copyWith(
+        workspaces: workspaces,
+        currentWorkspace: updatedWorkspace,
+      );
+
+      return member;
+    } catch (e) {
+      _state = _state.copyWith(error: e.toString());
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Remove a member from the current workspace
+  Future<void> removeMember(String userId) async {
+    if (_state.currentWorkspace == null) {
+      _state = _state.copyWith(error: 'No workspace selected');
+      notifyListeners();
+      return;
+    }
+
+    _setLoading(true);
+
+    try {
+      await _workspaceService.removeMember(
+        _state.currentWorkspace!.id,
+        userId,
+      );
+
+      // Update local state
+      final updatedMembers = _state.currentWorkspace!.members
+          .where((m) => m.userId != userId)
+          .toList();
+
+      final updatedWorkspace = _state.currentWorkspace!.copyWith(
+        members: updatedMembers,
+      );
+
+      final workspaces = _state.workspaces
+          .map((w) => w.id == updatedWorkspace.id ? updatedWorkspace : w)
+          .toList();
+
+      _state = _state.copyWith(
+        workspaces: workspaces,
+        currentWorkspace: updatedWorkspace,
+      );
+    } catch (e) {
+      _state = _state.copyWith(error: e.toString());
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Update member role
+  Future<void> updateMemberRole(String userId, WorkspaceRole newRole) async {
+    if (_state.currentWorkspace == null) {
+      _state = _state.copyWith(error: 'No workspace selected');
+      notifyListeners();
+      return;
+    }
+
+    _setLoading(true);
+
+    try {
+      await _workspaceService.updateMemberRole(
+        workspaceId: _state.currentWorkspace!.id,
+        userId: userId,
+        newRole: newRole,
+      );
+
+      // Update local state
+      final updatedMembers = _state.currentWorkspace!.members.map((m) {
+        if (m.userId == userId) {
+          return m.copyWith(role: newRole);
+        }
+        return m;
+      }).toList();
+
+      final updatedWorkspace = _state.currentWorkspace!.copyWith(
+        members: updatedMembers,
+      );
+
+      final workspaces = _state.workspaces
+          .map((w) => w.id == updatedWorkspace.id ? updatedWorkspace : w)
+          .toList();
+
+      _state = _state.copyWith(
+        workspaces: workspaces,
+        currentWorkspace: updatedWorkspace,
+      );
+    } catch (e) {
+      _state = _state.copyWith(error: e.toString());
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Accept invitation
+  Future<void> acceptInvitation({
+    required String workspaceId,
+    required String inviteToken,
+    required String userId,
+    String? displayName,
+  }) async {
+    _setLoading(true);
+
+    try {
+      await _workspaceService.acceptInvitation(
+        workspaceId: workspaceId,
+        inviteToken: inviteToken,
+        userId: userId,
+        displayName: displayName,
+      );
+
+      // Reload workspaces to get updated member status
+      await loadWorkspaces();
+    } catch (e) {
+      _state = _state.copyWith(error: e.toString());
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void clearError() {

@@ -76,6 +76,7 @@ dependencies:
   firebase_messaging: ^15.2.4
   firebase_analytics: ^11.4.4
   firebase_storage: ^12.3.2
+  # cloud_functions: ^4.6.0  # Disabled - emails not active
   
   # File operations
   share_plus: ^10.0.0

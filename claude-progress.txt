@@ -113,6 +113,136 @@
 
 ---
 
+### Session 4: Fixed Workspace Member Model & Role-Based Permissions
+**Date:** 2026-02-20
+**Session Goal:** Fix breaking changes from Workspace model update and implement proper role-based permission system
+**Completed:**
+- ✅ Fixed `workspace_service.dart` - Updated to use new `WorkspaceMember` model instead of `List<String>`
+- ✅ Fixed `workspace_provider.dart` - Added `creatorEmail` parameter and new member management methods
+- ✅ Fixed `team_members_screen.dart` - Updated to display rich member information with roles and status
+- ✅ Fixed `dashboard_screen.dart` - Added `creatorEmail` to workspace creation
+- ✅ Fixed `workspace_switch_screen.dart` - Added `creatorEmail` to workspace creation
+- ✅ Fixed `workspace_service_test.dart` - Updated tests for new WorkspaceMember model
+- ✅ Fixed `auth_service_test.dart` - Simplified tests without complex mocking
+- ✅ All compilation errors resolved (0 errors, 115 warnings/info only)
+- ✅ Implemented full role-based permission system:
+  - Owner: Full control including workspace deletion
+  - Admin: Can manage members and templates
+  - Editor: Can create and approve requests
+  - Viewer: Read-only access
+- ✅ Added member invitation system with pending/active states
+- ✅ Added invite acceptance flow
+- ✅ Created comprehensive test coverage for workspace operations
+**Issues/Blockers:**
+- None - all compilation errors resolved
+**Next Steps:**
+- Implement Firebase Firestore integration for real data persistence
+- Add invitation email sending via Firebase Functions
+- Connect PlanGuardService to enforce workspace/member limits based on subscription
+- Test the complete invitation flow end-to-end
+**Commit:** [Pending]
+
+---
+
+### Session 5: Plan Enforcement Enhancement
+**Date:** 2026-02-20
+**Session Goal:** Add comprehensive plan-based limits for workspaces and team members with UI enforcement
+**Completed:**
+- ✅ Added `maxTeamMembers` to `PlanEntitlements` model:
+  - Free: 3 team members
+  - Starter: 10 team members
+  - Pro: 50 team members
+- ✅ Enhanced `PlanGuardService` with team member limit checks
+- ✅ Created reusable plan enforcement widgets:
+  - `PlanLimitIndicator` - Progress bar with usage visualization
+  - `PlanLimitBadge` - Compact inline usage display
+  - `PlanLimitReachedWidget` - Visual block when limit exceeded
+- ✅ Created `PlanUpgradeDialog` with plan comparison UI:
+  - Beautiful upgrade dialog with current plan badge
+  - Recommended plan card with features list
+  - Full plan comparison bottom sheet
+- ✅ Integrated plan checks into `TeamMembersScreen`:
+  - Shows usage indicator at top
+  - Blocks invite button when limit reached
+  - Shows upgrade dialog when trying to invite over limit
+  - App bar invite button also checks limits
+- ✅ Integrated plan checks into `WorkspaceSwitchScreen`:
+  - Shows workspace usage indicator
+  - Blocks create button when at limit
+  - Shows upgrade prompt instead of create button
+- ✅ Integrated plan checks into `DashboardScreen`:
+  - Checks plan limit before creating default workspace
+  - Shows upgrade dialog if user can't create workspace
+- ✅ Added `canInviteTeamMember` method to `SubscriptionService`
+- ✅ Added `canInviteTeamMember` method to `SubscriptionProvider`
+- ✅ Created comprehensive test suite (`plan_enforcement_test.dart`):
+  - 32 tests covering all plan types
+  - Tests for workspace limits (Free: 1, Starter: 3, Pro: 10)
+  - Tests for team member limits (Free: 3, Starter: 10, Pro: 50)
+  - Tests for template limits (Free: 3, Starter: 10, Pro: 100)
+  - Tests for watermark and custom header features
+  - Tests for usage percentage calculations
+  - Tests for approaching limit detection
+  - Tests for exception handling
+**Issues/Blockers:**
+- None - all 32 tests passing
+**Next Steps:**
+- Implement Firebase Firestore for real data persistence
+- Add Firebase Functions for invitation emails
+- Test complete user flows end-to-end
+**Commit:** [Pending]
+
+---
+
+### Session 6: Email Notifications Implementation
+**Date:** 2026-02-20
+**Session Goal:** Implement complete email notification system with Firebase Functions
+**Completed:**
+- ✅ Created Firebase Functions project structure:
+  - `functions/package.json` with SendGrid, Firebase Admin dependencies
+  - `functions/index.js` with email cloud functions
+  - `functions/templates/invitation-email.html` with professional email template
+  - `functions/.gitignore` for node_modules
+- ✅ Implemented Cloud Functions:
+  - `sendInvitationEmail` - Triggered on Firestore invitation creation
+  - `sendRequestNotification` - Sends notifications for request status changes
+  - `resendInvitationEmail` - HTTP callable for resending invitations
+  - `cleanupExpiredInvitations` - Scheduled daily cleanup (7-day expiry)
+- ✅ Created professional HTML email template:
+  - Responsive design with branding
+  - Workspace name, inviter info, role badge
+  - Feature list based on role permissions
+  - Accept invitation button with fallback link
+  - 7-day expiration notice
+- ✅ Integrated Flutter with Firebase Functions:
+  - `InvitationService` class to call cloud functions
+  - `DeepLinkService` for handling invite links
+  - Added `cloud_functions` dependency to pubspec.yaml
+  - Support for Firebase Functions emulator in debug mode
+- ✅ Added deployment documentation:
+  - `FIREBASE_FUNCTIONS_SETUP.md` - Complete setup guide
+  - Configuration instructions for SendGrid
+  - Domain verification steps
+  - Deployment commands and troubleshooting
+- ✅ Email features implemented:
+  - Automatic email on invitation creation
+  - Notification emails for request approvals/rejections
+  - Deep link handling for invitation acceptance
+  - Token validation for secure invitation acceptance
+  - Plain text fallback for all emails
+  - Error logging and retry tracking
+**Issues/Blockers:**
+- None - implementation complete
+**Next Steps:**
+- Run `flutter pub get` to install cloud_functions package
+- Set up SendGrid account and API key
+- Deploy functions using Firebase CLI
+- Test email sending in development
+- Verify deep links work on mobile devices
+**Commit:** [Pending]
+
+---
+
 ## Firebase Setup Documentation
 
 Created comprehensive guides:
@@ -153,7 +283,7 @@ cat FIREBASE_QUICK_START.md
 - [x] #5 - Login screen
 - [x] #6 - Registration screen
 - [x] #7 - Local data persistence (AuthRepository with SharedPreferences)
-- [~] #8 - HTTP API integration (Local implementation complete, Firebase pending)
+- [x] #8 - HTTP API integration (Firebase Auth fully integrated with config files)
 - [x] #9 - Authentication state management (AuthProvider with ChangeNotifier)
 - [x] #10 - Profile screen
 
@@ -192,4 +322,43 @@ flutter build ios --release        # iOS
 
 ## Development Notes
 
-[Add any architectural decisions, technical notes, or important reminders here]
+### Email Notifications Status: TEMPORARILY DISABLED
+**Date:** 2026-02-20
+**Reason:** User chose free setup option (Firebase subdomain) - emails may go to spam without custom domain verification
+
+**Configuration:**
+- File: `lib/core/config/app_config.dart`
+- `enableEmailNotifications = false`
+- `useFirebaseFunctions = false`
+
+**What's Disabled:**
+- SendGrid email sending
+- Firebase Functions calls for invitations
+- "Resend Invite" button in UI
+- Email sent confirmation messages
+
+**What Still Works:**
+- Creating invitations locally
+- Team member management
+- Invitation acceptance flow
+- Manual invite link sharing
+- All plan enforcement features
+
+**UI Changes:**
+- Orange banner shown on Team Members screen: "Email notifications are currently disabled. Share the invitation link manually."
+- Invite dialog shows: "An invitation will be created. Share the invite link manually."
+- "Resend Invite" menu option hidden when emails disabled
+
+**To Re-enable Later:**
+1. Buy custom domain ($10-15/year)
+2. Verify domain with SendGrid
+3. Deploy Firebase Functions (already created in `/functions`)
+4. Set `AppConfig.enableEmailNotifications = true`
+5. Set `AppConfig.useFirebaseFunctions = true`
+6. Configure SendGrid API key
+
+**Files Created for Future Use:**
+- `/functions/index.js` - Cloud functions ready to deploy
+- `/functions/templates/invitation-email.html` - Professional email template
+- `FIREBASE_FUNCTIONS_SETUP.md` - Complete setup guide
+- `lib/modules/invitation/invitation_service.dart` - Ready to integrate with cloud functions

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'workspace_member.dart';
 
 /// Workspace model representing an approval workspace
 class Workspace extends Equatable {
@@ -12,8 +13,8 @@ class Workspace extends Equatable {
   final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final List<String> members;
-  final String plan; // free, starter, pro
+  final List<WorkspaceMember> members;
+  final String plan; // free, starter, pro, business
   final Map<String, dynamic> settings;
 
   const Workspace({
@@ -32,6 +33,51 @@ class Workspace extends Equatable {
     this.settings = const {},
   });
 
+  /// Get owner of the workspace
+  WorkspaceMember? get owner {
+    try {
+      return members.firstWhere((m) => m.role == WorkspaceRole.owner);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get active members only
+  List<WorkspaceMember> get activeMembers =>
+      members.where((m) => m.isActive).toList();
+
+  /// Get pending invitations
+  List<WorkspaceMember> get pendingMembers =>
+      members.where((m) => m.isPending).toList();
+
+  /// Check if user is member of workspace
+  bool isMember(String userId) =>
+      members.any((m) => m.userId == userId && m.isActive);
+
+  /// Get member by user ID
+  WorkspaceMember? getMember(String userId) {
+    try {
+      return members.firstWhere((m) => m.userId == userId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get member by email
+  WorkspaceMember? getMemberByEmail(String email) {
+    try {
+      return members.firstWhere((m) => m.email == email);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get role of a specific user
+  WorkspaceRole? getUserRole(String userId) {
+    final member = getMember(userId);
+    return member?.role;
+  }
+
   Workspace copyWith({
     String? id,
     String? name,
@@ -43,7 +89,7 @@ class Workspace extends Equatable {
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
-    List<String>? members,
+    List<WorkspaceMember>? members,
     String? plan,
     Map<String, dynamic>? settings,
   }) {
@@ -75,26 +121,31 @@ class Workspace extends Equatable {
         'createdBy': createdBy,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
-        'members': members,
+        'members': members.map((m) => m.toJson()).toList(),
         'plan': plan,
         'settings': settings,
       };
 
-  factory Workspace.fromJson(Map<String, dynamic> json) => Workspace(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        description: json['description'] as String?,
-        logoUrl: json['logoUrl'] as String?,
-        companyName: json['companyName'] as String?,
-        address: json['address'] as String?,
-        footerText: json['footerText'] as String?,
-        createdBy: json['createdBy'] as String,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-        members: List<String>.from(json['members'] ?? []),
-        plan: json['plan'] as String? ?? 'free',
-        settings: json['settings'] as Map<String, dynamic>? ?? {},
-      );
+  factory Workspace.fromJson(Map<String, dynamic> json) {
+    final membersJson = json['members'] as List<dynamic>? ?? [];
+    return Workspace(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      logoUrl: json['logoUrl'] as String?,
+      companyName: json['companyName'] as String?,
+      address: json['address'] as String?,
+      footerText: json['footerText'] as String?,
+      createdBy: json['createdBy'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      members: membersJson
+          .map((m) => WorkspaceMember.fromJson(m as Map<String, dynamic>))
+          .toList(),
+      plan: json['plan'] as String? ?? 'free',
+      settings: json['settings'] as Map<String, dynamic>? ?? {},
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -133,6 +184,25 @@ class CreateWorkspaceRequest {
         'description': description,
         'companyName': companyName,
         'address': address,
+      };
+}
+
+/// Request model for inviting a member
+class InviteMemberRequest {
+  final String email;
+  final WorkspaceRole role;
+  final String invitedBy;
+
+  const InviteMemberRequest({
+    required this.email,
+    required this.role,
+    required this.invitedBy,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'role': role.name,
+        'invitedBy': invitedBy,
       };
 }
 

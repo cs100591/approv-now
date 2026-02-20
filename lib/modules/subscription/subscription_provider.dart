@@ -81,6 +81,11 @@ class SubscriptionProvider extends ChangeNotifier {
     return _subscriptionService.canAddApprovalLevel(currentCount);
   }
 
+  /// Validate team member invitation
+  bool canInviteTeamMember(int currentCount) {
+    return _subscriptionService.canInviteTeamMember(currentCount);
+  }
+
   /// Check custom header availability
   bool get canUseCustomHeader => _subscriptionService.canUseCustomHeader;
 

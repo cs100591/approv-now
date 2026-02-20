@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'workspace_models.dart';
+import 'workspace_member.dart';
 
 /// WorkspaceService - Business logic for workspace management
 class WorkspaceService {
@@ -21,6 +22,7 @@ class WorkspaceService {
     String? companyName,
     String? address,
     required String createdBy,
+    required String creatorEmail,
   }) async {
     final workspace = Workspace(
       id: _generateId(),
@@ -31,7 +33,17 @@ class WorkspaceService {
       createdBy: createdBy,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      members: [createdBy],
+      members: [
+        WorkspaceMember(
+          userId: createdBy,
+          email: creatorEmail,
+          role: WorkspaceRole.owner,
+          status: MemberStatus.active,
+          invitedAt: DateTime.now(),
+          joinedAt: DateTime.now(),
+          invitedBy: createdBy,
+        ),
+      ],
     );
 
     _workspaces.add(workspace);
@@ -96,16 +108,77 @@ class WorkspaceService {
     }
   }
 
-  // Add member to workspace
-  Future<void> addMember(String workspaceId, String userId) async {
+  // Invite member to workspace
+  Future<WorkspaceMember> inviteMember({
+    required String workspaceId,
+    required String email,
+    required WorkspaceRole role,
+    required String invitedBy,
+  }) async {
     final index = _workspaces.indexWhere((w) => w.id == workspaceId);
-    if (index == -1) return;
-
-    final members = List<String>.from(_workspaces[index].members);
-    if (!members.contains(userId)) {
-      members.add(userId);
-      _workspaces[index] = _workspaces[index].copyWith(members: members);
+    if (index == -1) {
+      throw Exception('Workspace not found');
     }
+
+    // Check if member already exists
+    final existingMember = _workspaces[index].getMemberByEmail(email);
+    if (existingMember != null) {
+      throw Exception('Member already exists in workspace');
+    }
+
+    final inviteToken = _generateInviteToken();
+    final newMember = WorkspaceMember(
+      userId: _generateId(), // Temporary ID until user accepts
+      email: email,
+      role: role,
+      status: MemberStatus.pending,
+      invitedAt: DateTime.now(),
+      invitedBy: invitedBy,
+      inviteToken: inviteToken,
+    );
+
+    final members = List<WorkspaceMember>.from(_workspaces[index].members);
+    members.add(newMember);
+    _workspaces[index] = _workspaces[index].copyWith(members: members);
+
+    return newMember;
+  }
+
+  // Accept invitation
+  Future<WorkspaceMember> acceptInvitation({
+    required String workspaceId,
+    required String inviteToken,
+    required String userId,
+    String? displayName,
+    String? photoUrl,
+  }) async {
+    final index = _workspaces.indexWhere((w) => w.id == workspaceId);
+    if (index == -1) {
+      throw Exception('Workspace not found');
+    }
+
+    final memberIndex = _workspaces[index].members.indexWhere(
+          (m) =>
+              m.inviteToken == inviteToken && m.status == MemberStatus.pending,
+        );
+
+    if (memberIndex == -1) {
+      throw Exception('Invalid or expired invitation');
+    }
+
+    final updatedMember = _workspaces[index].members[memberIndex].copyWith(
+          userId: userId,
+          displayName: displayName,
+          photoUrl: photoUrl,
+          status: MemberStatus.active,
+          joinedAt: DateTime.now(),
+        );
+
+    final members = List<WorkspaceMember>.from(_workspaces[index].members);
+    members[memberIndex] = updatedMember;
+    _workspaces[index] = _workspaces[index].copyWith(members: members);
+
+    return updatedMember;
   }
 
   // Remove member from workspace
@@ -113,13 +186,61 @@ class WorkspaceService {
     final index = _workspaces.indexWhere((w) => w.id == workspaceId);
     if (index == -1) return;
 
-    final members = List<String>.from(_workspaces[index].members);
-    members.remove(userId);
+    final members = List<WorkspaceMember>.from(_workspaces[index].members);
+    members.removeWhere((m) => m.userId == userId);
+    _workspaces[index] = _workspaces[index].copyWith(members: members);
+  }
+
+  // Update member role
+  Future<WorkspaceMember> updateMemberRole({
+    required String workspaceId,
+    required String userId,
+    required WorkspaceRole newRole,
+  }) async {
+    final index = _workspaces.indexWhere((w) => w.id == workspaceId);
+    if (index == -1) {
+      throw Exception('Workspace not found');
+    }
+
+    final memberIndex = _workspaces[index].members.indexWhere(
+          (m) => m.userId == userId,
+        );
+
+    if (memberIndex == -1) {
+      throw Exception('Member not found');
+    }
+
+    final updatedMember = _workspaces[index].members[memberIndex].copyWith(
+          role: newRole,
+        );
+
+    final members = List<WorkspaceMember>.from(_workspaces[index].members);
+    members[memberIndex] = updatedMember;
+    _workspaces[index] = _workspaces[index].copyWith(members: members);
+
+    return updatedMember;
+  }
+
+  // Cancel pending invitation
+  Future<void> cancelInvitation({
+    required String workspaceId,
+    required String userId,
+  }) async {
+    final index = _workspaces.indexWhere((w) => w.id == workspaceId);
+    if (index == -1) return;
+
+    final members = List<WorkspaceMember>.from(_workspaces[index].members);
+    members.removeWhere(
+        (m) => m.userId == userId && m.status == MemberStatus.pending);
     _workspaces[index] = _workspaces[index].copyWith(members: members);
   }
 
   String _generateId() {
     return DateTime.now().millisecondsSinceEpoch.toString() +
         Random().nextInt(1000).toString();
+  }
+
+  String _generateInviteToken() {
+    return '${_generateId()}_${Random().nextInt(999999).toString().padLeft(6, '0')}';
   }
 }
