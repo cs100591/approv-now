@@ -115,13 +115,9 @@ class AuthService {
       final firebaseUser = _firebaseAuth.currentUser;
       if (firebaseUser == null) return null;
 
-      // Reload to ensure token is fresh
-      await firebaseUser.reload();
-      final refreshedUser = _firebaseAuth.currentUser;
-
-      if (refreshedUser == null) return null;
-
-      return _mapFirebaseUser(refreshedUser);
+      // Skip reload on web to avoid hanging
+      // Just return the cached user data
+      return _mapFirebaseUser(firebaseUser);
     } catch (e) {
       AppLogger.error('Error getting current user', e);
       return null;
