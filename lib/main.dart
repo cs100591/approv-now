@@ -105,9 +105,7 @@ class MyApp extends StatelessWidget {
 
         // Auth Provider
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(
-            AuthService(),
-          )..initialize(),
+          create: (_) => AuthProvider(AuthService()),
         ),
 
         // Workspace Provider

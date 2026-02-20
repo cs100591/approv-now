@@ -159,7 +159,10 @@ class SupabaseService {
   /// Get all workspaces for current user
   Future<List<Map<String, dynamic>>> getWorkspaces() async {
     final userId = currentUserId;
-    if (userId == null) throw StateError('User not authenticated');
+    if (userId == null) {
+      AppLogger.warning('getWorkspaces called without authenticated user');
+      return [];
+    }
 
     try {
       final response = await client
@@ -182,7 +185,10 @@ class SupabaseService {
     String? companyName,
   }) async {
     final userId = currentUserId;
-    if (userId == null) throw StateError('User not authenticated');
+    if (userId == null) {
+      throw StateError(
+          'Cannot create workspace: User not authenticated. Please log in first.');
+    }
 
     try {
       final response = await client

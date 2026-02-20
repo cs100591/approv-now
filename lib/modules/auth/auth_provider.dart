@@ -1,18 +1,41 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'auth_models.dart';
 import 'auth_service.dart';
+import '../../core/utils/app_logger.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
+  StreamSubscription<User?>? _authStateSubscription;
 
   AuthState _state = const AuthState();
 
-  AuthProvider(this._authService);
+  AuthProvider(this._authService) {
+    _listenToAuthChanges();
+  }
 
   AuthState get state => _state;
 
+  void _listenToAuthChanges() {
+    _authStateSubscription = _authService.authStateChanges.listen((user) {
+      AppLogger.info('Auth state changed: ${user?.email ?? "null"}');
+      if (user != null) {
+        _state = AuthState(
+          status: AuthStatus.authenticated,
+          user: user,
+        );
+      } else if (_state.status != AuthStatus.initial) {
+        _state = const AuthState(status: AuthStatus.unauthenticated);
+      }
+      notifyListeners();
+    });
+  }
+
   Future<void> initialize() async {
-    _setLoading(true);
+    if (_state.status != AuthStatus.initial) return;
+
+    _state = _state.copyWith(status: AuthStatus.loading);
+    notifyListeners();
 
     try {
       final user = await _authService.getCurrentUser();
@@ -21,10 +44,13 @@ class AuthProvider extends ChangeNotifier {
           status: AuthStatus.authenticated,
           user: user,
         );
+        AppLogger.info('Auth initialized: authenticated as ${user.email}');
       } else {
         _state = const AuthState(status: AuthStatus.unauthenticated);
+        AppLogger.info('Auth initialized: no user');
       }
     } catch (e) {
+      AppLogger.error('Auth initialization error', e);
       _state = AuthState(
         status: AuthStatus.error,
         errorMessage: e.toString(),
@@ -141,5 +167,11 @@ class AuthProvider extends ChangeNotifier {
       password: password,
     ));
     return isAuthenticated;
+  }
+
+  @override
+  void dispose() {
+    _authStateSubscription?.cancel();
+    super.dispose();
   }
 }

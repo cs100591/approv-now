@@ -480,3 +480,39 @@ flutter build ios --release        # iOS
 - Replace app icon with custom design
 
 **Commit:** 61d5e29
+
+---
+
+### Session 17: Fix Auth Initialization Race Condition
+**Date:** 2026-02-21
+**Session Goal:** Fix "User not authenticated" errors caused by auth initialization race condition
+**Completed:**
+- ✅ Fixed SupabaseService.getWorkspaces() to return empty list instead of throwing error when not authenticated
+- ✅ Added auth state listener to AuthProvider to react to Supabase auth changes
+- ✅ Improved AuthWrapper to properly handle auth initialization flow:
+  - Shows loading screen while checking auth
+  - Only shows Dashboard when authenticated
+  - Redirects to Login when unauthenticated
+  - No more race condition between auth check and Dashboard loading
+- ✅ Added dispose() to AuthProvider to cancel auth state subscription
+- ✅ All 52 tests passing
+- ✅ 0 compilation errors
+- ✅ Web version tested successfully
+
+**Root Cause:**
+- SupabaseService.getWorkspaces() threw "User not authenticated" error when currentUserId was null
+- AuthProvider.initialize() was called but app didn't wait for it to complete
+- Dashboard tried to load workspaces before auth state was confirmed
+
+**Files Modified:**
+- `lib/core/services/supabase_service.dart` - Return empty list instead of throwing error
+- `lib/modules/auth/auth_provider.dart` - Added auth state listener, improved initialization
+- `lib/modules/auth/auth_ui/auth_wrapper.dart` - Simplified and fixed auth flow
+- `lib/main.dart` - Removed ..initialize() from AuthProvider creation
+
+**Next Steps:**
+- Test login and logout flows on device
+- Fix team member invitation functionality
+- Test complete user journey
+
+**Commit:** [Pending]

@@ -16,155 +16,91 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool _hasNavigated = false;
-  bool _isTimedOut = false;
+  bool _hasInitialized = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAuthState();
-      _setupTimeout();
+      _initializeAuth();
     });
   }
 
-  void _checkAuthState() {
+  void _initializeAuth() {
+    final authProvider = context.read<AuthProvider>();
+    authProvider.initialize();
+  }
+
+  void _onAuthenticated() {
     final authProvider = context.read<AuthProvider>();
     final workspaceProvider = context.read<WorkspaceProvider>();
 
-    if (authProvider.isAuthenticated) {
-      final userId = authProvider.user?.id;
-      if (userId != null) {
-        workspaceProvider.setCurrentUser(userId);
-      }
+    final userId = authProvider.user?.id;
+    if (userId != null) {
+      workspaceProvider.setCurrentUser(userId);
     }
-  }
-
-  void _setupTimeout() {
-    // If auth state doesn't resolve in 10 seconds, show retry
-    Future.delayed(const Duration(seconds: 10), () {
-      if (mounted && !_hasNavigated) {
-        final authProvider = context.read<AuthProvider>();
-        if (authProvider.state.status == AuthStatus.loading ||
-            authProvider.state.status == AuthStatus.initial) {
-          setState(() => _isTimedOut = true);
-        }
-      }
-    });
-  }
-
-  void _retry() {
-    setState(() => _isTimedOut = false);
-    context.read<AuthProvider>().initialize();
-    _setupTimeout();
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        if (_hasNavigated) {
-          return widget.child;
-        }
+        final status = authProvider.state.status;
 
-        if (_isTimedOut) {
-          return Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.cloud_off,
-                      size: 64,
-                      color: AppColors.textHint,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Connection Timeout',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Unable to connect to the server.\nPlease check your internet connection.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _retry,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
-        switch (authProvider.state.status) {
-          case AuthStatus.loading:
+        switch (status) {
           case AuthStatus.initial:
-            return const Scaffold(
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text(
-                      'Loading...',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+          case AuthStatus.loading:
+            return const _LoadingScreen();
 
           case AuthStatus.authenticated:
-            final userId = authProvider.user?.id;
-            if (userId != null) {
+            if (!_hasInitialized) {
+              _hasInitialized = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                final workspaceProvider = context.read<WorkspaceProvider>();
-                workspaceProvider.setCurrentUser(userId);
+                _onAuthenticated();
               });
             }
-            _hasNavigated = true;
             return widget.child;
 
           case AuthStatus.unauthenticated:
           case AuthStatus.error:
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!_hasNavigated) {
-                _hasNavigated = true;
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  RouteNames.login,
-                  (route) => false,
-                );
-              }
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                RouteNames.login,
+                (route) => false,
+              );
             });
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
+            return const _LoadingScreen();
         }
       },
+    );
+  }
+}
+
+class _LoadingScreen extends StatelessWidget {
+  const _LoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              color: AppColors.primary,
+            ),
+            SizedBox(height: 24),
+            Text(
+              'Loading...',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -185,11 +121,7 @@ class AuthGuard extends StatelessWidget {
               (route) => false,
             );
           });
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
+          return const _LoadingScreen();
         }
         return child;
       },
