@@ -13,6 +13,7 @@ import '../ai/models/ai_generation_result.dart';
 import '../ai/template_ui/ai_generate_button.dart';
 import '../ai/template_ui/ai_preview_dialog.dart';
 import '../ai/template_ui/ai_suggestion_card.dart';
+import '../../../core/utils/app_logger.dart';
 
 class CreateTemplateScreen extends StatefulWidget {
   const CreateTemplateScreen({super.key});
@@ -707,53 +708,40 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await templateProvider.createTemplate(
+      // Create template with fields and approval steps included
+      final template = await templateProvider.createTemplateWithFields(
         workspaceId: workspaceProvider.currentWorkspace!.id,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         createdBy: authProvider.user!.id,
+        fields: _fields,
+        approvalSteps: _approvalSteps,
       );
 
-      // Get the newly created template
-      final templates = templateProvider.templates;
-      final newTemplate = templates.lastWhere(
-        (t) => t.name == _nameController.text.trim(),
-      );
-
-      // Add fields with their options
-      for (final field in _fields) {
-        await templateProvider.addField(
-          templateId: newTemplate.id,
-          name: field.name,
-          label: field.label,
-          type: field.type,
-          required: field.required,
-          placeholder: field.placeholder,
-          options: field.options,
-          validation: field.validation,
-        );
-      }
-
-      // Add approval steps
-      for (final step in _approvalSteps) {
-        await templateProvider.addApprovalStep(
-          templateId: newTemplate.id,
-          name: step.name,
-          approvers: step.approvers,
-          requireAll: step.requireAll,
-        );
-      }
-
-      if (mounted) {
+      if (template != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Template created successfully')),
+          const SnackBar(
+            content: Text('Template created successfully'),
+            backgroundColor: AppColors.success,
+          ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, template);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to create template. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     } catch (e) {
+      AppLogger.error('Error creating template', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {

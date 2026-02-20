@@ -138,6 +138,48 @@ class TemplateProvider extends ChangeNotifier {
     }
   }
 
+  /// Create template with all fields and approval steps in one operation
+  Future<Template?> createTemplateWithFields({
+    required String workspaceId,
+    required String name,
+    String? description,
+    required String createdBy,
+    required List<TemplateField> fields,
+    required List<ApprovalStep> approvalSteps,
+  }) async {
+    _setLoading(true);
+
+    try {
+      // Create template with all data at once
+      final template = Template(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        workspaceId: workspaceId,
+        name: name,
+        description: description,
+        fields: fields,
+        approvalSteps: approvalSteps,
+        isActive: true,
+        createdBy: createdBy,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Save to Firestore
+      await _templateRepository.createTemplate(template);
+
+      AppLogger.info(
+          'Created template with ${fields.length} fields and ${approvalSteps.length} steps: ${template.id}');
+      return template;
+    } catch (e) {
+      AppLogger.error('Error creating template with fields', e);
+      _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> updateTemplate({
     required String templateId,
     String? name,
