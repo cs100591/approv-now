@@ -1,0 +1,9 @@
+// Supabase Edge Functions Configuration
+// This file configures the Edge Functions for the Approve Now app
+
+export default {
+  // Email notifications function
+  "email-notifications": {
+    verifyJWT: true,
+  },
+};
