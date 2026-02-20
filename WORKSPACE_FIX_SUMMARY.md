@@ -6,8 +6,29 @@ The app was stuck loading workspaces and unable to create new ones due to:
 2. **Missing error handling** - Errors during workspace creation weren't surfaced to users
 3. **No retry mechanism** - Failed operations couldn't be retried
 4. **Timeout issues** - Long Firebase queries hung the app
+5. **Firestore Timestamp parsing error** - "type 'null' is not a subtype of type 'String' in type cast" 
 
-## Changes Made
+## Latest Fix (Commit: 7f5f2be)
+
+### Root Cause: Firestore Timestamp Objects
+The error `type 'null' is not a subtype of type 'String' in type cast` occurred because:
+- Firestore's `FieldValue.serverTimestamp()` returns `Timestamp` objects, not strings
+- The model's `fromJson` methods were casting these as `String`
+- This caused runtime errors when parsing Firestore documents
+
+### Solution: FirestoreParser Utility
+Created `lib/core/utils/firestore_parser.dart` with safe type conversion methods:
+- `parseDateTime()` - Handles Timestamp, String, DateTime, and null
+- `parseString()` - Safe string parsing with default values
+- `parseEnum()` - Enum parsing with fallback
+- `parseStringList()` - Safe list parsing
+
+### Files Modified:
+- `lib/core/utils/firestore_parser.dart` (NEW)
+- `lib/modules/workspace/workspace_models.dart` - Updated fromJson
+- `lib/modules/workspace/workspace_member.dart` - Updated fromJson
+
+## Previous Changes Made (Commit: 61d5e29)
 
 ### 1. Fixed State Management
 **Before:** Dashboard used duplicate `_isLoadingWorkspaces` state
@@ -127,7 +148,30 @@ To replace the default icon with your custom icon:
 ✅ **iOS Build:** Successful (64.0MB)  
 ✅ **Git Push:** Completed  
 
-**Commit:** 940ebc8
+**Commits:** 
+- 61d5e29 - Initial workspace loading fix
+- 7f5f2be - Firestore Timestamp parsing fix (LATEST)
+
+## Understanding the Timestamp Issue
+
+### Why It Happened:
+```dart
+// OLD CODE - This failed
+createdAt: DateTime.parse(json['createdAt'] as String)
+// Error when Firestore returns Timestamp object
+```
+
+### How We Fixed It:
+```dart
+// NEW CODE - This works
+createdAt: FirestoreParser.parseDateTime(json['createdAt'])
+// Handles Timestamp, String, DateTime, and null
+```
+
+### Firestore Timestamp Types:
+- **FieldValue.serverTimestamp()** → Returns `Timestamp` object
+- **DateTime.now().toIso8601String()** → Returns `String`
+- Our parser now handles both!
 
 ## Next Steps
 
