@@ -62,18 +62,21 @@ class WorkspaceProvider extends ChangeNotifier {
   }
 
   void _subscribeToWorkspaces(String userId) {
+    _setLoading(true);
+
     _workspacesSubscription =
         _workspaceRepository.streamWorkspacesForUser(userId).listen(
       (workspaces) {
         Workspace? currentWs;
 
         if (_state.currentWorkspace != null) {
-          currentWs = workspaces.firstWhere(
-            (w) => w.id == _state.currentWorkspace!.id,
-            orElse: () => workspaces.isNotEmpty
-                ? workspaces.first
-                : throw StateError('No workspaces'),
-          );
+          try {
+            currentWs = workspaces.firstWhere(
+              (w) => w.id == _state.currentWorkspace!.id,
+            );
+          } catch (_) {
+            currentWs = workspaces.isNotEmpty ? workspaces.first : null;
+          }
         } else if (workspaces.isNotEmpty) {
           currentWs = workspaces.first;
         }
@@ -90,21 +93,22 @@ class WorkspaceProvider extends ChangeNotifier {
             'Loaded ${workspaces.length} workspaces for user: $userId');
       },
       onError: (error) {
-        AppLogger.error('Error loading workspaces', error);
+        AppLogger.error('Error loading workspaces stream', error);
         _state = _state.copyWith(
-          error: error.toString(),
+          error: 'Failed to load workspaces: ${error.toString()}',
           isLoading: false,
         );
         notifyListeners();
       },
     );
 
+    // Timeout for initial load
     Future.delayed(const Duration(seconds: 10), () {
       if (_state.isLoading && _state.workspaces.isEmpty) {
         AppLogger.warning('Workspace loading timeout - showing empty state');
         _state = _state.copyWith(
           isLoading: false,
-          error: 'Unable to load workspaces. Please check your connection.',
+          error: 'Connection timeout. Please check your internet connection.',
         );
         notifyListeners();
       }

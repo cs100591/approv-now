@@ -23,15 +23,42 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isCreatingDefaultWorkspace = false;
-  bool _isLoadingWorkspaces = true;
   String? _loadingError;
+  int _retryCount = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndCreateDefaultWorkspace();
+      _initializeDashboard();
     });
+  }
+
+  Future<void> _initializeDashboard() async {
+    final workspaceProvider = context.read<WorkspaceProvider>();
+    final authProvider = context.read<AuthProvider>();
+
+    final user = authProvider.user;
+    if (user == null) return;
+
+    workspaceProvider.setCurrentUser(user.id);
+
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (workspaceProvider.isLoading) {
+      await Future.delayed(const Duration(seconds: 3));
+    }
+
+    if (!mounted) return;
+
+    if (workspaceProvider.error != null) {
+      setState(() {
+        _loadingError = workspaceProvider.error;
+      });
+      return;
+    }
+
+    _checkAndCreateDefaultWorkspace();
   }
 
   Future<void> _checkAndCreateDefaultWorkspace() async {
@@ -43,8 +70,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final user = authProvider.user;
     if (user == null) return;
-
-    workspaceProvider.setCurrentUser(user.id);
 
     try {
       final hasWorkspace = await workspaceProvider
@@ -87,7 +112,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             creatorEmail: user.email,
           );
 
-          if (workspace != null) {
+          if (workspace != null && mounted) {
             await workspaceProvider.switchWorkspace(workspace.id);
 
             templateProvider.setCurrentWorkspace(workspace.id);
@@ -103,15 +128,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               );
             }
+          } else if (mounted) {
+            setState(() {
+              _loadingError =
+                  'Failed to create workspace. Please check your internet connection and try again.';
+            });
           }
         } catch (e) {
+          AppLogger.error('Error creating workspace', e);
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to create workspace: $e'),
-                backgroundColor: AppColors.error,
-              ),
-            );
+            setState(() {
+              _loadingError = 'Failed to create workspace: ${e.toString()}';
+            });
           }
         } finally {
           if (mounted) {
@@ -129,21 +157,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     } catch (e) {
+      AppLogger.error('Error in _checkAndCreateDefaultWorkspace', e);
       if (mounted) {
         setState(() {
           _loadingError = 'Failed to load workspace: $e';
-          _isLoadingWorkspaces = false;
         });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingWorkspaces = false);
       }
     }
   }
 
+  Future<void> _retryInitialization() async {
+    setState(() {
+      _loadingError = null;
+      _retryCount++;
+    });
+    await _initializeDashboard();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final workspaceProvider = context.watch<WorkspaceProvider>();
+    final isLoading =
+        workspaceProvider.isLoading || _isCreatingDefaultWorkspace;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -210,7 +246,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             )
-          : _isLoadingWorkspaces
+          : isLoading && workspaceProvider.workspaces.isEmpty
               ? const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -223,35 +259,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 )
               : _loadingError != null
                   ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: AppColors.error,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _loadingError!,
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.bodyMedium,
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _isLoadingWorkspaces = true;
-                                _loadingError = null;
-                              });
-                              _checkAndCreateDefaultWorkspace();
-                            },
-                            child: const Text('Retry'),
-                          ),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: AppColors.error,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _loadingError!,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodyMedium,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: _retryInitialization,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                            if (_retryCount > 0) ...[
+                              const SizedBox(height: 16),
+                              TextButton(
+                                onPressed: () {
+                                  context.read<AuthProvider>().logout();
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    RouteNames.login,
+                                    (route) => false,
+                                  );
+                                },
+                                child: const Text(
+                                  'Logout and try again',
+                                  style:
+                                      TextStyle(color: AppColors.textSecondary),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     )
-                  : const _DashboardContent(),
+                  : workspaceProvider.workspaces.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.business_center,
+                                  size: 64,
+                                  color: AppColors.textHint,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No Workspace Found',
+                                  style: AppTextStyles.h4,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Unable to create a workspace. Please check your connection.',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    setState(() => _loadingError = null);
+                                    _checkAndCreateDefaultWorkspace();
+                                  },
+                                  icon: const Icon(Icons.add_business),
+                                  label: const Text('Create Workspace'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : const _DashboardContent(),
     );
   }
 
