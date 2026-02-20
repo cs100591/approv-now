@@ -4,8 +4,8 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../models/ai_generation_result.dart';
 
-/// 智能推荐卡片
-/// 显示推荐的场景列表
+/// AI Suggestion Card
+/// Shows list of suggested scenarios
 class AiSuggestionCard extends StatelessWidget {
   final List<AiMatchResult> suggestions;
   final Function(AiMatchResult) onSelect;
@@ -39,7 +39,7 @@ class AiSuggestionCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '智能推荐',
+                'Suggestions',
                 style: AppTextStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.warning,
@@ -49,7 +49,7 @@ class AiSuggestionCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            '未找到完全匹配的场景，为您推荐以下相似场景：',
+            'No exact match found. Here are similar scenarios:',
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -71,7 +71,7 @@ class AiSuggestionCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '让 AI 智能生成新场景',
+                    'Let AI generate a new scenario',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w500,
@@ -112,7 +112,7 @@ class AiSuggestionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    result.matchedScenario ?? '推荐场景',
+                    result.matchedScenario ?? 'Suggested Scenario',
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -128,7 +128,7 @@ class AiSuggestionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${result.fields.length} 个字段 · ${result.approvalSteps.length} 级审批',
+                    '${result.fields.length} fields · ${result.approvalSteps.length} approval levels',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textHint,
                     ),

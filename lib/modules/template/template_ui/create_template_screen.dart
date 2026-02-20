@@ -41,13 +41,9 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
   @override
   void initState() {
     super.initState();
-    // 初始化 AI Generator（注意：需要配置 OpenAI API Key）
     _aiGenerator = SmartTemplateGenerator(
-      // openAiApiKey: 'your-api-key-here', // 如果有 API Key 可以取消注释
-      enableAi: false, // 默认禁用 AI，需要配置 API Key 后启用
+      enableAi: false,
     );
-
-    // 监听输入变化
     _nameController.addListener(_onNameChanged);
   }
 
@@ -59,7 +55,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     super.dispose();
   }
 
-  /// 当模板名称变化时，检查匹配状态
+  /// Check template name match status
   void _onNameChanged() {
     final name = _nameController.text.trim();
     if (name.length >= 2) {
@@ -72,9 +68,8 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     }
   }
 
-  /// 检查本地匹配
+  /// Check local match
   void _checkLocalMatch(String templateName) {
-    // 使用本地匹配器检查
     final matcher = _aiGenerator.getSuggestions(templateName);
     matcher.then((suggestions) {
       if (mounted) {
@@ -93,7 +88,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     });
   }
 
-  /// 点击 AI 生成按钮
+  /// Handle AI generate button press
   Future<void> _onAiGeneratePressed() async {
     final templateName = _nameController.text.trim();
     if (templateName.isEmpty) return;
@@ -115,7 +110,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
         if (response.success) {
           _showPreviewDialog(response);
         } else {
-          _showErrorDialog(response.error ?? '生成失败');
+          _showErrorDialog(response.error ?? 'Generation failed');
         }
       }
     } catch (e) {
@@ -129,7 +124,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     }
   }
 
-  /// 显示预览弹窗
+  /// Show preview dialog
   void _showPreviewDialog(GenerationResponse response) {
     if (response.result == null) return;
 
@@ -155,50 +150,44 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     );
   }
 
-  /// 显示错误弹窗
+  /// Show error dialog
   void _showErrorDialog(String error) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('生成失败'),
+        title: const Text('Generation Failed'),
         content: Text(error),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('确定'),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
 
-  /// 应用 AI 生成的结果
+  /// Apply AI generated result
   void _applyAiResult(AiGenerationResult result) {
     setState(() {
-      // 更新描述
       _descriptionController.text = result.description;
-
-      // 更新字段
       _fields.clear();
       _fields.addAll(result.fields);
-
-      // 更新审批步骤
       _approvalSteps.clear();
       _approvalSteps.addAll(result.approvalSteps);
-
-      // 更新匹配状态
       _matchStatus = MatchStatus.matched;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('已应用 AI 生成的配置：${result.matchedScenario ?? "自定义场景"}'),
+        content: Text(
+            'Applied AI configuration: ${result.matchedScenario ?? "Custom"}'),
         backgroundColor: AppColors.success,
       ),
     );
   }
 
-  /// 使用 AI 强制生成
+  /// Force AI generation
   Future<void> _onUseAiGenerate() async {
     setState(() {
       _isGenerating = true;
@@ -217,7 +206,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
         if (response.success && response.result != null) {
           _showPreviewDialog(response);
         } else {
-          _showErrorDialog(response.error ?? 'AI 生成失败');
+          _showErrorDialog(response.error ?? 'AI generation failed');
         }
       }
     } catch (e) {
@@ -279,9 +268,10 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                     },
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(height: 8),
                 Padding(
-                  padding: const EdgeInsets.only(top: 24), // 对齐输入框
+                  padding:
+                      const EdgeInsets.only(top: 24), // Align with input field
                   child: AiGenerateButton(
                     isEnabled: _nameController.text.trim().length >= 2,
                     isLoading: _isGenerating,
@@ -293,7 +283,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // 显示推荐场景（如果有）
+            // Show suggested scenarios (if any)
             if (_suggestions.isNotEmpty &&
                 _suggestions.first.matchScore >= 0.5 &&
                 _suggestions.first.matchScore < 0.8 &&

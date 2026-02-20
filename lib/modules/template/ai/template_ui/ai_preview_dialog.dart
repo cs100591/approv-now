@@ -6,7 +6,7 @@ import '../../template_models.dart';
 import '../models/ai_generation_result.dart';
 import '../smart_template_generator.dart';
 
-/// AI 生成预览弹窗
+/// AI Preview Dialog
 class AiPreviewDialog extends StatelessWidget {
   final AiGenerationResult result;
   final MatchType matchType;
@@ -39,32 +39,22 @@ class AiPreviewDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 头部
             _buildHeader(),
-
-            // 内容区域
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 场景识别信息
                     _buildMatchInfo(),
                     const SizedBox(height: AppSpacing.lg),
-
-                    // 字段配置
                     _buildFieldsSection(),
                     const SizedBox(height: AppSpacing.lg),
-
-                    // 审批流程
                     _buildApprovalSection(),
                   ],
                 ),
               ),
             ),
-
-            // 底部按钮
             _buildFooter(),
           ],
         ),
@@ -92,7 +82,7 @@ class AiPreviewDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AI 生成预览',
+                  'AI Preview',
                   style: AppTextStyles.h4.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -128,13 +118,13 @@ class AiPreviewDialog extends StatelessWidget {
           Row(
             children: [
               Text(
-                '场景识别：',
+                'Scenario: ',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
               Text(
-                result.matchedScenario ?? '自定义场景',
+                result.matchedScenario ?? 'Custom',
                 style: AppTextStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -145,7 +135,7 @@ class AiPreviewDialog extends StatelessWidget {
           Row(
             children: [
               Text(
-                '匹配类型：',
+                'Match Type: ',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -170,7 +160,7 @@ class AiPreviewDialog extends StatelessWidget {
           Row(
             children: [
               Text(
-                '匹配度：',
+                'Match Score: ',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -202,7 +192,7 @@ class AiPreviewDialog extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '字段配置（${result.fields.length}个）',
+              'Fields (${result.fields.length})',
               style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -273,7 +263,7 @@ class AiPreviewDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_getFieldTypeName(field.type)}${field.options != null ? ' · ${field.options!.length}个选项' : ''}',
+                  '${_getFieldTypeName(field.type)}${field.options != null ? ' · ${field.options!.length} options' : ''}',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -299,7 +289,7 @@ class AiPreviewDialog extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '审批流程（${result.approvalSteps.length}级）',
+              'Approval Steps (${result.approvalSteps.length})',
               style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -353,7 +343,7 @@ class AiPreviewDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${step.approvers.length} 位审批人${step.requireAll ? '（需全部通过）' : ''}',
+                  '${step.approvers.length} approvers${step.requireAll ? ' (all required)' : ''}',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -382,7 +372,7 @@ class AiPreviewDialog extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onRegenerate,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('重新生成'),
+              label: const Text('Regenerate'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
               ),
@@ -393,7 +383,7 @@ class AiPreviewDialog extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: onApply,
               icon: const Icon(Icons.check, size: 18),
-              label: const Text('应用配置'),
+              label: const Text('Apply'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -442,15 +432,15 @@ class AiPreviewDialog extends StatelessWidget {
   String _getMatchTypeText() {
     switch (matchType) {
       case MatchType.localExact:
-        return '本地精确匹配';
+        return 'Exact Match';
       case MatchType.localSuggested:
-        return '本地推荐';
+        return 'Suggested';
       case MatchType.cached:
-        return '缓存结果';
+        return 'Cached';
       case MatchType.aiGenerated:
-        return 'AI 生成';
+        return 'AI Generated';
       case MatchType.genericFallback:
-        return '通用模板';
+        return 'Generic';
     }
   }
 
@@ -462,14 +452,14 @@ class AiPreviewDialog extends StatelessWidget {
 
   String _getFieldTypeName(FieldType type) {
     final names = {
-      FieldType.text: '文本',
-      FieldType.number: '数字',
-      FieldType.date: '日期',
-      FieldType.dropdown: '下拉选择',
-      FieldType.checkbox: '复选框',
-      FieldType.multiline: '多行文本',
-      FieldType.file: '文件',
-      FieldType.currency: '金额',
+      FieldType.text: 'Text',
+      FieldType.number: 'Number',
+      FieldType.date: 'Date',
+      FieldType.dropdown: 'Dropdown',
+      FieldType.checkbox: 'Checkbox',
+      FieldType.multiline: 'Multiline',
+      FieldType.file: 'File',
+      FieldType.currency: 'Currency',
     };
     return names[type] ?? type.name;
   }
