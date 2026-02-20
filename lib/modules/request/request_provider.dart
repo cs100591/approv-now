@@ -1,14 +1,20 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../template/template_models.dart';
 import 'request_models.dart';
 import 'request_service.dart';
 import 'request_repository.dart';
+import '../../core/utils/app_logger.dart';
 
 class RequestProvider extends ChangeNotifier {
   final RequestService _requestService;
   final RequestRepository _requestRepository;
 
   RequestState _state = const RequestState();
+  StreamSubscription<List<ApprovalRequest>>? _requestsSubscription;
+  StreamSubscription<List<ApprovalRequest>>? _pendingRequestsSubscription;
+  String? _currentWorkspaceId;
+  String? _currentApproverId;
 
   RequestProvider({
     required RequestService requestService,
@@ -27,16 +33,89 @@ class RequestProvider extends ChangeNotifier {
   String? get error => _state.error;
 
   Future<void> _initialize() async {
-    await loadRequests();
+    // Don't load requests on init - wait for workspace to be selected
   }
 
+  /// Set current workspace and subscribe to its requests
+  void setCurrentWorkspace(String? workspaceId, {String? approverId}) {
+    if (_currentWorkspaceId == workspaceId &&
+        _currentApproverId == approverId) {
+      return;
+    }
+
+    _currentWorkspaceId = workspaceId;
+    _currentApproverId = approverId;
+    _cancelSubscriptions();
+
+    if (workspaceId != null) {
+      _subscribeToRequests(workspaceId);
+      if (approverId != null) {
+        _subscribeToPendingRequests(workspaceId, approverId);
+      }
+    } else {
+      _state = const RequestState();
+      notifyListeners();
+    }
+  }
+
+  void _cancelSubscriptions() {
+    _requestsSubscription?.cancel();
+    _pendingRequestsSubscription?.cancel();
+    _requestsSubscription = null;
+    _pendingRequestsSubscription = null;
+  }
+
+  void _subscribeToRequests(String workspaceId) {
+    _requestsSubscription =
+        _requestRepository.streamRequestsByWorkspace(workspaceId).listen(
+      (requests) {
+        _state = _state.copyWith(requests: requests);
+        notifyListeners();
+        AppLogger.info(
+            'Loaded ${requests.length} requests for workspace: $workspaceId');
+      },
+      onError: (error) {
+        AppLogger.error('Error loading requests', error);
+        _state = _state.copyWith(error: error.toString());
+        notifyListeners();
+      },
+    );
+  }
+
+  void _subscribeToPendingRequests(String workspaceId, String approverId) {
+    _pendingRequestsSubscription = _requestRepository
+        .streamPendingRequestsForApprover(workspaceId, approverId)
+        .listen(
+      (pendingRequests) {
+        _state = _state.copyWith(
+          pendingRequests: pendingRequests,
+          pendingCount: pendingRequests.length,
+        );
+        notifyListeners();
+        AppLogger.info('Loaded ${pendingRequests.length} pending requests');
+      },
+      onError: (error) {
+        AppLogger.error('Error loading pending requests', error);
+      },
+    );
+  }
+
+  /// Load requests for workspace (manual refresh)
   Future<void> loadRequests() async {
+    if (_currentWorkspaceId == null) {
+      AppLogger.warning('Cannot load requests: no workspace selected');
+      return;
+    }
+
     _setLoading(true);
 
     try {
-      final requests = await _requestRepository.getRequests();
+      final requests =
+          await _requestRepository.getRequestsByWorkspace(_currentWorkspaceId!);
       _state = _state.copyWith(requests: requests);
+      AppLogger.info('Manually loaded ${requests.length} requests');
     } catch (e) {
+      AppLogger.error('Error loading requests', e);
       _state = _state.copyWith(error: e.toString());
     }
 
@@ -44,12 +123,15 @@ class RequestProvider extends ChangeNotifier {
   }
 
   Future<void> loadRequestsByWorkspace(String workspaceId) async {
+    _currentWorkspaceId = workspaceId;
+    _cancelSubscriptions();
     _setLoading(true);
 
     try {
       final requests =
           await _requestRepository.getRequestsByWorkspace(workspaceId);
       _state = _state.copyWith(requests: requests);
+      _subscribeToRequests(workspaceId);
     } catch (e) {
       _state = _state.copyWith(error: e.toString());
     }
@@ -59,6 +141,7 @@ class RequestProvider extends ChangeNotifier {
 
   Future<void> loadPendingRequests(
       String workspaceId, String approverId) async {
+    _currentApproverId = approverId;
     _setLoading(true);
 
     try {
@@ -66,7 +149,6 @@ class RequestProvider extends ChangeNotifier {
           await _requestRepository.getPendingRequestsForApprover(
         workspaceId,
         approverId,
-        1, // Current level would be determined by business logic
       );
       final pendingCount = pendingRequests.length;
 
@@ -81,7 +163,7 @@ class RequestProvider extends ChangeNotifier {
     _setLoading(false);
   }
 
-  Future<void> createDraftRequest({
+  Future<ApprovalRequest?> createDraftRequest({
     required String workspaceId,
     required Template template,
     required String submittedBy,
@@ -97,18 +179,19 @@ class RequestProvider extends ChangeNotifier {
         submittedByName: submittedByName,
       );
 
-      await _requestRepository.addRequest(request);
+      await _requestRepository.createRequest(request);
 
-      final requests = [..._state.requests, request];
-      _state = _state.copyWith(
-        requests: requests,
-        selectedRequest: request,
-      );
+      // Real-time subscription will update the state automatically
+      AppLogger.info('Created request: ${request.id}');
+      return request;
     } catch (e) {
+      AppLogger.error('Error creating request', e);
       _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+      return null;
+    } finally {
+      _setLoading(false);
     }
-
-    _setLoading(false);
   }
 
   Future<void> submitRequest({
@@ -132,11 +215,15 @@ class RequestProvider extends ChangeNotifier {
         requests: requests,
         selectedRequest: request,
       );
-    } catch (e) {
-      _state = _state.copyWith(error: e.toString());
-    }
 
-    _setLoading(false);
+      AppLogger.info('Submitted request: $requestId');
+    } catch (e) {
+      AppLogger.error('Error submitting request', e);
+      _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<void> updateFieldValues({
@@ -162,9 +249,10 @@ class RequestProvider extends ChangeNotifier {
       );
     } catch (e) {
       _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+    } finally {
+      _setLoading(false);
     }
-
-    _setLoading(false);
   }
 
   Future<void> approveRequest({
@@ -200,11 +288,15 @@ class RequestProvider extends ChangeNotifier {
         pendingRequests: pendingRequests,
         pendingCount: pendingRequests.length,
       );
-    } catch (e) {
-      _state = _state.copyWith(error: e.toString());
-    }
 
-    _setLoading(false);
+      AppLogger.info('Approved request: $requestId');
+    } catch (e) {
+      AppLogger.error('Error approving request', e);
+      _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<void> rejectRequest({
@@ -240,16 +332,20 @@ class RequestProvider extends ChangeNotifier {
         pendingRequests: pendingRequests,
         pendingCount: pendingRequests.length,
       );
-    } catch (e) {
-      _state = _state.copyWith(error: e.toString());
-    }
 
-    _setLoading(false);
+      AppLogger.info('Rejected request: $requestId');
+    } catch (e) {
+      AppLogger.error('Error rejecting request', e);
+      _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<void> selectRequest(String requestId) async {
     try {
-      final request = await _requestRepository.getRequestById(requestId);
+      final request = await _requestRepository.getRequest(requestId);
       _state = _state.copyWith(selectedRequest: request);
       notifyListeners();
     } catch (e) {
@@ -272,11 +368,27 @@ class RequestProvider extends ChangeNotifier {
             ? null
             : _state.selectedRequest,
       );
-    } catch (e) {
-      _state = _state.copyWith(error: e.toString());
-    }
 
-    _setLoading(false);
+      AppLogger.info('Deleted request: $requestId');
+    } catch (e) {
+      AppLogger.error('Error deleting request', e);
+      _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Get pending request count for plan enforcement
+  Future<int> getPendingRequestCount(
+      String workspaceId, String approverId) async {
+    try {
+      return await _requestRepository.getPendingRequestCount(
+          workspaceId, approverId);
+    } catch (e) {
+      AppLogger.error('Error getting pending request count', e);
+      return _state.pendingRequests.length;
+    }
   }
 
   void clearError() {
@@ -287,5 +399,11 @@ class RequestProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     _state = _state.copyWith(isLoading: loading);
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _cancelSubscriptions();
+    super.dispose();
   }
 }

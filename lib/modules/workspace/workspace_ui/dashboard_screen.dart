@@ -10,6 +10,7 @@ import '../../request/request_models.dart';
 import '../../subscription/subscription_provider.dart';
 import '../../subscription/plan_upgrade_dialog.dart';
 import '../../plan_enforcement/plan_guard_service.dart';
+import '../../template/template_provider.dart';
 import '../workspace_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -34,8 +35,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final workspaceProvider = context.read<WorkspaceProvider>();
     final authProvider = context.read<AuthProvider>();
     final subscriptionProvider = context.read<SubscriptionProvider>();
+    final requestProvider = context.read<RequestProvider>();
+    final templateProvider = context.read<TemplateProvider>();
 
-    if (workspaceProvider.workspaces.isEmpty && authProvider.user != null) {
+    // Set current user ID in workspace provider to load their workspaces
+    final user = authProvider.user;
+    if (user == null) return;
+
+    // Set current user in providers
+    workspaceProvider.setCurrentUser(user.id);
+
+    // Wait a moment for data to load
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Check if user already has a workspace (from Firestore)
+    final hasWorkspace = await workspaceProvider.hasAnyWorkspace();
+
+    if (!hasWorkspace) {
       // Check plan limit before creating default workspace
       final currentPlan = subscriptionProvider.currentPlan;
       final canCreate = PlanGuardService.canCreateWorkspace(
@@ -59,29 +75,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() => _isCreatingDefaultWorkspace = true);
 
       try {
-        final user = authProvider.user!;
         final userName = user.displayName ?? user.email ?? 'User';
 
-        await workspaceProvider.createWorkspace(
+        final workspace = await workspaceProvider.createWorkspace(
           name: "$userName's Workspace",
           description: 'Default workspace created automatically',
           createdBy: user.id,
           creatorEmail: user.email,
         );
 
-        if (workspaceProvider.workspaces.isNotEmpty) {
-          await workspaceProvider.switchWorkspace(
-            workspaceProvider.workspaces.first.id,
-          );
-        }
+        if (workspace != null) {
+          await workspaceProvider.switchWorkspace(workspace.id);
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Welcome! Default workspace created successfully.'),
-              backgroundColor: AppColors.success,
-            ),
-          );
+          // Set current workspace for other providers
+          templateProvider.setCurrentWorkspace(workspace.id);
+          requestProvider.setCurrentWorkspace(workspace.id,
+              approverId: user.id);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Welcome! Default workspace created successfully.'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -96,6 +115,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (mounted) {
           setState(() => _isCreatingDefaultWorkspace = false);
         }
+      }
+    } else {
+      // User has workspace(es), set up the current workspace context
+      if (workspaceProvider.currentWorkspace != null) {
+        templateProvider
+            .setCurrentWorkspace(workspaceProvider.currentWorkspace!.id);
+        requestProvider.setCurrentWorkspace(
+          workspaceProvider.currentWorkspace!.id,
+          approverId: user.id,
+        );
       }
     }
   }
