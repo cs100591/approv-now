@@ -601,6 +601,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- RPC FUNCTIONS FOR INVITE CODES
 -- ============================================
 
+-- Drop existing function first (to change return type)
+DROP FUNCTION IF EXISTS use_invite_code(TEXT, UUID, TEXT);
+
 -- Function to validate and use invite code
 CREATE OR REPLACE FUNCTION use_invite_code(
   p_code TEXT,
