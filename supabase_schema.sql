@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================
 -- PROFILES TABLE (User profiles)
 -- ============================================
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   display_name TEXT,
@@ -48,7 +48,7 @@ CREATE TRIGGER on_auth_user_created
 -- ============================================
 -- WORKSPACES TABLE
 -- ============================================
-CREATE TABLE workspaces (
+CREATE TABLE IF NOT EXISTS workspaces (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   description TEXT,
@@ -91,7 +91,7 @@ CREATE INDEX idx_workspaces_member_ids ON workspaces USING GIN(member_ids);
 -- ============================================
 -- WORKSPACE MEMBERS TABLE (Detailed member info)
 -- ============================================
-CREATE TABLE workspace_members (
+CREATE TABLE IF NOT EXISTS workspace_members (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -131,7 +131,7 @@ CREATE INDEX idx_workspace_members_user_id ON workspace_members(user_id);
 -- ============================================
 -- TEMPLATES TABLE
 -- ============================================
-CREATE TABLE templates (
+CREATE TABLE IF NOT EXISTS templates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -188,7 +188,7 @@ CREATE INDEX idx_templates_created_at ON templates(created_at DESC);
 -- ============================================
 -- REQUESTS TABLE
 -- ============================================
-CREATE TABLE requests (
+CREATE TABLE IF NOT EXISTS requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   template_id UUID REFERENCES templates(id) ON DELETE SET NULL,
@@ -254,7 +254,7 @@ CREATE INDEX idx_requests_workspace_status ON requests(workspace_id, status);
 -- ============================================
 -- MEMBER GROUPS TABLE
 -- ============================================
-CREATE TABLE member_groups (
+CREATE TABLE IF NOT EXISTS member_groups (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -297,7 +297,7 @@ CREATE INDEX idx_member_groups_created_at ON member_groups(created_at DESC);
 -- ============================================
 -- GROUP MEMBERS TABLE (Junction table)
 -- ============================================
-CREATE TABLE group_members (
+CREATE TABLE IF NOT EXISTS group_members (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   group_id UUID NOT NULL REFERENCES member_groups(id) ON DELETE CASCADE,
   workspace_member_id UUID NOT NULL REFERENCES workspace_members(id) ON DELETE CASCADE,
@@ -342,7 +342,7 @@ CREATE INDEX idx_group_members_workspace_member_id ON group_members(workspace_me
 -- ============================================
 -- NOTIFICATIONS TABLE (Persistent)
 -- ============================================
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
@@ -399,7 +399,7 @@ CREATE INDEX idx_notifications_workspace_id ON notifications(workspace_id);
 -- ============================================
 -- TEMPLATE VISIBILITY TABLE
 -- ============================================
-CREATE TABLE template_visibility (
+CREATE TABLE IF NOT EXISTS template_visibility (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   template_id UUID NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
   workspace_member_id UUID REFERENCES workspace_members(id) ON DELETE CASCADE,

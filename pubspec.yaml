@@ -73,11 +73,6 @@ dependencies:
   # Supabase - 替换 Firebase
   supabase_flutter: ^2.8.0
   
-  # Firebase - 仅保留 Analytics 和 Push Notifications（可选）
-  firebase_core: ^3.12.1
-  firebase_messaging: ^15.2.4
-  firebase_analytics: ^11.4.4
-  
   # File operations
   share_plus: ^10.0.0
   file_picker: ^8.1.2
