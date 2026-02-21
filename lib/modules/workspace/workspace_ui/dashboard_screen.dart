@@ -12,6 +12,7 @@ import '../../subscription/subscription_provider.dart';
 import '../../subscription/plan_upgrade_dialog.dart';
 import '../../plan_enforcement/plan_guard_service.dart';
 import '../../template/template_provider.dart';
+import '../../notification/notification_ui/notification_badge.dart';
 import '../workspace_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -185,12 +186,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.pushNamed(context, RouteNames.notifications);
-            },
-          ),
+          const NotificationBadge(),
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () {
@@ -429,6 +425,7 @@ class _DashboardContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const NotificationBanner(),
           Text(
             'Welcome back!',
             style: AppTextStyles.h2,
