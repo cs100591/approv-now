@@ -1,189 +1,262 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../../core/utils/app_logger.dart';
 import 'notification_models.dart';
 import 'notification_service.dart';
 
 class NotificationProvider extends ChangeNotifier {
-  final NotificationService _notificationService;
+  final NotificationRepository _repository;
+  final NotificationService _service;
+  final PushService _pushService;
 
   NotificationState _state = const NotificationState();
+  StreamSubscription<List<AppNotification>>? _subscription;
+  String? _currentUserId;
 
   NotificationProvider({
-    required NotificationService notificationService,
-  }) : _notificationService = notificationService;
+    NotificationRepository? repository,
+    NotificationService? service,
+    PushService? pushService,
+  })  : _repository = repository ?? NotificationRepository(),
+        _service = service ?? NotificationService(),
+        _pushService = pushService ?? PushService();
 
   NotificationState get state => _state;
   List<AppNotification> get notifications => _state.notifications;
+  List<AppNotification> get pendingInvitations => _state.pendingInvitations;
+  List<AppNotification> get unreadNotifications => _state.unreadNotifications;
   int get unreadCount => _state.unreadCount;
   bool get isLoading => _state.isLoading;
+  String? get error => _state.error;
+  bool get hasPendingInvitations => pendingInvitations.isNotEmpty;
 
   /// Initialize with user ID
   void initialize(String userId) {
-    _notificationService.initialize(userId);
-    loadNotifications(userId);
+    if (_currentUserId == userId) return;
+
+    _currentUserId = userId;
+    _pushService.initialize(userId);
+    _subscribeToNotifications(userId);
+    loadNotifications();
   }
 
-  /// Load notifications for user
-  void loadNotifications(String userId) {
-    final notifications = _notificationService.getNotificationsForUser(userId);
-    final unreadCount = _notificationService.getUnreadCount(userId);
+  /// Subscribe to real-time notification updates
+  void _subscribeToNotifications(String userId) {
+    _subscription?.cancel();
+    _subscription = _repository.streamUserNotifications(userId).listen(
+      (notifications) {
+        _updateNotifications(notifications);
+      },
+      onError: (error) {
+        AppLogger.error('Error in notification stream', error);
+        _state = _state.copyWith(
+          error: error.toString(),
+          isLoading: false,
+        );
+        notifyListeners();
+      },
+    );
+  }
+
+  /// Update notifications state
+  void _updateNotifications(List<AppNotification> notifications) {
+    final unreadCount =
+        notifications.where((n) => !n.isRead && !n.isDismissed).length;
 
     _state = _state.copyWith(
       notifications: notifications,
       unreadCount: unreadCount,
+      isLoading: false,
+      error: null,
     );
     notifyListeners();
   }
 
-  /// Notify new request
-  Future<void> notifyNewRequest({
-    required String recipientId,
-    required String requestTitle,
-    required String submitterName,
-    required String requestId,
-    required String workspaceId,
-  }) async {
-    await _notificationService.notifyNewRequest(
-      recipientId: recipientId,
-      requestTitle: requestTitle,
-      submitterName: submitterName,
-      requestId: requestId,
-      workspaceId: workspaceId,
-    );
+  /// Load notifications for current user
+  Future<void> loadNotifications({bool unreadOnly = false}) async {
+    if (_currentUserId == null) return;
 
-    if (_notificationService.currentUserId == recipientId) {
-      loadNotifications(recipientId);
-    }
-  }
+    _state = _state.copyWith(isLoading: true);
+    notifyListeners();
 
-  /// Notify approval
-  Future<void> notifyApproval({
-    required String recipientId,
-    required String requestTitle,
-    required String approverName,
-    required String requestId,
-    required String workspaceId,
-  }) async {
-    await _notificationService.notifyApproval(
-      recipientId: recipientId,
-      requestTitle: requestTitle,
-      approverName: approverName,
-      requestId: requestId,
-      workspaceId: workspaceId,
-    );
-
-    if (_notificationService.currentUserId == recipientId) {
-      loadNotifications(recipientId);
-    }
-  }
-
-  /// Notify rejection
-  Future<void> notifyRejection({
-    required String recipientId,
-    required String requestTitle,
-    required String rejectorName,
-    required String requestId,
-    required String workspaceId,
-    String? reason,
-  }) async {
-    await _notificationService.notifyRejection(
-      recipientId: recipientId,
-      requestTitle: requestTitle,
-      rejectorName: rejectorName,
-      requestId: requestId,
-      workspaceId: workspaceId,
-      reason: reason,
-    );
-
-    if (_notificationService.currentUserId == recipientId) {
-      loadNotifications(recipientId);
-    }
-  }
-
-  /// Notify revision restart
-  Future<void> notifyRevisionRestart({
-    required List<String> approverIds,
-    required String requestTitle,
-    required String editorName,
-    required String requestId,
-    required String workspaceId,
-  }) async {
-    await _notificationService.notifyRevisionRestart(
-      approverIds: approverIds,
-      requestTitle: requestTitle,
-      editorName: editorName,
-      requestId: requestId,
-      workspaceId: workspaceId,
-    );
-
-    // Reload if current user is affected
-    final currentUserId = _notificationService.currentUserId;
-    if (currentUserId != null && approverIds.contains(currentUserId)) {
-      loadNotifications(currentUserId);
+    try {
+      final notifications = await _repository
+          .getUserNotifications(_currentUserId!, unreadOnly: unreadOnly);
+      _updateNotifications(notifications);
+    } catch (e) {
+      AppLogger.error('Failed to load notifications', e);
+      _state = _state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+      notifyListeners();
     }
   }
 
   /// Mark notification as read
-  void markAsRead(String notificationId) {
-    _notificationService.markAsRead(notificationId);
+  Future<void> markAsRead(String notificationId) async {
+    try {
+      await _repository.markAsRead(notificationId);
 
-    // Update local state
-    final notifications = _state.notifications.map((n) {
-      if (n.id == notificationId) {
-        return n.copyWith(isRead: true);
-      }
-      return n;
-    }).toList();
+      final notifications = _state.notifications.map((n) {
+        if (n.id == notificationId) {
+          return n.copyWith(isRead: true, readAt: DateTime.now());
+        }
+        return n;
+      }).toList();
 
-    final unreadCount = _state.unreadCount > 0 ? _state.unreadCount - 1 : 0;
+      final unreadCount = _state.unreadCount > 0 ? _state.unreadCount - 1 : 0;
 
-    _state = _state.copyWith(
-      notifications: notifications,
-      unreadCount: unreadCount,
-    );
-    notifyListeners();
+      _state = _state.copyWith(
+        notifications: notifications,
+        unreadCount: unreadCount,
+      );
+      notifyListeners();
+    } catch (e) {
+      AppLogger.error('Failed to mark notification as read', e);
+    }
   }
 
-  /// Mark all as read
-  void markAllAsRead(String userId) {
-    _notificationService.markAllAsRead(userId);
+  /// Mark all notifications as read
+  Future<void> markAllAsRead() async {
+    if (_currentUserId == null) return;
 
-    final notifications =
-        _state.notifications.map((n) => n.copyWith(isRead: true)).toList();
+    try {
+      await _repository.markAllAsRead(_currentUserId!);
 
-    _state = _state.copyWith(
-      notifications: notifications,
-      unreadCount: 0,
+      final notifications = _state.notifications
+          .map((n) => n.copyWith(isRead: true, readAt: DateTime.now()))
+          .toList();
+
+      _state = _state.copyWith(
+        notifications: notifications,
+        unreadCount: 0,
+      );
+      notifyListeners();
+    } catch (e) {
+      AppLogger.error('Failed to mark all notifications as read', e);
+    }
+  }
+
+  /// Dismiss notification
+  Future<void> dismissNotification(String notificationId) async {
+    try {
+      await _repository.dismissNotification(notificationId);
+
+      final notifications = _state.notifications.map((n) {
+        if (n.id == notificationId) {
+          return n.copyWith(isDismissed: true, dismissedAt: DateTime.now());
+        }
+        return n;
+      }).toList();
+
+      _state = _state.copyWith(notifications: notifications);
+      notifyListeners();
+    } catch (e) {
+      AppLogger.error('Failed to dismiss notification', e);
+    }
+  }
+
+  /// Create invitation notification
+  Future<AppNotification> createInvitationNotification({
+    required String userId,
+    required String workspaceId,
+    required String workspaceName,
+    required String inviterName,
+    required String invitationToken,
+  }) async {
+    return await _service.createInvitationNotification(
+      userId: userId,
+      workspaceId: workspaceId,
+      workspaceName: workspaceName,
+      inviterName: inviterName,
+      invitationToken: invitationToken,
     );
-    notifyListeners();
+  }
+
+  /// Create pending request notification
+  Future<AppNotification> createPendingRequestNotification({
+    required String userId,
+    required String workspaceId,
+    required String requestId,
+    required String requestTitle,
+    required String submitterName,
+  }) async {
+    return await _service.createPendingRequestNotification(
+      userId: userId,
+      workspaceId: workspaceId,
+      requestId: requestId,
+      requestTitle: requestTitle,
+      submitterName: submitterName,
+    );
+  }
+
+  /// Create request approved notification
+  Future<AppNotification> createRequestApprovedNotification({
+    required String userId,
+    required String workspaceId,
+    required String requestId,
+    required String requestTitle,
+    required String approverName,
+  }) async {
+    return await _service.createRequestApprovedNotification(
+      userId: userId,
+      workspaceId: workspaceId,
+      requestId: requestId,
+      requestTitle: requestTitle,
+      approverName: approverName,
+    );
+  }
+
+  /// Create request rejected notification
+  Future<AppNotification> createRequestRejectedNotification({
+    required String userId,
+    required String workspaceId,
+    required String requestId,
+    required String requestTitle,
+    required String rejectorName,
+    String? reason,
+  }) async {
+    return await _service.createRequestRejectedNotification(
+      userId: userId,
+      workspaceId: workspaceId,
+      requestId: requestId,
+      requestTitle: requestTitle,
+      rejectorName: rejectorName,
+      reason: reason,
+    );
+  }
+
+  /// Create request revision notification
+  Future<AppNotification> createRequestRevisionNotification({
+    required String userId,
+    required String workspaceId,
+    required String requestId,
+    required String requestTitle,
+    required String editorName,
+  }) async {
+    return await _service.createRequestRevisionNotification(
+      userId: userId,
+      workspaceId: workspaceId,
+      requestId: requestId,
+      requestTitle: requestTitle,
+      editorName: editorName,
+    );
+  }
+
+  /// Cleanup expired notifications
+  Future<void> cleanupExpiredNotifications() async {
+    await _repository.deleteOldNotifications(30);
   }
 
   /// Save FCM token
   Future<void> saveFcmToken(String userId, String token) async {
-    await _notificationService.saveFcmToken(userId, token);
+    await _pushService.saveFcmToken(userId, token);
   }
-}
 
-/// State for notification provider
-class NotificationState {
-  final List<AppNotification> notifications;
-  final int unreadCount;
-  final bool isLoading;
-
-  const NotificationState({
-    this.notifications = const [],
-    this.unreadCount = 0,
-    this.isLoading = false,
-  });
-
-  NotificationState copyWith({
-    List<AppNotification>? notifications,
-    int? unreadCount,
-    bool? isLoading,
-  }) {
-    return NotificationState(
-      notifications: notifications ?? this.notifications,
-      unreadCount: unreadCount ?? this.unreadCount,
-      isLoading: isLoading ?? this.isLoading,
-    );
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }

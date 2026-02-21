@@ -5,6 +5,7 @@ import 'workspace_service.dart';
 import 'workspace_repository.dart';
 import 'workspace_member.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/services/supabase_service.dart';
 
 class WorkspaceProvider extends ChangeNotifier {
   final WorkspaceService _workspaceService;
@@ -449,7 +450,7 @@ class WorkspaceProvider extends ChangeNotifier {
 
   /// Accept invitation
   Future<void> acceptInvitation({
-    required String workspaceId,
+    String? workspaceId,
     required String inviteToken,
     required String userId,
     String? displayName,
@@ -457,26 +458,33 @@ class WorkspaceProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      await _workspaceService.acceptInvitation(
-        workspaceId: workspaceId,
+      await SupabaseService().acceptInvitation(
         inviteToken: inviteToken,
         userId: userId,
         displayName: displayName,
       );
 
-      // Add user to workspace members in Firestore
-      await _workspaceRepository.addMember(workspaceId, userId);
-
-      // Reload workspaces
       await loadWorkspaces();
 
-      AppLogger.info('Accepted invitation to workspace: $workspaceId');
+      AppLogger.info('Accepted invitation');
     } catch (e) {
       AppLogger.error('Error accepting invitation', e);
       _state = _state.copyWith(error: e.toString());
       notifyListeners();
+      rethrow;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  /// Decline invitation
+  Future<void> declineInvitation(String inviteToken) async {
+    try {
+      await SupabaseService().declineInvitation(inviteToken);
+      AppLogger.info('Declined invitation');
+    } catch (e) {
+      AppLogger.error('Error declining invitation', e);
+      rethrow;
     }
   }
 

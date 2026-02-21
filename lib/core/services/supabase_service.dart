@@ -498,4 +498,201 @@ class SupabaseService {
       rethrow;
     }
   }
+
+  // ============================================
+  // WORKSPACE MEMBERS & INVITATIONS
+  // ============================================
+
+  /// Get workspace members
+  Future<List<Map<String, dynamic>>> getWorkspaceMembers(
+      String workspaceId) async {
+    try {
+      final response = await client
+          .from('workspace_members')
+          .select()
+          .eq('workspace_id', workspaceId)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      AppLogger.error('Failed to get workspace members', e);
+      return [];
+    }
+  }
+
+  /// Get pending invitations for a user
+  Future<List<Map<String, dynamic>>> getPendingInvitationsForUser(
+      String userId) async {
+    try {
+      final response = await client.from('workspace_members').select('''
+            *,
+            workspaces!inner(id, name, owner_id)
+          ''').eq('user_id', userId).eq('status', 'pending');
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      AppLogger.error('Failed to get pending invitations', e);
+      return [];
+    }
+  }
+
+  /// Create invitation
+  Future<Map<String, dynamic>> createInvitation({
+    required String workspaceId,
+    required String email,
+    required String userId,
+    required String role,
+    required String invitedBy,
+    required String inviteToken,
+  }) async {
+    try {
+      final response = await client
+          .from('workspace_members')
+          .insert({
+            'workspace_id': workspaceId,
+            'user_id': userId,
+            'email': email,
+            'role': role,
+            'status': 'pending',
+            'invited_by': invitedBy,
+            'invite_token': inviteToken,
+          })
+          .select()
+          .single();
+
+      AppLogger.info('Created invitation for: $email');
+      return response;
+    } catch (e) {
+      AppLogger.error('Failed to create invitation', e);
+      rethrow;
+    }
+  }
+
+  /// Create invitation by email (user doesn't exist yet)
+  Future<Map<String, dynamic>> createInvitationByEmail({
+    required String workspaceId,
+    required String email,
+    required String role,
+    required String invitedBy,
+    required String inviteToken,
+  }) async {
+    try {
+      final response = await client
+          .from('workspace_members')
+          .insert({
+            'workspace_id': workspaceId,
+            'user_id': '00000000-0000-0000-0000-000000000000',
+            'email': email,
+            'role': role,
+            'status': 'pending',
+            'invited_by': invitedBy,
+            'invite_token': inviteToken,
+          })
+          .select()
+          .single();
+
+      AppLogger.info('Created invitation for: $email');
+      return response;
+    } catch (e) {
+      AppLogger.error('Failed to create invitation by email', e);
+      rethrow;
+    }
+  }
+
+  /// Accept invitation
+  Future<Map<String, dynamic>> acceptInvitation({
+    required String inviteToken,
+    required String userId,
+    String? displayName,
+  }) async {
+    try {
+      final response = await client
+          .from('workspace_members')
+          .update({
+            'user_id': userId,
+            'display_name': displayName,
+            'status': 'active',
+            'joined_at': DateTime.now().toIso8601String(),
+          })
+          .eq('invite_token', inviteToken)
+          .eq('status', 'pending')
+          .select()
+          .single();
+
+      final workspaceId = response['workspace_id'];
+
+      await client.rpc('add_member_to_workspace', params: {
+        'p_workspace_id': workspaceId,
+        'p_user_id': userId,
+      });
+
+      AppLogger.info('Accepted invitation for user: $userId');
+      return response;
+    } catch (e) {
+      AppLogger.error('Failed to accept invitation', e);
+      rethrow;
+    }
+  }
+
+  /// Decline invitation
+  Future<void> declineInvitation(String inviteToken) async {
+    try {
+      await client
+          .from('workspace_members')
+          .delete()
+          .eq('invite_token', inviteToken)
+          .eq('status', 'pending');
+
+      AppLogger.info('Declined invitation');
+    } catch (e) {
+      AppLogger.error('Failed to decline invitation', e);
+      rethrow;
+    }
+  }
+
+  /// Update workspace member role
+  Future<void> updateMemberRole({
+    required String workspaceId,
+    required String userId,
+    required String role,
+  }) async {
+    try {
+      await client
+          .from('workspace_members')
+          .update({
+            'role': role,
+          })
+          .eq('workspace_id', workspaceId)
+          .eq('user_id', userId);
+
+      AppLogger.info('Updated member role for: $userId');
+    } catch (e) {
+      AppLogger.error('Failed to update member role', e);
+      rethrow;
+    }
+  }
+
+  /// Remove workspace member
+  Future<void> removeWorkspaceMember({
+    required String workspaceId,
+    required String userId,
+  }) async {
+    try {
+      await client
+          .from('workspace_members')
+          .delete()
+          .eq('workspace_id', workspaceId)
+          .eq('user_id', userId);
+
+      await client.rpc('remove_member_from_workspace', params: {
+        'p_workspace_id': workspaceId,
+        'p_user_id': userId,
+      });
+
+      AppLogger.info('Removed member: $userId');
+    } catch (e) {
+      AppLogger.error('Failed to remove member', e);
+      rethrow;
+    }
+  }
 }

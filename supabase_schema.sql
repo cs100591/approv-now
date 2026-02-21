@@ -252,6 +252,254 @@ CREATE INDEX idx_requests_created_at ON requests(created_at DESC);
 CREATE INDEX idx_requests_workspace_status ON requests(workspace_id, status);
 
 -- ============================================
+-- MEMBER GROUPS TABLE
+-- ============================================
+CREATE TABLE member_groups (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  color TEXT DEFAULT '#3B82F6',
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(workspace_id, name)
+);
+
+-- Enable RLS
+ALTER TABLE member_groups ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for member_groups
+CREATE POLICY "Users can view groups of their workspaces" ON member_groups
+  FOR SELECT USING (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+CREATE POLICY "Owners and admins can manage groups" ON member_groups
+  FOR ALL USING (
+    workspace_id IN (
+      SELECT id FROM workspaces WHERE auth.uid() = owner_id
+    )
+    OR
+    workspace_id IN (
+      SELECT workspace_id FROM workspace_members 
+      WHERE user_id = auth.uid() AND role = 'admin' AND status = 'active'
+    )
+  );
+
+-- Indexes
+CREATE INDEX idx_member_groups_workspace_id ON member_groups(workspace_id);
+CREATE INDEX idx_member_groups_created_at ON member_groups(created_at DESC);
+
+-- ============================================
+-- GROUP MEMBERS TABLE (Junction table)
+-- ============================================
+CREATE TABLE group_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  group_id UUID NOT NULL REFERENCES member_groups(id) ON DELETE CASCADE,
+  workspace_member_id UUID NOT NULL REFERENCES workspace_members(id) ON DELETE CASCADE,
+  added_by UUID REFERENCES auth.users(id),
+  added_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(group_id, workspace_member_id)
+);
+
+-- Enable RLS
+ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for group_members
+CREATE POLICY "Users can view group members of their workspaces" ON group_members
+  FOR SELECT USING (
+    group_id IN (
+      SELECT mg.id FROM member_groups mg
+      JOIN workspaces w ON mg.workspace_id = w.id
+      WHERE auth.uid() = w.owner_id OR auth.uid() = ANY(w.member_ids)
+    )
+  );
+
+CREATE POLICY "Owners and admins can manage group members" ON group_members
+  FOR ALL USING (
+    group_id IN (
+      SELECT mg.id FROM member_groups mg
+      JOIN workspaces w ON mg.workspace_id = w.id
+      WHERE auth.uid() = w.owner_id
+      OR EXISTS (
+        SELECT 1 FROM workspace_members wm
+        WHERE wm.workspace_id = w.id 
+        AND wm.user_id = auth.uid() 
+        AND wm.role = 'admin' 
+        AND wm.status = 'active'
+      )
+    )
+  );
+
+-- Indexes
+CREATE INDEX idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX idx_group_members_workspace_member_id ON group_members(workspace_member_id);
+
+-- ============================================
+-- NOTIFICATIONS TABLE (Persistent)
+-- ============================================
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN (
+    'workspace_invitation',
+    'invitation_accepted',
+    'invitation_declined',
+    'pending_request',
+    'request_approved',
+    'request_rejected',
+    'request_revision',
+    'member_added',
+    'member_removed',
+    'mention'
+  )),
+  title TEXT NOT NULL,
+  message TEXT,
+  data JSONB DEFAULT '{}',
+  action_type TEXT CHECK (action_type IN ('accept_invitation', 'decline_invitation', 'view_request', 'view_workspace', 'none')),
+  action_data JSONB DEFAULT '{}',
+  is_read BOOLEAN DEFAULT false,
+  is_dismissed BOOLEAN DEFAULT false,
+  read_at TIMESTAMPTZ,
+  dismissed_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days'),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for notifications
+CREATE POLICY "Users can view their own notifications" ON notifications
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own notifications" ON notifications
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "System can insert notifications" ON notifications
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Users can delete their own notifications" ON notifications
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Indexes for performance
+CREATE INDEX idx_notifications_user_unread ON notifications(user_id, created_at DESC) 
+  WHERE is_read = false AND is_dismissed = false;
+CREATE INDEX idx_notifications_user_all ON notifications(user_id, created_at DESC);
+CREATE INDEX idx_notifications_type ON notifications(type);
+CREATE INDEX idx_notifications_expires ON notifications(expires_at);
+CREATE INDEX idx_notifications_workspace_id ON notifications(workspace_id);
+
+-- ============================================
+-- TEMPLATE VISIBILITY TABLE
+-- ============================================
+CREATE TABLE template_visibility (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  template_id UUID NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
+  workspace_member_id UUID REFERENCES workspace_members(id) ON DELETE CASCADE,
+  member_group_id UUID REFERENCES member_groups(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT visibility_target_check CHECK (
+    (workspace_member_id IS NOT NULL AND member_group_id IS NULL) OR
+    (workspace_member_id IS NULL AND member_group_id IS NOT NULL)
+  ),
+  UNIQUE(template_id, workspace_member_id),
+  UNIQUE(template_id, member_group_id)
+);
+
+-- Enable RLS
+ALTER TABLE template_visibility ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for template_visibility
+CREATE POLICY "Users can view template visibility of their workspaces" ON template_visibility
+  FOR SELECT USING (
+    template_id IN (
+      SELECT t.id FROM templates t
+      JOIN workspaces w ON t.workspace_id = w.id
+      WHERE auth.uid() = w.owner_id OR auth.uid() = ANY(w.member_ids)
+    )
+  );
+
+CREATE POLICY "Users can manage template visibility in their workspaces" ON template_visibility
+  FOR ALL USING (
+    template_id IN (
+      SELECT t.id FROM templates t
+      JOIN workspaces w ON t.workspace_id = w.id
+      WHERE auth.uid() = w.owner_id OR auth.uid() = ANY(w.member_ids)
+    )
+  );
+
+-- Indexes
+CREATE INDEX idx_template_visibility_template_id ON template_visibility(template_id);
+CREATE INDEX idx_template_visibility_member_id ON template_visibility(workspace_member_id);
+CREATE INDEX idx_template_visibility_group_id ON template_visibility(member_group_id);
+
+-- Add visibility_type column to templates
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS visibility_type TEXT NOT NULL DEFAULT 'everyone'
+  CHECK (visibility_type IN ('everyone', 'specific_members', 'specific_groups'));
+
+-- Apply triggers for new tables
+CREATE TRIGGER update_member_groups_updated_at BEFORE UPDATE ON member_groups
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- RPC FUNCTIONS FOR WORKSPACE MEMBERS
+-- ============================================
+
+-- Function to add member to workspace member_ids array
+CREATE OR REPLACE FUNCTION add_member_to_workspace(
+  p_workspace_id UUID,
+  p_user_id UUID
+)
+RETURNS void AS $$
+BEGIN
+  UPDATE workspaces
+  SET member_ids = array_append(member_ids, p_user_id)
+  WHERE id = p_workspace_id
+    AND NOT (p_user_id = ANY(member_ids));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to remove member from workspace member_ids array
+CREATE OR REPLACE FUNCTION remove_member_from_workspace(
+  p_workspace_id UUID,
+  p_user_id UUID
+)
+RETURNS void AS $$
+BEGIN
+  UPDATE workspaces
+  SET member_ids = array_remove(member_ids, p_user_id)
+  WHERE id = p_workspace_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get workspaces owned by user
+CREATE OR REPLACE FUNCTION get_owned_workspaces(p_user_id UUID)
+RETURNS SETOF workspaces AS $$
+BEGIN
+  RETURN QUERY SELECT * FROM workspaces WHERE owner_id = p_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get workspaces user has joined (not owned)
+CREATE OR REPLACE FUNCTION get_joined_workspaces(p_user_id UUID)
+RETURNS SETOF workspaces AS $$
+BEGIN
+  RETURN QUERY SELECT * FROM workspaces 
+  WHERE p_user_id = ANY(member_ids) AND owner_id != p_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
 -- STORAGE BUCKETS
 -- ============================================
 -- Create storage buckets for file uploads

@@ -18,6 +18,7 @@ import 'modules/workspace/workspace_provider.dart';
 import 'modules/workspace/workspace_service.dart';
 import 'modules/workspace/workspace_repository.dart';
 import 'modules/workspace/workspace_ui/dashboard_screen.dart';
+import 'modules/workspace/group_provider.dart';
 
 // Template Module
 import 'modules/template/template_provider.dart';
@@ -116,6 +117,11 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
+        // Group Provider
+        ChangeNotifierProvider(
+          create: (_) => GroupProvider(),
+        ),
+
         // Template Provider
         ChangeNotifierProvider(
           create: (_) => TemplateProvider(
@@ -171,9 +177,7 @@ class MyApp extends StatelessWidget {
 
         // Notification Provider
         ChangeNotifierProvider(
-          create: (_) => NotificationProvider(
-            notificationService: NotificationService(),
-          ),
+          create: (_) => NotificationProvider(),
         ),
       ],
       child: MaterialApp(

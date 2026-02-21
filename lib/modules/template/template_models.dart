@@ -164,6 +164,13 @@ class ApprovalStep extends Equatable {
       [id, level, name, approvers, requireAll, condition];
 }
 
+/// Template visibility type
+enum TemplateVisibilityType {
+  everyone,
+  specificMembers,
+  specificGroups,
+}
+
 /// Template model representing an approval template
 class Template extends Equatable {
   final String id;
@@ -176,6 +183,9 @@ class Template extends Equatable {
   final String createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final TemplateVisibilityType visibilityType;
+  final List<String>? visibleMemberIds;
+  final List<String>? visibleGroupIds;
 
   const Template({
     required this.id,
@@ -188,6 +198,9 @@ class Template extends Equatable {
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
+    this.visibilityType = TemplateVisibilityType.everyone,
+    this.visibleMemberIds,
+    this.visibleGroupIds,
   });
 
   Template copyWith({
@@ -201,6 +214,9 @@ class Template extends Equatable {
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    TemplateVisibilityType? visibilityType,
+    List<String>? visibleMemberIds,
+    List<String>? visibleGroupIds,
   }) {
     return Template(
       id: id ?? this.id,
@@ -213,6 +229,9 @@ class Template extends Equatable {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      visibilityType: visibilityType ?? this.visibilityType,
+      visibleMemberIds: visibleMemberIds ?? this.visibleMemberIds,
+      visibleGroupIds: visibleGroupIds ?? this.visibleGroupIds,
     );
   }
 
@@ -227,6 +246,9 @@ class Template extends Equatable {
         'createdBy': createdBy,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
+        'visibilityType': visibilityType.name,
+        'visibleMemberIds': visibleMemberIds,
+        'visibleGroupIds': visibleGroupIds,
       };
 
   factory Template.fromJson(Map<String, dynamic> json) => Template(
@@ -246,7 +268,23 @@ class Template extends Equatable {
         createdBy: DataParser.parseString(json['createdBy']),
         createdAt: DataParser.parseDateTime(json['createdAt']),
         updatedAt: DataParser.parseDateTime(json['updatedAt']),
+        visibilityType:
+            _parseVisibilityType(json['visibilityType']?.toString()),
+        visibleMemberIds: json['visibleMemberIds'] != null
+            ? List<String>.from(json['visibleMemberIds'] as List)
+            : null,
+        visibleGroupIds: json['visibleGroupIds'] != null
+            ? List<String>.from(json['visibleGroupIds'] as List)
+            : null,
       );
+
+  static TemplateVisibilityType _parseVisibilityType(String? value) {
+    if (value == null) return TemplateVisibilityType.everyone;
+    return TemplateVisibilityType.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => TemplateVisibilityType.everyone,
+    );
+  }
 
   int get maxApprovalLevel => approvalSteps.isEmpty
       ? 0
@@ -264,6 +302,9 @@ class Template extends Equatable {
         createdBy,
         createdAt,
         updatedAt,
+        visibilityType,
+        visibleMemberIds,
+        visibleGroupIds,
       ];
 }
 
