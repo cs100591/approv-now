@@ -156,13 +156,15 @@ class AuthService {
   User _mapSupabaseUser(dynamic supabaseUser) {
     final metadata = supabaseUser.userMetadata ?? {};
     return User(
-      id: supabaseUser.id,
+      id: supabaseUser.id ?? '',
       email: supabaseUser.email ?? '',
       displayName: metadata['display_name'] as String?,
       photoUrl: metadata['photo_url'] as String?,
-      createdAt: DateTime.parse(supabaseUser.createdAt),
+      createdAt: supabaseUser.createdAt != null
+          ? DateTime.tryParse(supabaseUser.createdAt) ?? DateTime.now()
+          : DateTime.now(),
       lastLoginAt: supabaseUser.lastSignInAt != null
-          ? DateTime.parse(supabaseUser.lastSignInAt!)
+          ? DateTime.tryParse(supabaseUser.lastSignInAt!)
           : null,
     );
   }

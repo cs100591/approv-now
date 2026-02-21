@@ -67,14 +67,19 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final result = await _authService.signInWithEmailAndPassword(request);
-      if (!result.success) {
+      if (result.success && result.user != null) {
+        _state = AuthState(
+          status: AuthStatus.authenticated,
+          user: result.user,
+        );
+        notifyListeners();
+      } else {
         _state = AuthState(
           status: AuthStatus.error,
           errorMessage: result.error ?? 'Login failed',
         );
         notifyListeners();
       }
-      // On success, the auth state listener will update the state
     } catch (e) {
       _state = AuthState(
         status: AuthStatus.error,
