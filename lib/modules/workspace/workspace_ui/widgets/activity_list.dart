@@ -23,7 +23,7 @@ class ActivityList extends StatelessWidget {
             .toList()
           ..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
 
-        final pendingForMe = requestProvider.state.pendingRequests
+        final pendingForMe = requestProvider.state.pendingRequests.toList()
           ..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
 
         // Combine and take top 5
