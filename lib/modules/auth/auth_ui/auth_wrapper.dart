@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../auth_provider.dart';
 import '../auth_models.dart';
 import '../../workspace/workspace_provider.dart';
-import '../../../core/routing/route_names.dart';
+import 'login_screen.dart';
 import '../../../core/theme/app_colors.dart';
 
 class AuthWrapper extends StatefulWidget {
@@ -59,18 +59,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 _onAuthenticated();
               });
             }
-            // Pop login screen if it's on top
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            });
             return widget.child;
 
           case AuthStatus.unauthenticated:
           case AuthStatus.error:
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).pushReplacementNamed(RouteNames.login);
-            });
-            return const _LoadingScreen();
+            return const LoginScreen();
         }
       },
     );
@@ -116,13 +109,7 @@ class AuthGuard extends StatelessWidget {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         if (!authProvider.isAuthenticated) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              RouteNames.login,
-              (route) => false,
-            );
-          });
-          return const _LoadingScreen();
+          return const LoginScreen();
         }
         return child;
       },
