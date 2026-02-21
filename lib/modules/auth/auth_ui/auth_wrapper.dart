@@ -59,15 +59,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 _onAuthenticated();
               });
             }
+            // Pop login screen if it's on top
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            });
             return widget.child;
 
           case AuthStatus.unauthenticated:
           case AuthStatus.error:
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                RouteNames.login,
-                (route) => false,
-              );
+              Navigator.of(context).pushReplacementNamed(RouteNames.login);
             });
             return const _LoadingScreen();
         }
