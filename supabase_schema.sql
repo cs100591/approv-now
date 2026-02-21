@@ -22,12 +22,15 @@ CREATE TABLE IF NOT EXISTS profiles (
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for profiles
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 CREATE POLICY "Users can view own profile" ON profiles
   FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile" ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 CREATE POLICY "Users can insert own profile" ON profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
@@ -41,6 +44,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -69,24 +73,28 @@ CREATE TABLE IF NOT EXISTS workspaces (
 ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for workspaces
+DROP POLICY IF EXISTS "Users can view workspaces they own or are members of" ON workspaces;
 CREATE POLICY "Users can view workspaces they own or are members of" ON workspaces
   FOR SELECT USING (
     auth.uid() = owner_id OR 
     auth.uid() = ANY(member_ids)
   );
 
+DROP POLICY IF EXISTS "Users can create workspaces" ON workspaces;
 CREATE POLICY "Users can create workspaces" ON workspaces
   FOR INSERT WITH CHECK (auth.uid() = owner_id);
 
+DROP POLICY IF EXISTS "Owners can update workspaces" ON workspaces;
 CREATE POLICY "Owners can update workspaces" ON workspaces
   FOR UPDATE USING (auth.uid() = owner_id);
 
+DROP POLICY IF EXISTS "Owners can delete workspaces" ON workspaces;
 CREATE POLICY "Owners can delete workspaces" ON workspaces
   FOR DELETE USING (auth.uid() = owner_id);
 
 -- Index for workspace queries
-CREATE INDEX idx_workspaces_owner_id ON workspaces(owner_id);
-CREATE INDEX idx_workspaces_member_ids ON workspaces USING GIN(member_ids);
+CREATE INDEX IF NOT EXISTS idx_workspaces_owner_id ON workspaces(owner_id);
+CREATE INDEX IF NOT EXISTS idx_workspaces_member_ids ON workspaces USING GIN(member_ids);
 
 -- ============================================
 -- WORKSPACE MEMBERS TABLE (Detailed member info)
@@ -111,6 +119,7 @@ CREATE TABLE IF NOT EXISTS workspace_members (
 ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for workspace_members
+DROP POLICY IF EXISTS "Users can view members of their workspaces" ON workspace_members;
 CREATE POLICY "Users can view members of their workspaces" ON workspace_members
   FOR SELECT USING (
     workspace_id IN (
@@ -119,14 +128,15 @@ CREATE POLICY "Users can view members of their workspaces" ON workspace_members
     )
   );
 
+DROP POLICY IF EXISTS "Workspace owners can manage members" ON workspace_members;
 CREATE POLICY "Workspace owners can manage members" ON workspace_members
   FOR ALL USING (
     workspace_id IN (SELECT id FROM workspaces WHERE auth.uid() = owner_id)
   );
 
 -- Indexes
-CREATE INDEX idx_workspace_members_workspace_id ON workspace_members(workspace_id);
-CREATE INDEX idx_workspace_members_user_id ON workspace_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_members_workspace_id ON workspace_members(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_members_user_id ON workspace_members(user_id);
 
 -- ============================================
 -- TEMPLATES TABLE
@@ -139,6 +149,8 @@ CREATE TABLE IF NOT EXISTS templates (
   fields JSONB DEFAULT '[]',
   approval_steps JSONB DEFAULT '[]',
   is_active BOOLEAN DEFAULT true,
+  visibility_type TEXT NOT NULL DEFAULT 'everyone'
+    CHECK (visibility_type IN ('everyone', 'specific_members', 'specific_groups')),
   created_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -148,6 +160,7 @@ CREATE TABLE IF NOT EXISTS templates (
 ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for templates
+DROP POLICY IF EXISTS "Users can view templates of their workspaces" ON templates;
 CREATE POLICY "Users can view templates of their workspaces" ON templates
   FOR SELECT USING (
     workspace_id IN (
@@ -156,6 +169,7 @@ CREATE POLICY "Users can view templates of their workspaces" ON templates
     )
   );
 
+DROP POLICY IF EXISTS "Users can create templates in their workspaces" ON templates;
 CREATE POLICY "Users can create templates in their workspaces" ON templates
   FOR INSERT WITH CHECK (
     workspace_id IN (
@@ -164,6 +178,7 @@ CREATE POLICY "Users can create templates in their workspaces" ON templates
     )
   );
 
+DROP POLICY IF EXISTS "Users can update templates in their workspaces" ON templates;
 CREATE POLICY "Users can update templates in their workspaces" ON templates
   FOR UPDATE USING (
     workspace_id IN (
@@ -172,6 +187,7 @@ CREATE POLICY "Users can update templates in their workspaces" ON templates
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete templates in their workspaces" ON templates;
 CREATE POLICY "Users can delete templates in their workspaces" ON templates
   FOR DELETE USING (
     workspace_id IN (
@@ -181,9 +197,9 @@ CREATE POLICY "Users can delete templates in their workspaces" ON templates
   );
 
 -- Indexes
-CREATE INDEX idx_templates_workspace_id ON templates(workspace_id);
-CREATE INDEX idx_templates_is_active ON templates(is_active);
-CREATE INDEX idx_templates_created_at ON templates(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_templates_workspace_id ON templates(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_templates_is_active ON templates(is_active);
+CREATE INDEX IF NOT EXISTS idx_templates_created_at ON templates(created_at DESC);
 
 -- ============================================
 -- REQUESTS TABLE
@@ -209,6 +225,7 @@ CREATE TABLE IF NOT EXISTS requests (
 ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for requests
+DROP POLICY IF EXISTS "Users can view requests of their workspaces" ON requests;
 CREATE POLICY "Users can view requests of their workspaces" ON requests
   FOR SELECT USING (
     workspace_id IN (
@@ -217,6 +234,7 @@ CREATE POLICY "Users can view requests of their workspaces" ON requests
     )
   );
 
+DROP POLICY IF EXISTS "Users can create requests in their workspaces" ON requests;
 CREATE POLICY "Users can create requests in their workspaces" ON requests
   FOR INSERT WITH CHECK (
     workspace_id IN (
@@ -225,6 +243,7 @@ CREATE POLICY "Users can create requests in their workspaces" ON requests
     )
   );
 
+DROP POLICY IF EXISTS "Users can update requests in their workspaces" ON requests;
 CREATE POLICY "Users can update requests in their workspaces" ON requests
   FOR UPDATE USING (
     workspace_id IN (
@@ -233,6 +252,7 @@ CREATE POLICY "Users can update requests in their workspaces" ON requests
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete requests in their workspaces" ON requests;
 CREATE POLICY "Users can delete requests in their workspaces" ON requests
   FOR DELETE USING (
     workspace_id IN (
@@ -242,14 +262,14 @@ CREATE POLICY "Users can delete requests in their workspaces" ON requests
   );
 
 -- Indexes
-CREATE INDEX idx_requests_workspace_id ON requests(workspace_id);
-CREATE INDEX idx_requests_status ON requests(status);
-CREATE INDEX idx_requests_submitted_by ON requests(submitted_by);
-CREATE INDEX idx_requests_current_approver_ids ON requests USING GIN(current_approver_ids);
-CREATE INDEX idx_requests_created_at ON requests(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_requests_workspace_id ON requests(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
+CREATE INDEX IF NOT EXISTS idx_requests_submitted_by ON requests(submitted_by);
+CREATE INDEX IF NOT EXISTS idx_requests_current_approver_ids ON requests USING GIN(current_approver_ids);
+CREATE INDEX IF NOT EXISTS idx_requests_created_at ON requests(created_at DESC);
 
 -- Composite index for common query pattern
-CREATE INDEX idx_requests_workspace_status ON requests(workspace_id, status);
+CREATE INDEX IF NOT EXISTS idx_requests_workspace_status ON requests(workspace_id, status);
 
 -- ============================================
 -- MEMBER GROUPS TABLE
@@ -270,6 +290,7 @@ CREATE TABLE IF NOT EXISTS member_groups (
 ALTER TABLE member_groups ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for member_groups
+DROP POLICY IF EXISTS "Users can view groups of their workspaces" ON member_groups;
 CREATE POLICY "Users can view groups of their workspaces" ON member_groups
   FOR SELECT USING (
     workspace_id IN (
@@ -278,6 +299,7 @@ CREATE POLICY "Users can view groups of their workspaces" ON member_groups
     )
   );
 
+DROP POLICY IF EXISTS "Owners and admins can manage groups" ON member_groups;
 CREATE POLICY "Owners and admins can manage groups" ON member_groups
   FOR ALL USING (
     workspace_id IN (
@@ -291,8 +313,8 @@ CREATE POLICY "Owners and admins can manage groups" ON member_groups
   );
 
 -- Indexes
-CREATE INDEX idx_member_groups_workspace_id ON member_groups(workspace_id);
-CREATE INDEX idx_member_groups_created_at ON member_groups(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_member_groups_workspace_id ON member_groups(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_member_groups_created_at ON member_groups(created_at DESC);
 
 -- ============================================
 -- GROUP MEMBERS TABLE (Junction table)
@@ -310,6 +332,7 @@ CREATE TABLE IF NOT EXISTS group_members (
 ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for group_members
+DROP POLICY IF EXISTS "Users can view group members of their workspaces" ON group_members;
 CREATE POLICY "Users can view group members of their workspaces" ON group_members
   FOR SELECT USING (
     group_id IN (
@@ -319,6 +342,7 @@ CREATE POLICY "Users can view group members of their workspaces" ON group_member
     )
   );
 
+DROP POLICY IF EXISTS "Owners and admins can manage group members" ON group_members;
 CREATE POLICY "Owners and admins can manage group members" ON group_members
   FOR ALL USING (
     group_id IN (
@@ -336,8 +360,8 @@ CREATE POLICY "Owners and admins can manage group members" ON group_members
   );
 
 -- Indexes
-CREATE INDEX idx_group_members_group_id ON group_members(group_id);
-CREATE INDEX idx_group_members_workspace_member_id ON group_members(workspace_member_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_workspace_member_id ON group_members(workspace_member_id);
 
 -- ============================================
 -- NOTIFICATIONS TABLE (Persistent)
@@ -376,25 +400,29 @@ CREATE TABLE IF NOT EXISTS notifications (
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for notifications
+DROP POLICY IF EXISTS "Users can view their own notifications" ON notifications;
 CREATE POLICY "Users can view their own notifications" ON notifications
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
 CREATE POLICY "Users can update their own notifications" ON notifications
   FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "System can insert notifications" ON notifications;
 CREATE POLICY "System can insert notifications" ON notifications
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Users can delete their own notifications" ON notifications;
 CREATE POLICY "Users can delete their own notifications" ON notifications
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Indexes for performance
-CREATE INDEX idx_notifications_user_unread ON notifications(user_id, created_at DESC) 
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, created_at DESC) 
   WHERE is_read = false AND is_dismissed = false;
-CREATE INDEX idx_notifications_user_all ON notifications(user_id, created_at DESC);
-CREATE INDEX idx_notifications_type ON notifications(type);
-CREATE INDEX idx_notifications_expires ON notifications(expires_at);
-CREATE INDEX idx_notifications_workspace_id ON notifications(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_all ON notifications(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
+CREATE INDEX IF NOT EXISTS idx_notifications_expires ON notifications(expires_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_workspace_id ON notifications(workspace_id);
 
 -- ============================================
 -- TEMPLATE VISIBILITY TABLE
@@ -417,6 +445,7 @@ CREATE TABLE IF NOT EXISTS template_visibility (
 ALTER TABLE template_visibility ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for template_visibility
+DROP POLICY IF EXISTS "Users can view template visibility of their workspaces" ON template_visibility;
 CREATE POLICY "Users can view template visibility of their workspaces" ON template_visibility
   FOR SELECT USING (
     template_id IN (
@@ -426,6 +455,7 @@ CREATE POLICY "Users can view template visibility of their workspaces" ON templa
     )
   );
 
+DROP POLICY IF EXISTS "Users can manage template visibility in their workspaces" ON template_visibility;
 CREATE POLICY "Users can manage template visibility in their workspaces" ON template_visibility
   FOR ALL USING (
     template_id IN (
@@ -436,18 +466,45 @@ CREATE POLICY "Users can manage template visibility in their workspaces" ON temp
   );
 
 -- Indexes
-CREATE INDEX idx_template_visibility_template_id ON template_visibility(template_id);
-CREATE INDEX idx_template_visibility_member_id ON template_visibility(workspace_member_id);
-CREATE INDEX idx_template_visibility_group_id ON template_visibility(member_group_id);
+CREATE INDEX IF NOT EXISTS idx_template_visibility_template_id ON template_visibility(template_id);
+CREATE INDEX IF NOT EXISTS idx_template_visibility_member_id ON template_visibility(workspace_member_id);
+CREATE INDEX IF NOT EXISTS idx_template_visibility_group_id ON template_visibility(member_group_id);
 
--- Add visibility_type column to templates
-ALTER TABLE templates ADD COLUMN IF NOT EXISTS visibility_type TEXT NOT NULL DEFAULT 'everyone'
-  CHECK (visibility_type IN ('everyone', 'specific_members', 'specific_groups'));
+-- ============================================
+-- FUNCTIONS AND TRIGGERS
+-- ============================================
 
--- Apply triggers for new tables
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Apply triggers for updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_workspaces_updated_at ON workspaces;
+CREATE TRIGGER update_workspaces_updated_at BEFORE UPDATE ON workspaces
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_templates_updated_at ON templates;
+CREATE TRIGGER update_templates_updated_at BEFORE UPDATE ON templates
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_requests_updated_at ON requests;
+CREATE TRIGGER update_requests_updated_at BEFORE UPDATE ON requests
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_member_groups_updated_at ON member_groups;
 CREATE TRIGGER update_member_groups_updated_at BEFORE UPDATE ON member_groups
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_notifications_updated_at ON notifications;
 CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -502,17 +559,24 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================
 -- STORAGE BUCKETS
 -- ============================================
--- Create storage buckets for file uploads
-INSERT INTO storage.buckets (id, name, public) VALUES ('attachments', 'attachments', false);
-INSERT INTO storage.buckets (id, name, public) VALUES ('logos', 'logos', false);
+-- Create storage buckets for file uploads (use INSERT with ON CONFLICT for idempotency)
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('attachments', 'attachments', false)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('logos', 'logos', false)
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for attachments
+DROP POLICY IF EXISTS "Users can upload attachments to their workspaces" ON storage.objects;
 CREATE POLICY "Users can upload attachments to their workspaces"
   ON storage.objects FOR INSERT WITH CHECK (
     bucket_id = 'attachments' AND
     auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "Users can view attachments from their workspaces" ON storage.objects;
 CREATE POLICY "Users can view attachments from their workspaces"
   ON storage.objects FOR SELECT USING (
     bucket_id = 'attachments' AND
@@ -520,40 +584,16 @@ CREATE POLICY "Users can view attachments from their workspaces"
   );
 
 -- Storage policies for logos
+DROP POLICY IF EXISTS "Users can upload logos" ON storage.objects;
 CREATE POLICY "Users can upload logos"
   ON storage.objects FOR INSERT WITH CHECK (
     bucket_id = 'logos' AND
     auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "Users can view logos" ON storage.objects;
 CREATE POLICY "Users can view logos"
   ON storage.objects FOR SELECT USING (bucket_id = 'logos');
-
--- ============================================
--- FUNCTIONS AND TRIGGERS
--- ============================================
-
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Apply triggers for updated_at
-CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_workspaces_updated_at BEFORE UPDATE ON workspaces
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_templates_updated_at BEFORE UPDATE ON templates
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_requests_updated_at BEFORE UPDATE ON requests
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
 -- DONE! 
