@@ -314,21 +314,31 @@ class WorkspaceProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final member = await _workspaceService.inviteMember(
-        workspaceId: _state.currentWorkspace!.id,
+      final currentWorkspace = _state.currentWorkspace!;
+      final inviteToken = _generateInviteToken();
+
+      await SupabaseService().createInvitationByEmail(
+        workspaceId: currentWorkspace.id,
+        email: email,
+        role: role.name,
+        invitedBy: _currentUserId!,
+        inviteToken: inviteToken,
+      );
+
+      final member = WorkspaceMember(
+        userId: email,
         email: email,
         role: role,
+        status: MemberStatus.pending,
+        invitedAt: DateTime.now(),
         invitedBy: _currentUserId!,
+        inviteToken: inviteToken,
       );
 
-      // Update workspace in Firestore with new member
-      final updatedWorkspace = _state.currentWorkspace!.copyWith(
-        members: [..._state.currentWorkspace!.members, member],
+      final updatedWorkspace = currentWorkspace.copyWith(
+        members: [...currentWorkspace.members, member],
       );
 
-      await _workspaceRepository.updateWorkspace(updatedWorkspace);
-
-      // Update local state
       final workspaces = _state.workspaces
           .map((w) => w.id == updatedWorkspace.id ? updatedWorkspace : w)
           .toList();
@@ -336,6 +346,13 @@ class WorkspaceProvider extends ChangeNotifier {
       _state = _state.copyWith(
         workspaces: workspaces,
         currentWorkspace: updatedWorkspace,
+      );
+
+      _createInvitationNotification(
+        email: email,
+        workspaceId: currentWorkspace.id,
+        workspaceName: currentWorkspace.name,
+        inviteToken: inviteToken,
       );
 
       AppLogger.info('Invited member: $email');
@@ -347,6 +364,66 @@ class WorkspaceProvider extends ChangeNotifier {
       return null;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  String _generateInviteToken() {
+    return DateTime.now().millisecondsSinceEpoch.toString() +
+        (_currentUserId?.hashCode ?? 0).toString();
+  }
+
+  void _createInvitationNotification({
+    required String email,
+    required String workspaceId,
+    required String workspaceName,
+    required String inviteToken,
+  }) async {
+    try {
+      final response = await SupabaseService()
+          .client
+          .from('profiles')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+
+      if (response != null) {
+        final invitedUserId = response['id'].toString();
+        final inviterName = _state.currentWorkspace?.members
+                .firstWhere(
+                  (m) => m.userId == _currentUserId,
+                  orElse: () => WorkspaceMember(
+                    userId: _currentUserId!,
+                    email: '',
+                    role: WorkspaceRole.owner,
+                    status: MemberStatus.active,
+                    invitedAt: DateTime.now(),
+                    invitedBy: '',
+                  ),
+                )
+                .displayName ??
+            'Someone';
+
+        await SupabaseService().client.from('notifications').insert({
+          'user_id': invitedUserId,
+          'workspace_id': workspaceId,
+          'type': 'workspace_invitation',
+          'title': 'Workspace Invitation',
+          'message': '$inviterName invited you to join "$workspaceName"',
+          'data': {
+            'workspace_name': workspaceName,
+            'inviter_name': inviterName,
+          },
+          'action_type': 'accept_invitation',
+          'action_data': {
+            'invitation_token': inviteToken,
+            'workspace_id': workspaceId,
+          },
+        });
+
+        AppLogger.info('Created invitation notification for: $email');
+      }
+    } catch (e) {
+      AppLogger.error('Error creating invitation notification', e);
     }
   }
 

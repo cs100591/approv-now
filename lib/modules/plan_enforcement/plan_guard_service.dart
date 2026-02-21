@@ -1,5 +1,6 @@
 import 'dart:math';
 import '../subscription/subscription_models.dart';
+import '../workspace/workspace_models.dart';
 
 /// PlanGuardService - Enforces plan limits before actions
 class PlanGuardService {
@@ -22,12 +23,55 @@ class PlanGuardService {
   }
 
   /// Check if user can create workspace
+  /// Note: This counts only OWNED workspaces, not joined workspaces
   static bool canCreateWorkspace({
     required PlanType currentPlan,
     required int currentWorkspaceCount,
   }) {
     final entitlements = PlanEntitlements.forPlan(currentPlan);
     return currentWorkspaceCount < entitlements.maxWorkspaces;
+  }
+
+  /// Check if user can create workspace (from workspace list)
+  /// Only counts workspaces where user is the owner
+  static bool canCreateWorkspaceFromList({
+    required PlanType currentPlan,
+    required List<Workspace> workspaces,
+    required String userId,
+  }) {
+    final ownedCount = workspaces.where((w) => w.ownerId == userId).length;
+    return canCreateWorkspace(
+      currentPlan: currentPlan,
+      currentWorkspaceCount: ownedCount,
+    );
+  }
+
+  /// Check if user can join a workspace (always allowed - no limit on joined workspaces)
+  static bool canJoinWorkspace() {
+    // Users can join unlimited workspaces via invitation
+    return true;
+  }
+
+  /// Count owned workspaces
+  static int countOwnedWorkspaces(List<Workspace> workspaces, String userId) {
+    return workspaces.where((w) => w.ownerId == userId).length;
+  }
+
+  /// Count joined workspaces (not owned)
+  static int countJoinedWorkspaces(List<Workspace> workspaces, String userId) {
+    return workspaces.where((w) => w.ownerId != userId).length;
+  }
+
+  /// Get owned workspaces
+  static List<Workspace> getOwnedWorkspaces(
+      List<Workspace> workspaces, String userId) {
+    return workspaces.where((w) => w.ownerId == userId).toList();
+  }
+
+  /// Get joined workspaces (not owned)
+  static List<Workspace> getJoinedWorkspaces(
+      List<Workspace> workspaces, String userId) {
+    return workspaces.where((w) => w.ownerId != userId).toList();
   }
 
   /// Check if user can invite team member
