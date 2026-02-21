@@ -48,7 +48,16 @@ class WorkspaceRepository {
   Future<List<Workspace>> getWorkspacesForUser(String userId) async {
     try {
       final workspaces = await _supabase.getWorkspaces();
-      return workspaces.map(_mapToWorkspace).toList();
+      final result = <Workspace>[];
+
+      for (final ws in workspaces) {
+        final workspace = _mapToWorkspace(ws);
+        // Load members from workspace_members table
+        final members = await getMembers(workspace.id);
+        result.add(workspace.copyWith(members: members));
+      }
+
+      return result;
     } catch (e) {
       AppLogger.error('Error getting workspaces for user', e);
       rethrow;

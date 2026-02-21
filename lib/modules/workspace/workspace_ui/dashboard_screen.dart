@@ -13,6 +13,7 @@ import '../../subscription/plan_upgrade_dialog.dart';
 import '../../plan_enforcement/plan_guard_service.dart';
 import '../../template/template_provider.dart';
 import '../../notification/notification_ui/notification_badge.dart';
+import '../../notification/notification_provider.dart';
 import '../workspace_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -38,11 +39,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _initializeDashboard() async {
     final workspaceProvider = context.read<WorkspaceProvider>();
     final authProvider = context.read<AuthProvider>();
+    final notificationProvider = context.read<NotificationProvider>();
 
     final user = authProvider.user;
     if (user == null) return;
 
     workspaceProvider.setCurrentUser(user.id);
+    notificationProvider.initialize(user.id);
 
     await Future.delayed(const Duration(milliseconds: 500));
 
