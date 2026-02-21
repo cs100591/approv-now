@@ -5,6 +5,7 @@ import '../auth_models.dart';
 import '../../workspace/workspace_provider.dart';
 import 'login_screen.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_logger.dart';
 
 class AuthWrapper extends StatefulWidget {
   final Widget child;
@@ -46,6 +47,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final status = authProvider.state.status;
+        final user = authProvider.user;
+
+        AppLogger.info(
+            'AuthWrapper building - status: $status, user: ${user?.email ?? "null"}');
 
         switch (status) {
           case AuthStatus.initial:
@@ -59,10 +64,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 _onAuthenticated();
               });
             }
+            AppLogger.info('AuthWrapper returning Dashboard (authenticated)');
             return widget.child;
 
           case AuthStatus.unauthenticated:
           case AuthStatus.error:
+            AppLogger.info(
+                'AuthWrapper returning LoginScreen (unauthenticated/error)');
             return const LoginScreen();
         }
       },
