@@ -47,9 +47,9 @@ class RequestProvider extends ChangeNotifier {
     _currentApproverId = approverId;
     _cancelSubscriptions();
 
-    if (workspaceId != null) {
+    if (workspaceId != null && workspaceId.isNotEmpty) {
       _subscribeToRequests(workspaceId);
-      if (approverId != null) {
+      if (approverId != null && approverId.isNotEmpty) {
         _subscribeToPendingRequests(workspaceId, approverId);
       }
     } else {

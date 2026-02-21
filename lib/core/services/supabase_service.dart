@@ -378,7 +378,10 @@ class SupabaseService {
   Future<List<Map<String, dynamic>>> getPendingRequests(
       String workspaceId) async {
     final userId = currentUserId;
-    if (userId == null) throw StateError('User not authenticated');
+    if (userId == null) {
+      AppLogger.warning('getPendingRequests called without authenticated user');
+      return [];
+    }
 
     try {
       final response = await client
@@ -391,8 +394,10 @@ class SupabaseService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      AppLogger.error('Failed to get pending requests', e);
-      rethrow;
+      AppLogger.error(
+          'Failed to get pending requests for workspace $workspaceId', e);
+      // Return empty list instead of throwing to prevent UI errors
+      return [];
     }
   }
 
