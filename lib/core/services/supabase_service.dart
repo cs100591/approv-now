@@ -816,13 +816,44 @@ class SupabaseService {
   /// Validate invite code (check if valid and not expired)
   Future<Map<String, dynamic>?> validateInviteCode(String code) async {
     try {
+      // First, just get the invite code without filtering by expiration
       final response = await client
           .from('workspace_invite_codes')
           .select('*, workspace:workspaces!inner(name)')
           .eq('code', code)
-          .gt('expires_at', DateTime.now().toIso8601String())
           .maybeSingle();
 
+      if (response == null) {
+        AppLogger.info('Invite code not found: $code');
+        return null;
+      }
+
+      // Check expiration manually
+      final expiresAtStr = response['expires_at'] as String?;
+      if (expiresAtStr == null) {
+        AppLogger.info('Invite code has no expiration date: $code');
+        return null;
+      }
+
+      final expiresAt = DateTime.tryParse(expiresAtStr);
+      if (expiresAt == null) {
+        AppLogger.info('Invalid expiration date format: $expiresAtStr');
+        return null;
+      }
+
+      // Use UTC comparison
+      final now = DateTime.now().toUtc();
+      final expiresAtUtc = expiresAt.toUtc();
+
+      AppLogger.info(
+          'Checking invite code: $code, expires: $expiresAtUtc, now: $now');
+
+      if (expiresAtUtc.isBefore(now)) {
+        AppLogger.info('Invite code expired: $code (expired at $expiresAtUtc)');
+        return null;
+      }
+
+      AppLogger.info('Invite code valid: $code');
       return response;
     } catch (e) {
       AppLogger.error('Failed to validate invite code', e);
