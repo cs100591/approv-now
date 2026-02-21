@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -67,12 +68,20 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (success && mounted) {
-        final shouldEnable = await _showBiometricPrompt();
-        if (shouldEnable == true) {
-          await _biometricService.enableBiometric(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+        // Only show biometric prompt on mobile platforms
+        if (!kIsWeb) {
+          try {
+            final shouldEnable = await _showBiometricPrompt();
+            if (shouldEnable == true) {
+              await _biometricService.enableBiometric(
+                email: _emailController.text.trim(),
+                password: _passwordController.text,
+              );
+            }
+          } catch (e) {
+            // Biometric not available on this platform, ignore
+            debugPrint('Biometric setup skipped: $e');
+          }
         }
         // AuthWrapper will handle navigation based on auth state
       }
