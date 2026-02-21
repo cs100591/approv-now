@@ -607,7 +607,7 @@ CREATE OR REPLACE FUNCTION use_invite_code(
   p_user_id UUID,
   p_display_name TEXT DEFAULT NULL
 )
-RETURNS TABLE(workspace_id UUID, workspace_name TEXT, role TEXT) AS $$
+RETURNS JSON AS $$
 DECLARE
   v_invite_record RECORD;
   v_workspace_record RECORD;
@@ -672,11 +672,12 @@ BEGIN
   SET used_count = used_count + 1
   WHERE id = v_invite_record.id;
   
-  -- Return workspace info
-  RETURN QUERY SELECT 
-    v_workspace_record.id,
-    v_workspace_record.name,
-    'viewer'::TEXT;
+  -- Return workspace info as JSON
+  RETURN json_build_object(
+    'workspace_id', v_workspace_record.id,
+    'workspace_name', v_workspace_record.name,
+    'role', 'viewer'
+  );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

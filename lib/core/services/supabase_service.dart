@@ -805,7 +805,8 @@ class SupabaseService {
       );
 
       AppLogger.info('User $userId joined workspace using code: $code');
-      return response;
+      // Response is now a JSON object
+      return response as Map<String, dynamic>;
     } catch (e) {
       AppLogger.error('Failed to use invite code', e);
       rethrow;
@@ -817,7 +818,7 @@ class SupabaseService {
     try {
       final response = await client
           .from('workspace_invite_codes')
-          .select('*, workspaces(name)')
+          .select('*, workspace:workspaces!inner(name)')
           .eq('code', code)
           .gt('expires_at', DateTime.now().toIso8601String())
           .maybeSingle();

@@ -101,7 +101,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
       if (mounted) {
         if (success) {
           final workspaceName =
-              (_validatedWorkspace?['workspaces'] as Map<String, dynamic>?)
+              (_validatedWorkspace?['workspace'] as Map<String, dynamic>?)
                       ?.cast<String, dynamic>()['name'] as String? ??
                   'Workspace';
           ScaffoldMessenger.of(context).showSnackBar(
@@ -308,7 +308,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               Text(
-                                (_validatedWorkspace?['workspaces']
+                                (_validatedWorkspace?['workspace']
                                                 as Map<String, dynamic>?)
                                             ?.cast<String, dynamic>()['name']
                                         as String? ??
