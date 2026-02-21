@@ -133,7 +133,6 @@ class MyApp extends StatelessWidget {
         // Request Provider
         ChangeNotifierProvider(
           create: (_) => RequestProvider(
-            requestService: RequestService(),
             requestRepository: RequestRepository(),
           ),
         ),

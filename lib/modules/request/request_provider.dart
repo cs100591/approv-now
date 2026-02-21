@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../approval_engine/approval_engine_service.dart';
 import '../template/template_models.dart';
 import 'request_models.dart';
-import 'request_service.dart';
 import 'request_repository.dart';
 import '../../core/utils/app_logger.dart';
 
 class RequestProvider extends ChangeNotifier {
-  final RequestService _requestService;
   final RequestRepository _requestRepository;
+  final ApprovalEngineService _approvalEngine;
 
   RequestState _state = const RequestState();
   StreamSubscription<List<ApprovalRequest>>? _requestsSubscription;
@@ -17,10 +17,10 @@ class RequestProvider extends ChangeNotifier {
   String? _currentApproverId;
 
   RequestProvider({
-    required RequestService requestService,
     required RequestRepository requestRepository,
-  })  : _requestService = requestService,
-        _requestRepository = requestRepository {
+    ApprovalEngineService? approvalEngine,
+  })  : _requestRepository = requestRepository,
+        _approvalEngine = approvalEngine ?? ApprovalEngineService() {
     _initialize();
   }
 
@@ -58,24 +58,15 @@ class RequestProvider extends ChangeNotifier {
     }
   }
 
-  void _cancelSubscriptions() {
-    _requestsSubscription?.cancel();
-    _pendingRequestsSubscription?.cancel();
-    _requestsSubscription = null;
-    _pendingRequestsSubscription = null;
-  }
-
   void _subscribeToRequests(String workspaceId) {
     _requestsSubscription =
         _requestRepository.streamRequestsByWorkspace(workspaceId).listen(
       (requests) {
         _state = _state.copyWith(requests: requests);
         notifyListeners();
-        AppLogger.info(
-            'Loaded ${requests.length} requests for workspace: $workspaceId');
       },
       onError: (error) {
-        AppLogger.error('Error loading requests', error);
+        AppLogger.error('Error streaming requests', error);
         _state = _state.copyWith(error: error.toString());
         notifyListeners();
       },
@@ -86,81 +77,56 @@ class RequestProvider extends ChangeNotifier {
     _pendingRequestsSubscription = _requestRepository
         .streamPendingRequestsForApprover(workspaceId, approverId)
         .listen(
-      (pendingRequests) {
+      (requests) {
         _state = _state.copyWith(
-          pendingRequests: pendingRequests,
-          pendingCount: pendingRequests.length,
+          pendingRequests: requests,
+          pendingCount: requests.length,
         );
         notifyListeners();
-        AppLogger.info('Loaded ${pendingRequests.length} pending requests');
       },
       onError: (error) {
-        AppLogger.error('Error loading pending requests', error);
+        AppLogger.error('Error streaming pending requests', error);
       },
     );
   }
 
-  /// Load requests for workspace (manual refresh)
+  void _cancelSubscriptions() {
+    _requestsSubscription?.cancel();
+    _requestsSubscription = null;
+    _pendingRequestsSubscription?.cancel();
+    _pendingRequestsSubscription = null;
+  }
+
+  /// Load requests for current workspace
   Future<void> loadRequests() async {
-    if (_currentWorkspaceId == null) {
-      AppLogger.warning('Cannot load requests: no workspace selected');
-      return;
-    }
+    if (_currentWorkspaceId == null) return;
 
     _setLoading(true);
 
     try {
       final requests =
           await _requestRepository.getRequestsByWorkspace(_currentWorkspaceId!);
-      _state = _state.copyWith(requests: requests);
-      AppLogger.info('Manually loaded ${requests.length} requests');
+
+      List<ApprovalRequest>? pendingRequests;
+      if (_currentApproverId != null) {
+        pendingRequests =
+            await _requestRepository.getPendingRequestsForApprover(
+          _currentWorkspaceId!,
+          _currentApproverId!,
+        );
+      }
+
+      _state = _state.copyWith(
+        requests: requests,
+        pendingRequests: pendingRequests ?? _state.pendingRequests,
+        pendingCount: pendingRequests?.length ?? _state.pendingCount,
+      );
     } catch (e) {
       AppLogger.error('Error loading requests', e);
       _state = _state.copyWith(error: e.toString());
+    } finally {
+      _setLoading(false);
     }
-
-    _setLoading(false);
-  }
-
-  Future<void> loadRequestsByWorkspace(String workspaceId) async {
-    _currentWorkspaceId = workspaceId;
-    _cancelSubscriptions();
-    _setLoading(true);
-
-    try {
-      final requests =
-          await _requestRepository.getRequestsByWorkspace(workspaceId);
-      _state = _state.copyWith(requests: requests);
-      _subscribeToRequests(workspaceId);
-    } catch (e) {
-      _state = _state.copyWith(error: e.toString());
-    }
-
-    _setLoading(false);
-  }
-
-  Future<void> loadPendingRequests(
-      String workspaceId, String approverId) async {
-    _currentApproverId = approverId;
-    _setLoading(true);
-
-    try {
-      final pendingRequests =
-          await _requestRepository.getPendingRequestsForApprover(
-        workspaceId,
-        approverId,
-      );
-      final pendingCount = pendingRequests.length;
-
-      _state = _state.copyWith(
-        pendingRequests: pendingRequests,
-        pendingCount: pendingCount,
-      );
-    } catch (e) {
-      _state = _state.copyWith(error: e.toString());
-    }
-
-    _setLoading(false);
   }
 
   Future<ApprovalRequest?> createDraftRequest({
@@ -172,18 +138,22 @@ class RequestProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final request = await _requestService.createDraftRequest(
+      // Create request directly in database
+      final request = ApprovalRequest(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         workspaceId: workspaceId,
-        template: template,
+        templateId: template.id,
+        templateName: template.name,
         submittedBy: submittedBy,
         submittedByName: submittedByName,
+        submittedAt: DateTime.now(),
+        status: RequestStatus.draft,
       );
 
-      await _requestRepository.createRequest(request);
+      final createdRequest = await _requestRepository.createRequest(request);
 
-      // Real-time subscription will update the state automatically
-      AppLogger.info('Created request: ${request.id}');
-      return request;
+      AppLogger.info('Created request: ${createdRequest.id}');
+      return createdRequest;
     } catch (e) {
       AppLogger.error('Error creating request', e);
       _state = _state.copyWith(error: e.toString());
@@ -201,20 +171,31 @@ class RequestProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final request = await _requestService.submitRequest(
-        requestId: requestId,
+      // Get request from current state
+      final request = _state.requests.firstWhere(
+        (r) => r.id == requestId,
+        orElse: () => throw Exception('Request not found'),
+      );
+
+      if (!request.canEdit) {
+        throw Exception('Cannot edit request in current status');
+      }
+
+      // Create revision for this submission
+      final revision = RequestRevision(
+        revisionNumber: request.revisionNumber,
+        createdAt: DateTime.now(),
         fieldValues: fieldValues,
       );
 
-      await _requestRepository.updateRequest(request);
-
-      final requests =
-          _state.requests.map((r) => r.id == requestId ? request : r).toList();
-
-      _state = _state.copyWith(
-        requests: requests,
-        selectedRequest: request,
+      final updated = request.copyWith(
+        status: RequestStatus.pending,
+        fieldValues: fieldValues,
+        currentLevel: 1,
+        revisions: [...request.revisions, revision],
       );
+
+      await _requestRepository.updateRequest(updated);
 
       AppLogger.info('Submitted request: $requestId');
     } catch (e) {
@@ -233,21 +214,17 @@ class RequestProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final request = await _requestService.updateFieldValues(
-        requestId: requestId,
-        fieldValues: fieldValues,
+      final request = _state.requests.firstWhere(
+        (r) => r.id == requestId,
+        orElse: () => throw Exception('Request not found'),
       );
 
-      await _requestRepository.updateRequest(request);
+      final updated = request.copyWith(fieldValues: fieldValues);
+      await _requestRepository.updateRequest(updated);
 
-      final requests =
-          _state.requests.map((r) => r.id == requestId ? request : r).toList();
-
-      _state = _state.copyWith(
-        requests: requests,
-        selectedRequest: request,
-      );
+      AppLogger.info('Updated field values for request: $requestId');
     } catch (e) {
+      AppLogger.error('Error updating field values', e);
       _state = _state.copyWith(error: e.toString());
       notifyListeners();
     } finally {
@@ -265,29 +242,40 @@ class RequestProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final request = await _requestService.approveRequest(
-        requestId: requestId,
+      // Get request from database to ensure we have the latest data
+      final request = await _requestRepository.getRequest(requestId);
+      if (request == null) {
+        throw Exception('Request not found in database');
+      }
+
+      if (request.status != RequestStatus.pending) {
+        throw Exception('Request is not pending approval');
+      }
+
+      // Use ApprovalEngine to process the approval
+      final result = await _approvalEngine.executeApproval(
+        request: request,
+        template: template,
         approverId: approverId,
         approverName: approverName,
-        template: template,
         comment: comment,
       );
 
-      await _requestRepository.updateRequest(request);
+      // Update the revision with the action
+      final updatedRevisions = [...request.revisions];
+      if (updatedRevisions.isNotEmpty) {
+        final lastRevision = updatedRevisions.last;
+        updatedRevisions[updatedRevisions.length - 1] = lastRevision.copyWith(
+          approvalActions: [...lastRevision.approvalActions, result.action],
+        );
+      }
 
-      final requests =
-          _state.requests.map((r) => r.id == requestId ? request : r).toList();
-
-      // Update pending requests
-      final pendingRequests =
-          _state.pendingRequests.where((r) => r.id != requestId).toList();
-
-      _state = _state.copyWith(
-        requests: requests,
-        selectedRequest: request,
-        pendingRequests: pendingRequests,
-        pendingCount: pendingRequests.length,
+      // Use the updated request from ApprovalEngine
+      final updated = result.request.copyWith(
+        revisions: updatedRevisions,
       );
+
+      await _requestRepository.updateRequest(updated);
 
       AppLogger.info('Approved request: $requestId');
     } catch (e) {
@@ -309,29 +297,39 @@ class RequestProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final request = await _requestService.rejectRequest(
-        requestId: requestId,
+      // Get request from database
+      final request = await _requestRepository.getRequest(requestId);
+      if (request == null) {
+        throw Exception('Request not found in database');
+      }
+
+      if (request.status != RequestStatus.pending) {
+        throw Exception('Request is not pending approval');
+      }
+
+      // Use ApprovalEngine to process the rejection
+      final result = await _approvalEngine.executeRejection(
+        request: request,
+        template: template,
         approverId: approverId,
         approverName: approverName,
-        template: template,
         comment: comment,
       );
 
-      await _requestRepository.updateRequest(request);
+      // Update the revision with the action
+      final updatedRevisions = [...request.revisions];
+      if (updatedRevisions.isNotEmpty) {
+        final lastRevision = updatedRevisions.last;
+        updatedRevisions[updatedRevisions.length - 1] = lastRevision.copyWith(
+          approvalActions: [...lastRevision.approvalActions, result.action],
+        );
+      }
 
-      final requests =
-          _state.requests.map((r) => r.id == requestId ? request : r).toList();
-
-      // Update pending requests
-      final pendingRequests =
-          _state.pendingRequests.where((r) => r.id != requestId).toList();
-
-      _state = _state.copyWith(
-        requests: requests,
-        selectedRequest: request,
-        pendingRequests: pendingRequests,
-        pendingCount: pendingRequests.length,
+      final updated = result.request.copyWith(
+        revisions: updatedRevisions,
       );
+
+      await _requestRepository.updateRequest(updated);
 
       AppLogger.info('Rejected request: $requestId');
     } catch (e) {
@@ -349,8 +347,7 @@ class RequestProvider extends ChangeNotifier {
       _state = _state.copyWith(selectedRequest: request);
       notifyListeners();
     } catch (e) {
-      _state = _state.copyWith(error: e.toString());
-      notifyListeners();
+      AppLogger.error('Error selecting request', e);
     }
   }
 
@@ -358,17 +355,22 @@ class RequestProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      await _requestService.deleteRequest(requestId);
       await _requestRepository.deleteRequest(requestId);
 
       final requests = _state.requests.where((r) => r.id != requestId).toList();
+      final pendingRequests =
+          _state.pendingRequests.where((r) => r.id != requestId).toList();
+
       _state = _state.copyWith(
         requests: requests,
+        pendingRequests: pendingRequests,
+        pendingCount: pendingRequests.length,
         selectedRequest: _state.selectedRequest?.id == requestId
             ? null
             : _state.selectedRequest,
       );
 
+      notifyListeners();
       AppLogger.info('Deleted request: $requestId');
     } catch (e) {
       AppLogger.error('Error deleting request', e);
@@ -379,15 +381,16 @@ class RequestProvider extends ChangeNotifier {
     }
   }
 
-  /// Get pending request count for plan enforcement
   Future<int> getPendingRequestCount(
       String workspaceId, String approverId) async {
     try {
       return await _requestRepository.getPendingRequestCount(
-          workspaceId, approverId);
+        workspaceId,
+        approverId,
+      );
     } catch (e) {
       AppLogger.error('Error getting pending request count', e);
-      return _state.pendingRequests.length;
+      return 0;
     }
   }
 

@@ -35,16 +35,14 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
     final authProvider = context.read<AuthProvider>();
 
     if (workspaceProvider.currentWorkspace != null) {
-      await requestProvider
-          .loadRequestsByWorkspace(workspaceProvider.currentWorkspace!.id);
+      // Set current workspace which automatically subscribes to requests
+      requestProvider.setCurrentWorkspace(
+        workspaceProvider.currentWorkspace!.id,
+        approverId: authProvider.user?.id,
+      );
 
-      // Load pending requests for the current user
-      if (authProvider.user != null) {
-        await requestProvider.loadPendingRequests(
-          workspaceProvider.currentWorkspace!.id,
-          authProvider.user!.id,
-        );
-      }
+      // Manually refresh requests
+      await requestProvider.loadRequests();
     }
   }
 
