@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'auth_models.dart';
 import 'auth_service.dart';
+import 'biometric_service.dart';
 import '../../core/utils/app_logger.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -20,15 +21,18 @@ class AuthProvider extends ChangeNotifier {
     _authStateSubscription = _authService.authStateChanges.listen((user) {
       AppLogger.info('Auth state changed: ${user?.email ?? "null"}');
       if (user != null) {
+        // Always update state when we have a user (handles login and user switches)
         _state = AuthState(
           status: AuthStatus.authenticated,
           user: user,
         );
+        notifyListeners();
       } else if (_state.status != AuthStatus.initial &&
           _state.status != AuthStatus.loading) {
+        // Only set to unauthenticated if we were previously authenticated
         _state = const AuthState(status: AuthStatus.unauthenticated);
+        notifyListeners();
       }
-      notifyListeners();
     });
   }
 
@@ -117,6 +121,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Clear stored credentials from biometric service
+      await BiometricService().disableBiometric();
       await _authService.signOut();
       _state = const AuthState(status: AuthStatus.unauthenticated);
       notifyListeners();
