@@ -34,6 +34,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _checkBiometricAvailability() async {
+    // Skip biometric check on web - local_auth doesn't support web
+    if (kIsWeb) {
+      debugPrint('Biometric check skipped on web');
+      return;
+    }
+
     try {
       final canCheck = await _biometricService.canCheckBiometrics;
       final hasCredentials = await _biometricService.hasStoredCredentials;
