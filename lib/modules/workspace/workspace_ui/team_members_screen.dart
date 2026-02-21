@@ -71,22 +71,24 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
             currentMemberCount: memberCount,
           );
 
+          // Calculate proper indices accounting for email banner
+          final hasEmailBanner = !AppConfig.emailsEnabled;
+          final headerIndex = 0;
+          final inviteButtonIndex =
+              1 + (hasEmailBanner ? 1 : 0) + members.length;
+
           return RefreshIndicator(
             onRefresh: _loadWorkspaces,
             child: ListView.builder(
               padding: AppSpacing.screenPadding,
-              itemCount: members.length +
-                  2 +
-                  (AppConfig.emailsEnabled
-                      ? 0
-                      : 1), // +1 for email disabled banner if needed
+              itemCount: (hasEmailBanner ? 1 : 0) + 2 + members.length,
               itemBuilder: (context, index) {
-                if (index == 0) {
-                  // Plan limit indicator header
+                if (index == headerIndex) {
+                  // Plan limit indicator header (with optional email banner)
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (!AppConfig.emailsEnabled) _buildEmailDisabledBanner(),
+                      if (hasEmailBanner) _buildEmailDisabledBanner(),
                       PlanLimitIndicator(
                         currentPlan: currentPlan,
                         action: PlanAction.inviteTeamMember,
@@ -100,7 +102,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                   );
                 }
 
-                if (index == members.length + 1) {
+                if (index == inviteButtonIndex) {
                   // Invite button at the bottom
                   return Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.lg),
@@ -116,7 +118,13 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                   );
                 }
 
-                return _buildMemberCard(members[index - 1]);
+                // Member cards are between header and invite button
+                final memberIndex = index - 1 - (hasEmailBanner ? 1 : 0);
+                if (memberIndex >= 0 && memberIndex < members.length) {
+                  return _buildMemberCard(members[memberIndex]);
+                }
+
+                return const SizedBox.shrink();
               },
             ),
           );

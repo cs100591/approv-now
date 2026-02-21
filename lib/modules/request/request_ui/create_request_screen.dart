@@ -526,11 +526,19 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
       // Get the created request and submit it
       final requests = requestProvider.requests;
-      final newRequest = requests.lastWhere(
-        (r) =>
-            r.templateId == _selectedTemplate!.id &&
-            r.status == RequestStatus.draft,
-      );
+      final matchingRequests = requests
+          .where(
+            (r) =>
+                r.templateId == _selectedTemplate!.id &&
+                r.status == RequestStatus.draft,
+          )
+          .toList();
+
+      if (matchingRequests.isEmpty) {
+        throw StateError('Failed to create draft request. Please try again.');
+      }
+
+      final newRequest = matchingRequests.last;
 
       await requestProvider.submitRequest(
         requestId: newRequest.id,
