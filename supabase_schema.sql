@@ -102,7 +102,7 @@ CREATE INDEX IF NOT EXISTS idx_workspaces_member_ids ON workspaces USING GIN(mem
 CREATE TABLE IF NOT EXISTS workspace_members (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- NULL for pending invitations
   email TEXT NOT NULL,
   display_name TEXT,
   photo_url TEXT,
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS workspace_members (
   invited_at TIMESTAMPTZ DEFAULT NOW(),
   joined_at TIMESTAMPTZ,
   invite_token TEXT,
-  UNIQUE(workspace_id, user_id)
+  UNIQUE(workspace_id, email) -- Prevent duplicate invitations to same email
 );
 
 -- Enable RLS

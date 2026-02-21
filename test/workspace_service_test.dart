@@ -126,7 +126,7 @@ void main() {
       );
 
       // Act
-      await workspaceService.removeMember(workspace.id, member.userId);
+      await workspaceService.removeMember(workspace.id, member.userId!);
 
       // Assert - workspace should only have owner now
       final updatedWorkspaces = workspaceService.getWorkspaces();
@@ -151,7 +151,7 @@ void main() {
       // Act
       final updatedMember = await workspaceService.updateMemberRole(
         workspaceId: workspace.id,
-        userId: member.userId,
+        userId: member.userId!,
         newRole: WorkspaceRole.admin,
       );
 

@@ -581,7 +581,6 @@ class SupabaseService {
           .from('workspace_members')
           .insert({
             'workspace_id': workspaceId,
-            'user_id': '00000000-0000-0000-0000-000000000000',
             'email': email,
             'role': role,
             'status': 'pending',

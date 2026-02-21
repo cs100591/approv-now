@@ -71,7 +71,7 @@ extension MemberStatusExtension on MemberStatus {
 
 /// Represents a member of a workspace
 class WorkspaceMember {
-  final String userId;
+  final String? userId; // null for pending invitations
   final String email;
   final String? displayName;
   final String? photoUrl;
@@ -83,7 +83,7 @@ class WorkspaceMember {
   final String? inviteToken; // For accepting invitation
 
   const WorkspaceMember({
-    required this.userId,
+    this.userId, // Optional for pending invitations
     required this.email,
     this.displayName,
     this.photoUrl,
@@ -178,7 +178,7 @@ class WorkspaceMember {
   /// Create from JSON
   factory WorkspaceMember.fromJson(Map<String, dynamic> json) {
     return WorkspaceMember(
-      userId: json['userId']?.toString() ?? '',
+      userId: json['userId']?.toString(), // Nullable
       email: json['email']?.toString() ?? '',
       displayName: json['displayName']?.toString(),
       photoUrl: json['photoUrl']?.toString(),

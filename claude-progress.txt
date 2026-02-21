@@ -516,3 +516,36 @@ flutter build ios --release        # iOS
 - Test complete user journey
 
 **Commit:** [Pending]
+
+---
+
+### Session: Critical Bug Fixes - Auth, Workspace, Notification
+**Date:** 2026-02-21
+**Session Goal:** Fix critical bugs preventing login and member features from working
+**Completed:**
+- ✅ Fixed AuthState.copyWith to allow clearing error messages (sentinel pattern)
+- ✅ Fixed race condition between auth listener and login method
+- ✅ Fixed _hasInitialized flag in AuthWrapper - now properly handles re-login
+- ✅ Added clearCurrentUser method to WorkspaceProvider
+- ✅ Fixed Timer memory leaks in workspace_repository and notification_service
+- ✅ Fixed removeMember and updateMemberRole to use repository methods (database)
+- ✅ Added duplicate invitation check in inviteMember
+- ✅ Added email validation and proper error handling in invite dialog
+- ✅ Removed Firebase dependencies completely
+- ✅ Fixed SQL schema with DROP POLICY IF EXISTS and IF NOT EXISTS
+- ✅ All 52 tests passing
+- ✅ iOS build successful (23.4MB)
+**Commits:**
+- fe30b45: fix: critical auth, workspace, and notification bugs
+- 6ed7040: refactor: remove duplicate provider initialization from dashboard
+
+**Known Remaining Issues:**
+- No actual push notification implementation (mock only)
+- No email sending (emailsEnabled = false)
+- WorkspaceService still has empty in-memory list (not used but could confuse)
+
+**Next Steps:**
+- Test login flow with multiple accounts
+- Test member invitation workflow
+- Test notification center
+- Consider implementing Supabase Realtime for live updates

@@ -366,9 +366,20 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
           ),
           TextButton(
             onPressed: () async {
+              if (member.userId == null) {
+                // Pending invitation - can't remove via userId
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Cannot remove pending invitation from here'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                return;
+              }
               Navigator.pop(context);
               final provider = context.read<WorkspaceProvider>();
-              await provider.removeMember(member.userId);
+              await provider.removeMember(member.userId!);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('${member.email} removed')),
@@ -401,10 +412,23 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                       value: role,
                       groupValue: member.role,
                       onChanged: (value) async {
+                        if (member.userId == null) {
+                          // Pending invitation - can't change role
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Cannot change role of pending invitation'),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                          return;
+                        }
                         Navigator.pop(context);
                         if (value != null) {
                           final provider = context.read<WorkspaceProvider>();
-                          await provider.updateMemberRole(member.userId, value);
+                          await provider.updateMemberRole(
+                              member.userId!, value);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
