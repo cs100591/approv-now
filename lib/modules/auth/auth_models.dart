@@ -40,37 +40,37 @@ class User extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'email': email,
-    'displayName': displayName,
-    'photoUrl': photoUrl,
-    'workspaceId': workspaceId,
-    'createdAt': createdAt.toIso8601String(),
-    'lastLoginAt': lastLoginAt?.toIso8601String(),
-  };
+        'id': id,
+        'email': email,
+        'displayName': displayName,
+        'photoUrl': photoUrl,
+        'workspaceId': workspaceId,
+        'createdAt': createdAt.toIso8601String(),
+        'lastLoginAt': lastLoginAt?.toIso8601String(),
+      };
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-    id: json['id'] as String,
-    email: json['email'] as String,
-    displayName: json['displayName'] as String?,
-    photoUrl: json['photoUrl'] as String?,
-    workspaceId: json['workspaceId'] as String?,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    lastLoginAt: json['lastLoginAt'] != null
-        ? DateTime.parse(json['lastLoginAt'] as String)
-        : null,
-  );
+        id: json['id'] as String,
+        email: json['email'] as String,
+        displayName: json['displayName'] as String?,
+        photoUrl: json['photoUrl'] as String?,
+        workspaceId: json['workspaceId'] as String?,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        lastLoginAt: json['lastLoginAt'] != null
+            ? DateTime.parse(json['lastLoginAt'] as String)
+            : null,
+      );
 
   @override
   List<Object?> get props => [
-    id,
-    email,
-    displayName,
-    photoUrl,
-    workspaceId,
-    createdAt,
-    lastLoginAt,
-  ];
+        id,
+        email,
+        displayName,
+        photoUrl,
+        workspaceId,
+        createdAt,
+        lastLoginAt,
+      ];
 }
 
 class LoginRequest {
@@ -85,10 +85,10 @@ class LoginRequest {
   });
 
   Map<String, dynamic> toJson() => {
-    'email': email,
-    'password': password,
-    'rememberMe': rememberMe,
-  };
+        'email': email,
+        'password': password,
+        'rememberMe': rememberMe,
+      };
 }
 
 class RegisterRequest {
@@ -103,10 +103,10 @@ class RegisterRequest {
   });
 
   Map<String, dynamic> toJson() => {
-    'email': email,
-    'password': password,
-    'displayName': displayName,
-  };
+        'email': email,
+        'password': password,
+        'displayName': displayName,
+      };
 }
 
 enum AuthStatus { initial, authenticated, unauthenticated, loading, error }
@@ -122,11 +122,18 @@ class AuthState extends Equatable {
     this.errorMessage,
   });
 
-  AuthState copyWith({AuthStatus? status, User? user, String? errorMessage}) {
+  static const _unset = Object();
+
+  AuthState copyWith({
+    AuthStatus? status,
+    User? user,
+    Object? errorMessage = _unset,
+  }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage:
+          errorMessage == _unset ? this.errorMessage : errorMessage as String?,
     );
   }
 

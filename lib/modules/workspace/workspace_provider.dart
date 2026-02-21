@@ -48,6 +48,11 @@ class WorkspaceProvider extends ChangeNotifier {
     }
   }
 
+  /// Clear current user (on logout)
+  void clearCurrentUser() {
+    setCurrentUser(null);
+  }
+
   Future<void> _initialize() async {
     if (_currentUserId != null) {
       await loadWorkspaces();
@@ -311,23 +316,41 @@ class WorkspaceProvider extends ChangeNotifier {
       return null;
     }
 
+    final currentWorkspace = _state.currentWorkspace!;
+    final normalizedEmail = email.trim().toLowerCase();
+
+    // Check for duplicate invitation
+    final existingMember = currentWorkspace.members
+        .where((m) => m.email.toLowerCase() == normalizedEmail)
+        .firstOrNull;
+    if (existingMember != null) {
+      String errorMsg;
+      if (existingMember.status == MemberStatus.pending) {
+        errorMsg = 'This email already has a pending invitation';
+      } else {
+        errorMsg = 'This email is already a member of this workspace';
+      }
+      _state = _state.copyWith(error: errorMsg);
+      notifyListeners();
+      return null;
+    }
+
     _setLoading(true);
 
     try {
-      final currentWorkspace = _state.currentWorkspace!;
       final inviteToken = _generateInviteToken();
 
       await SupabaseService().createInvitationByEmail(
         workspaceId: currentWorkspace.id,
-        email: email,
+        email: normalizedEmail,
         role: role.name,
         invitedBy: _currentUserId!,
         inviteToken: inviteToken,
       );
 
       final member = WorkspaceMember(
-        userId: email,
-        email: email,
+        userId: '00000000-0000-0000-0000-000000000000',
+        email: normalizedEmail,
         role: role,
         status: MemberStatus.pending,
         invitedAt: DateTime.now(),
@@ -346,16 +369,17 @@ class WorkspaceProvider extends ChangeNotifier {
       _state = _state.copyWith(
         workspaces: workspaces,
         currentWorkspace: updatedWorkspace,
+        error: null,
       );
 
       _createInvitationNotification(
-        email: email,
+        email: normalizedEmail,
         workspaceId: currentWorkspace.id,
         workspaceName: currentWorkspace.name,
         inviteToken: inviteToken,
       );
 
-      AppLogger.info('Invited member: $email');
+      AppLogger.info('Invited member: $normalizedEmail');
       return member;
     } catch (e) {
       AppLogger.error('Error inviting member', e);
@@ -368,8 +392,9 @@ class WorkspaceProvider extends ChangeNotifier {
   }
 
   String _generateInviteToken() {
-    return DateTime.now().millisecondsSinceEpoch.toString() +
-        (_currentUserId?.hashCode ?? 0).toString();
+    final random = DateTime.now().microsecondsSinceEpoch;
+    final hash = _currentUserId?.hashCode ?? 0;
+    return '${random}_$hash';
   }
 
   void _createInvitationNotification({
@@ -438,12 +463,19 @@ class WorkspaceProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      await _workspaceService.removeMember(
+      // Remove from database (workspace_members table)
+      await _workspaceRepository.removeMember(
         _state.currentWorkspace!.id,
         userId,
       );
 
-      // Update workspace in Firestore
+      // Also remove from workspace member_ids array
+      await SupabaseService().removeWorkspaceMember(
+        workspaceId: _state.currentWorkspace!.id,
+        userId: userId,
+      );
+
+      // Update local state
       final updatedMembers = _state.currentWorkspace!.members
           .where((m) => m.userId != userId)
           .toList();
@@ -452,9 +484,6 @@ class WorkspaceProvider extends ChangeNotifier {
         members: updatedMembers,
       );
 
-      await _workspaceRepository.updateWorkspace(updatedWorkspace);
-
-      // Update local state
       final workspaces = _state.workspaces
           .map((w) => w.id == updatedWorkspace.id ? updatedWorkspace : w)
           .toList();
@@ -485,13 +514,14 @@ class WorkspaceProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      await _workspaceService.updateMemberRole(
-        workspaceId: _state.currentWorkspace!.id,
-        userId: userId,
-        newRole: newRole,
+      // Update in database (workspace_members table)
+      await _workspaceRepository.updateMemberRole(
+        _state.currentWorkspace!.id,
+        userId,
+        newRole,
       );
 
-      // Update workspace in Firestore
+      // Update local state
       final updatedMembers = _state.currentWorkspace!.members.map((m) {
         if (m.userId == userId) {
           return m.copyWith(role: newRole);
@@ -503,9 +533,6 @@ class WorkspaceProvider extends ChangeNotifier {
         members: updatedMembers,
       );
 
-      await _workspaceRepository.updateWorkspace(updatedWorkspace);
-
-      // Update local state
       final workspaces = _state.workspaces
           .map((w) => w.id == updatedWorkspace.id ? updatedWorkspace : w)
           .toList();

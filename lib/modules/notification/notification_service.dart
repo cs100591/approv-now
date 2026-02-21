@@ -74,6 +74,7 @@ class NotificationRepository {
   /// Stream notifications for user
   Stream<List<AppNotification>> streamUserNotifications(String userId) {
     final controller = StreamController<List<AppNotification>>();
+    Timer? timer;
 
     getUserNotifications(userId).then((notifications) {
       if (!controller.isClosed) {
@@ -85,7 +86,11 @@ class NotificationRepository {
       }
     });
 
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
+    timer = Timer.periodic(const Duration(seconds: 30), (t) async {
+      if (controller.isClosed) {
+        t.cancel();
+        return;
+      }
       try {
         final notifications = await getUserNotifications(userId);
         if (!controller.isClosed) {
@@ -97,6 +102,11 @@ class NotificationRepository {
         }
       }
     });
+
+    controller.onCancel = () {
+      timer?.cancel();
+      controller.close();
+    };
 
     return controller.stream;
   }

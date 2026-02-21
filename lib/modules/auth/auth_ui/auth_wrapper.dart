@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../auth_provider.dart';
 import '../auth_models.dart';
 import '../../workspace/workspace_provider.dart';
+import '../../notification/notification_provider.dart';
 import 'login_screen.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -16,7 +17,8 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool _hasInitialized = false;
+  AuthStatus? _lastStatus;
+  String? _lastUserId;
 
   @override
   void initState() {
@@ -31,14 +33,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
     authProvider.initialize();
   }
 
-  void _onAuthenticated() {
-    final authProvider = context.read<AuthProvider>();
+  void _onAuthenticated(String userId) {
     final workspaceProvider = context.read<WorkspaceProvider>();
+    final notificationProvider = context.read<NotificationProvider>();
 
-    final userId = authProvider.user?.id;
-    if (userId != null) {
-      workspaceProvider.setCurrentUser(userId);
-    }
+    workspaceProvider.setCurrentUser(userId);
+    notificationProvider.initialize(userId);
+  }
+
+  void _onLogout() {
+    final workspaceProvider = context.read<WorkspaceProvider>();
+    workspaceProvider.clearCurrentUser();
   }
 
   @override
@@ -46,6 +51,24 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final status = authProvider.state.status;
+        final userId = authProvider.user?.id;
+
+        if (status == AuthStatus.authenticated && userId != null) {
+          if (_lastStatus != AuthStatus.authenticated ||
+              _lastUserId != userId) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _onAuthenticated(userId);
+            });
+          }
+        } else if (status == AuthStatus.unauthenticated &&
+            _lastStatus == AuthStatus.authenticated) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _onLogout();
+          });
+        }
+
+        _lastStatus = status;
+        _lastUserId = userId;
 
         switch (status) {
           case AuthStatus.initial:
@@ -53,12 +76,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
             return const _LoadingScreen();
 
           case AuthStatus.authenticated:
-            if (!_hasInitialized) {
-              _hasInitialized = true;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _onAuthenticated();
-              });
-            }
             return widget.child;
 
           case AuthStatus.unauthenticated:

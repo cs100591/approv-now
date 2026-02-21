@@ -509,18 +509,48 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
             ),
             TextButton(
               onPressed: () async {
-                if (emailController.text.isNotEmpty) {
-                  final provider = context.read<WorkspaceProvider>();
-                  await provider.inviteMember(
-                    email: emailController.text,
-                    role: selectedRole,
+                final email = emailController.text.trim();
+                if (email.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter an email address'),
+                      backgroundColor: AppColors.error,
+                    ),
                   );
+                  return;
+                }
+
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                    .hasMatch(email)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid email address'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                  return;
+                }
+
+                final provider = context.read<WorkspaceProvider>();
+                final result = await provider.inviteMember(
+                  email: email,
+                  role: selectedRole,
+                );
+
+                if (mounted) {
                   Navigator.pop(context);
-                  if (mounted) {
+                  if (result != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content:
-                            Text('Invitation sent to ${emailController.text}'),
+                        content: Text('Invitation sent to $email'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                  } else if (provider.error != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(provider.error!),
+                        backgroundColor: AppColors.error,
                       ),
                     );
                   }

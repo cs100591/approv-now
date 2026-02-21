@@ -24,7 +24,8 @@ class AuthProvider extends ChangeNotifier {
           status: AuthStatus.authenticated,
           user: user,
         );
-      } else if (_state.status != AuthStatus.initial) {
+      } else if (_state.status != AuthStatus.initial &&
+          _state.status != AuthStatus.loading) {
         _state = const AuthState(status: AuthStatus.unauthenticated);
       }
       notifyListeners();
@@ -34,7 +35,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> initialize() async {
     if (_state.status != AuthStatus.initial) return;
 
-    _state = _state.copyWith(status: AuthStatus.loading);
+    _state = _state.copyWith(status: AuthStatus.loading, errorMessage: null);
     notifyListeners();
 
     try {
@@ -61,71 +62,66 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> login(LoginRequest request) async {
-    _setLoading(true);
+    _state = _state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    notifyListeners();
 
     try {
       final result = await _authService.signInWithEmailAndPassword(request);
-      if (result.success && result.user != null) {
-        _state = AuthState(
-          status: AuthStatus.authenticated,
-          user: result.user,
-        );
-      } else {
+      if (!result.success) {
         _state = AuthState(
           status: AuthStatus.error,
           errorMessage: result.error ?? 'Login failed',
         );
+        notifyListeners();
       }
+      // On success, the auth state listener will update the state
     } catch (e) {
       _state = AuthState(
         status: AuthStatus.error,
         errorMessage: e.toString(),
       );
+      notifyListeners();
     }
-
-    notifyListeners();
   }
 
   Future<void> register(RegisterRequest request) async {
-    _setLoading(true);
+    _state = _state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    notifyListeners();
 
     try {
       final result = await _authService.registerWithEmailAndPassword(request);
-      if (result.success && result.user != null) {
-        _state = AuthState(
-          status: AuthStatus.authenticated,
-          user: result.user,
-        );
-      } else {
+      if (!result.success) {
         _state = AuthState(
           status: AuthStatus.error,
           errorMessage: result.error ?? 'Registration failed',
         );
+        notifyListeners();
       }
+      // On success, the auth state listener will update the state
     } catch (e) {
       _state = AuthState(
         status: AuthStatus.error,
         errorMessage: e.toString(),
       );
+      notifyListeners();
     }
-
-    notifyListeners();
   }
 
   Future<void> logout() async {
-    _setLoading(true);
+    _state = _state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    notifyListeners();
 
     try {
       await _authService.signOut();
       _state = const AuthState(status: AuthStatus.unauthenticated);
+      notifyListeners();
     } catch (e) {
       _state = AuthState(
         status: AuthStatus.error,
         errorMessage: e.toString(),
       );
+      notifyListeners();
     }
-
-    notifyListeners();
   }
 
   void clearError() {
@@ -133,21 +129,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setLoading(bool loading) {
-    _state = _state.copyWith(
-      status: loading ? AuthStatus.loading : _state.status,
-    );
-    notifyListeners();
-  }
-
-  // Helper getters for UI
   bool get isLoading => _state.status == AuthStatus.loading;
   bool get isAuthenticated => _state.status == AuthStatus.authenticated;
   bool get hasError => _state.status == AuthStatus.error;
   String? get error => _state.errorMessage;
   User? get user => _state.user;
 
-  // Helper methods for UI with named parameters
   Future<bool> loginWithCredentials({
     required String email,
     required String password,

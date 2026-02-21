@@ -109,19 +109,26 @@ class WorkspaceRepository {
 
   /// Stream workspaces for user
   Stream<List<Workspace>> streamWorkspacesForUser(String userId) {
-    // For Supabase, we'll use a periodic fetch with timer
-    // Real realtime can be added later if needed
     final controller = StreamController<List<Workspace>>();
+    Timer? timer;
 
     // Initial fetch
     getWorkspacesForUser(userId).then((workspaces) {
-      controller.add(workspaces);
+      if (!controller.isClosed) {
+        controller.add(workspaces);
+      }
     }).catchError((error) {
-      controller.addError(error);
+      if (!controller.isClosed) {
+        controller.addError(error);
+      }
     });
 
     // Refresh every 30 seconds
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
+    timer = Timer.periodic(const Duration(seconds: 30), (t) async {
+      if (controller.isClosed) {
+        t.cancel();
+        return;
+      }
       try {
         final workspaces = await getWorkspacesForUser(userId);
         if (!controller.isClosed) {
@@ -133,6 +140,12 @@ class WorkspaceRepository {
         }
       }
     });
+
+    // Clean up when stream is cancelled
+    controller.onCancel = () {
+      timer?.cancel();
+      controller.close();
+    };
 
     return controller.stream;
   }
