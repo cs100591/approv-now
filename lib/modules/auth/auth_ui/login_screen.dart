@@ -74,9 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
             password: _passwordController.text,
           );
         }
-        if (mounted) {
-          Navigator.of(context).pushReplacementNamed(RouteNames.dashboard);
-        }
+        // AuthWrapper will handle navigation based on auth state
       }
     }
   }
@@ -88,14 +86,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result.success && result.email != null && result.password != null) {
       final provider = context.read<AuthProvider>();
-      final success = await provider.loginWithCredentials(
+      await provider.loginWithCredentials(
         email: result.email!,
         password: result.password!,
       );
-
-      if (success && mounted) {
-        Navigator.of(context).pushReplacementNamed(RouteNames.dashboard);
-      }
+      // AuthWrapper will handle navigation based on auth state
     } else if (result.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

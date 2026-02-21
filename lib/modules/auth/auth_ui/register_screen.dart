@@ -39,9 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text,
       );
 
-      if (success && mounted) {
-        Navigator.of(context).pushReplacementNamed(RouteNames.dashboard);
-      }
+      // AuthWrapper will handle navigation based on auth state
     }
   }
 
