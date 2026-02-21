@@ -4,6 +4,7 @@ import '../../modules/auth/auth_ui/profile_screen.dart';
 import '../../modules/workspace/workspace_ui/dashboard_screen.dart';
 import '../../modules/workspace/workspace_ui/workspace_switch_screen.dart';
 import '../../modules/workspace/workspace_ui/team_members_screen.dart';
+import '../../modules/workspace/workspace_ui/join_workspace_screen.dart';
 import '../../modules/template/template_ui/templates_list_screen.dart';
 import '../../modules/template/template_ui/create_template_screen.dart';
 import '../../modules/template/template_ui/edit_template_screen.dart';
@@ -107,6 +108,12 @@ class AppRouter {
       case RouteNames.teamMembers:
         return MaterialPageRoute(
           builder: (_) => const TeamMembersScreen(),
+          settings: settings,
+        );
+
+      case RouteNames.joinWorkspace:
+        return MaterialPageRoute(
+          builder: (_) => const JoinWorkspaceScreen(),
           settings: settings,
         );
 

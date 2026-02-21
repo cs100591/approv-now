@@ -16,5 +16,6 @@ class RouteNames {
   static const String analytics = '/analytics';
   static const String teamMembers = '/team-members';
   static const String workspaceSwitch = '/workspace-switch';
+  static const String joinWorkspace = '/join-workspace';
   static const String settings = '/settings';
 }

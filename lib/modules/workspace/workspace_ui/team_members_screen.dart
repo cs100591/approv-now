@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/provider.dart' show Consumer2;
 import '../../../core/config/app_config.dart';
@@ -109,7 +110,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                     child: canInvite
                         ? SecondaryButton(
                             text: 'Invite New Member',
-                            onPressed: () => _showInviteDialog(),
+                            onPressed: () => _showInviteCodeDialog(),
                           )
                         : PlanLimitReachedWidget(
                             resourceName: 'Team Member',
@@ -153,7 +154,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
       return;
     }
 
-    _showInviteDialog();
+    _showInviteCodeDialog();
   }
 
   Future<void> _showUpgradeDialog(BuildContext context) async {
@@ -275,17 +276,6 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                         ],
                       ),
                     ),
-                  if (member.isPending && AppConfig.emailsEnabled)
-                    const PopupMenuItem(
-                      value: 'resend',
-                      child: Row(
-                        children: [
-                          Icon(Icons.send, color: AppColors.primary),
-                          SizedBox(width: 8),
-                          Text('Resend Invite'),
-                        ],
-                      ),
-                    ),
                   const PopupMenuItem(
                     value: 'remove',
                     child: Row(
@@ -346,9 +336,6 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
         break;
       case 'change_role':
         _showChangeRoleDialog(member);
-        break;
-      case 'resend':
-        await _resendInvitation(member);
         break;
     }
   }
@@ -453,137 +440,159 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
     );
   }
 
-  Future<void> _resendInvitation(WorkspaceMember member) async {
-    if (!AppConfig.emailsEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email notifications are disabled'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    // TODO: Implement resend invitation logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Invitation resent to ${member.email}')),
-    );
-  }
-
-  void _showInviteDialog() {
-    final emailController = TextEditingController();
-    WorkspaceRole selectedRole = WorkspaceRole.editor;
-
+  void _showInviteCodeDialog() {
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Invite Team Member'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppTextField(
-                controller: emailController,
-                label: 'Email Address',
-                hint: 'colleague@company.com',
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              DropdownButtonFormField<WorkspaceRole>(
-                value: selectedRole,
-                decoration: const InputDecoration(
-                  labelText: 'Role',
-                  border: OutlineInputBorder(),
-                ),
-                items: WorkspaceRole.values
-                    .where((r) => r != WorkspaceRole.owner)
-                    .map((role) => DropdownMenuItem(
-                          value: role,
-                          child: Text(role.displayName),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => selectedRole = value);
-                  }
-                },
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                selectedRole.description,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                AppConfig.emailsEnabled
-                    ? 'An invitation email will be sent to this address.'
-                    : 'An invitation will be created. Share the invite link manually.',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+      builder: (context) => AlertDialog(
+        title: const Text('Generate Invite Code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Generate a 6-character invite code that anyone can use to join this workspace.',
+              style: TextStyle(fontSize: 14),
             ),
-            TextButton(
-              onPressed: () async {
-                final email = emailController.text.trim();
-                if (email.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter an email address'),
-                      backgroundColor: AppColors.error,
-                    ),
-                  );
-                  return;
-                }
-
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                    .hasMatch(email)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a valid email address'),
-                      backgroundColor: AppColors.error,
-                    ),
-                  );
-                  return;
-                }
-
-                final provider = context.read<WorkspaceProvider>();
-                final result = await provider.inviteMember(
-                  email: email,
-                  role: selectedRole,
-                );
-
-                if (mounted) {
-                  Navigator.pop(context);
-                  if (result != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Invitation sent to $email'),
-                        backgroundColor: AppColors.success,
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.info.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.info.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: AppColors.info, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Code Details',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.info,
+                        ),
                       ),
-                    );
-                  } else if (provider.error != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(provider.error!),
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('Send Invite'),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '• Valid for 24 hours\n'
+                    '• Can be used by multiple people\n'
+                    '• New members join as Viewer role',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final provider = context.read<WorkspaceProvider>();
+              final result = await provider.generateInviteCode();
+
+              if (mounted) {
+                Navigator.pop(context);
+                if (result != null) {
+                  _showInviteCodeResultDialog(result);
+                } else if (provider.error != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(provider.error!),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Generate Code'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInviteCodeResultDialog(Map<String, dynamic> inviteCode) {
+    final code = inviteCode['code'] as String;
+    final expiresAt = DateTime.parse(inviteCode['expires_at'] as String);
+    final formattedDate =
+        '${expiresAt.day}/${expiresAt.month}/${expiresAt.year}';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Invite Code Generated'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    code,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Expires: $formattedDate',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Text(
+              'Share this code with team members. They can use it to join this workspace.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Copy to clipboard
+              Clipboard.setData(ClipboardData(text: code));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Code copied to clipboard'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            child: const Text('Copy Code'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Done'),
+          ),
+        ],
       ),
     );
   }

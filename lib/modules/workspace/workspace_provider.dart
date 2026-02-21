@@ -299,11 +299,12 @@ class WorkspaceProvider extends ChangeNotifier {
     }
   }
 
-  /// Invite a new member to the current workspace
-  Future<WorkspaceMember?> inviteMember({
-    required String email,
-    required WorkspaceRole role,
-  }) async {
+  // ============================================
+  // INVITE CODE METHODS
+  // ============================================
+
+  /// Generate a new invite code for current workspace
+  Future<Map<String, dynamic>?> generateInviteCode() async {
     if (_state.currentWorkspace == null) {
       _state = _state.copyWith(error: 'No workspace selected');
       notifyListeners();
@@ -316,73 +317,21 @@ class WorkspaceProvider extends ChangeNotifier {
       return null;
     }
 
-    final currentWorkspace = _state.currentWorkspace!;
-    final normalizedEmail = email.trim().toLowerCase();
-
-    // Check for duplicate invitation
-    final existingMember = currentWorkspace.members
-        .where((m) => m.email.toLowerCase() == normalizedEmail)
-        .firstOrNull;
-    if (existingMember != null) {
-      String errorMsg;
-      if (existingMember.status == MemberStatus.pending) {
-        errorMsg = 'This email already has a pending invitation';
-      } else {
-        errorMsg = 'This email is already a member of this workspace';
-      }
-      _state = _state.copyWith(error: errorMsg);
-      notifyListeners();
-      return null;
-    }
-
     _setLoading(true);
 
     try {
-      final inviteToken = _generateInviteToken();
-
-      await SupabaseService().createInvitationByEmail(
-        workspaceId: currentWorkspace.id,
-        email: normalizedEmail,
-        role: role.name,
-        invitedBy: _currentUserId!,
-        inviteToken: inviteToken,
+      final response = await SupabaseService().createInviteCode(
+        workspaceId: _state.currentWorkspace!.id,
+        createdBy: _currentUserId!,
       );
 
-      final member = WorkspaceMember(
-        userId: '00000000-0000-0000-0000-000000000000',
-        email: normalizedEmail,
-        role: role,
-        status: MemberStatus.pending,
-        invitedAt: DateTime.now(),
-        invitedBy: _currentUserId!,
-        inviteToken: inviteToken,
-      );
+      _state = _state.copyWith(error: null);
+      notifyListeners();
 
-      final updatedWorkspace = currentWorkspace.copyWith(
-        members: [...currentWorkspace.members, member],
-      );
-
-      final workspaces = _state.workspaces
-          .map((w) => w.id == updatedWorkspace.id ? updatedWorkspace : w)
-          .toList();
-
-      _state = _state.copyWith(
-        workspaces: workspaces,
-        currentWorkspace: updatedWorkspace,
-        error: null,
-      );
-
-      _createInvitationNotification(
-        email: normalizedEmail,
-        workspaceId: currentWorkspace.id,
-        workspaceName: currentWorkspace.name,
-        inviteToken: inviteToken,
-      );
-
-      AppLogger.info('Invited member: $normalizedEmail');
-      return member;
+      AppLogger.info('Generated invite code: ${response['code']}');
+      return response;
     } catch (e) {
-      AppLogger.error('Error inviting member', e);
+      AppLogger.error('Error generating invite code', e);
       _state = _state.copyWith(error: e.toString());
       notifyListeners();
       return null;
@@ -391,64 +340,73 @@ class WorkspaceProvider extends ChangeNotifier {
     }
   }
 
-  String _generateInviteToken() {
-    final random = DateTime.now().microsecondsSinceEpoch;
-    final hash = _currentUserId?.hashCode ?? 0;
-    return '${random}_$hash';
+  /// Get all invite codes for current workspace
+  Future<List<Map<String, dynamic>>> getInviteCodes() async {
+    if (_state.currentWorkspace == null) return [];
+
+    try {
+      return await SupabaseService().getWorkspaceInviteCodes(
+        _state.currentWorkspace!.id,
+      );
+    } catch (e) {
+      AppLogger.error('Error getting invite codes', e);
+      return [];
+    }
   }
 
-  void _createInvitationNotification({
-    required String email,
-    required String workspaceId,
-    required String workspaceName,
-    required String inviteToken,
-  }) async {
+  /// Delete an invite code
+  Future<void> deleteInviteCode(String codeId) async {
+    _setLoading(true);
+
     try {
-      final response = await SupabaseService()
-          .client
-          .from('profiles')
-          .select('id')
-          .eq('email', email)
-          .maybeSingle();
-
-      if (response != null) {
-        final invitedUserId = response['id'].toString();
-        final inviterName = _state.currentWorkspace?.members
-                .firstWhere(
-                  (m) => m.userId == _currentUserId,
-                  orElse: () => WorkspaceMember(
-                    userId: _currentUserId!,
-                    email: '',
-                    role: WorkspaceRole.owner,
-                    status: MemberStatus.active,
-                    invitedAt: DateTime.now(),
-                    invitedBy: '',
-                  ),
-                )
-                .displayName ??
-            'Someone';
-
-        await SupabaseService().client.from('notifications').insert({
-          'user_id': invitedUserId,
-          'workspace_id': workspaceId,
-          'type': 'workspace_invitation',
-          'title': 'Workspace Invitation',
-          'message': '$inviterName invited you to join "$workspaceName"',
-          'data': {
-            'workspace_name': workspaceName,
-            'inviter_name': inviterName,
-          },
-          'action_type': 'accept_invitation',
-          'action_data': {
-            'invitation_token': inviteToken,
-            'workspace_id': workspaceId,
-          },
-        });
-
-        AppLogger.info('Created invitation notification for: $email');
-      }
+      await SupabaseService().deleteInviteCode(codeId);
+      AppLogger.info('Deleted invite code: $codeId');
     } catch (e) {
-      AppLogger.error('Error creating invitation notification', e);
+      AppLogger.error('Error deleting invite code', e);
+      _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Join workspace using invite code
+  Future<bool> joinWorkspaceWithCode({
+    required String code,
+    required String userId,
+    String? displayName,
+  }) async {
+    _setLoading(true);
+
+    try {
+      final response = await SupabaseService().useInviteCode(
+        code: code,
+        userId: userId,
+        displayName: displayName,
+      );
+
+      // Refresh workspaces list
+      await loadWorkspaces();
+
+      AppLogger.info('Joined workspace: ${response['workspace_name']}');
+      return true;
+    } catch (e) {
+      AppLogger.error('Error joining workspace', e);
+      _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Validate invite code before joining
+  Future<Map<String, dynamic>?> validateInviteCode(String code) async {
+    try {
+      return await SupabaseService().validateInviteCode(code);
+    } catch (e) {
+      AppLogger.error('Error validating invite code', e);
+      return null;
     }
   }
 

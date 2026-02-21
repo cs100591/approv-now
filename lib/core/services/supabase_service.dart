@@ -694,4 +694,138 @@ class SupabaseService {
       rethrow;
     }
   }
+
+  // ============================================
+  // INVITE CODE METHODS
+  // ============================================
+
+  /// Generate a random 6-character invite code (uppercase letters + numbers)
+  String _generateInviteCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = DateTime.now().millisecondsSinceEpoch;
+    var code = '';
+    for (var i = 0; i < 6; i++) {
+      code += chars[(random + i * 7) % chars.length];
+    }
+    return code;
+  }
+
+  /// Create a new invite code for workspace
+  Future<Map<String, dynamic>> createInviteCode({
+    required String workspaceId,
+    required String createdBy,
+  }) async {
+    try {
+      // Generate unique code
+      var code = _generateInviteCode();
+      var attempts = 0;
+      const maxAttempts = 10;
+
+      // Check if code already exists and regenerate if needed
+      while (attempts < maxAttempts) {
+        final existing = await client
+            .from('workspace_invite_codes')
+            .select('id')
+            .eq('code', code)
+            .maybeSingle();
+
+        if (existing == null) break;
+
+        code = _generateInviteCode();
+        attempts++;
+      }
+
+      if (attempts >= maxAttempts) {
+        throw Exception('Failed to generate unique invite code');
+      }
+
+      final response = await client
+          .from('workspace_invite_codes')
+          .insert({
+            'workspace_id': workspaceId,
+            'code': code,
+            'created_by': createdBy,
+            'expires_at':
+                DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+          })
+          .select()
+          .single();
+
+      AppLogger.info('Created invite code: $code for workspace: $workspaceId');
+      return response;
+    } catch (e) {
+      AppLogger.error('Failed to create invite code', e);
+      rethrow;
+    }
+  }
+
+  /// Get all invite codes for a workspace
+  Future<List<Map<String, dynamic>>> getWorkspaceInviteCodes(
+      String workspaceId) async {
+    try {
+      final response = await client
+          .from('workspace_invite_codes')
+          .select()
+          .eq('workspace_id', workspaceId)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      AppLogger.error('Failed to get invite codes', e);
+      return [];
+    }
+  }
+
+  /// Delete an invite code
+  Future<void> deleteInviteCode(String codeId) async {
+    try {
+      await client.from('workspace_invite_codes').delete().eq('id', codeId);
+
+      AppLogger.info('Deleted invite code: $codeId');
+    } catch (e) {
+      AppLogger.error('Failed to delete invite code', e);
+      rethrow;
+    }
+  }
+
+  /// Use invite code to join workspace
+  Future<Map<String, dynamic>> useInviteCode({
+    required String code,
+    required String userId,
+    String? displayName,
+  }) async {
+    try {
+      final response = await client.rpc(
+        'use_invite_code',
+        params: {
+          'p_code': code,
+          'p_user_id': userId,
+          'p_display_name': displayName,
+        },
+      );
+
+      AppLogger.info('User $userId joined workspace using code: $code');
+      return response;
+    } catch (e) {
+      AppLogger.error('Failed to use invite code', e);
+      rethrow;
+    }
+  }
+
+  /// Validate invite code (check if valid and not expired)
+  Future<Map<String, dynamic>?> validateInviteCode(String code) async {
+    try {
+      final response = await client
+          .from('workspace_invite_codes')
+          .select('*, workspaces(name)')
+          .eq('code', code)
+          .gt('expires_at', DateTime.now().toIso8601String())
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      AppLogger.error('Failed to validate invite code', e);
+      return null;
+    }
+  }
 }

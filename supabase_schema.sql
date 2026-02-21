@@ -139,6 +139,47 @@ CREATE INDEX IF NOT EXISTS idx_workspace_members_workspace_id ON workspace_membe
 CREATE INDEX IF NOT EXISTS idx_workspace_members_user_id ON workspace_members(user_id);
 
 -- ============================================
+-- WORKSPACE INVITE CODES TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS workspace_invite_codes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  code TEXT NOT NULL UNIQUE, -- 6位: 大写字母+数字 (如 A3B7K9)
+  created_by UUID NOT NULL REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL, -- 24小时后过期
+  used_count INTEGER DEFAULT 0 -- 仅统计，无使用限制
+);
+
+-- Enable RLS
+ALTER TABLE workspace_invite_codes ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for invite codes
+DROP POLICY IF EXISTS "Users can view invite codes of their workspaces" ON workspace_invite_codes;
+CREATE POLICY "Users can view invite codes of their workspaces" ON workspace_invite_codes
+  FOR SELECT USING (
+    workspace_id IN (
+      SELECT id FROM workspaces 
+      WHERE auth.uid() = owner_id OR auth.uid() = ANY(member_ids)
+    )
+  );
+
+DROP POLICY IF EXISTS "Workspace owners can manage invite codes" ON workspace_invite_codes;
+CREATE POLICY "Workspace owners can manage invite codes" ON workspace_invite_codes
+  FOR ALL USING (
+    workspace_id IN (SELECT id FROM workspaces WHERE auth.uid() = owner_id)
+  );
+
+DROP POLICY IF EXISTS "Anyone can use valid invite code" ON workspace_invite_codes;
+CREATE POLICY "Anyone can use valid invite code" ON workspace_invite_codes
+  FOR SELECT USING (expires_at > NOW());
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_invite_codes_workspace_id ON workspace_invite_codes(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON workspace_invite_codes(code);
+CREATE INDEX IF NOT EXISTS idx_invite_codes_expires ON workspace_invite_codes(expires_at);
+
+-- ============================================
 -- TEMPLATES TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS templates (
@@ -553,6 +594,103 @@ RETURNS SETOF workspaces AS $$
 BEGIN
   RETURN QUERY SELECT * FROM workspaces 
   WHERE p_user_id = ANY(member_ids) AND owner_id != p_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
+-- RPC FUNCTIONS FOR INVITE CODES
+-- ============================================
+
+-- Function to validate and use invite code
+CREATE OR REPLACE FUNCTION use_invite_code(
+  p_code TEXT,
+  p_user_id UUID,
+  p_display_name TEXT DEFAULT NULL
+)
+RETURNS TABLE(workspace_id UUID, workspace_name TEXT, role TEXT) AS $$
+DECLARE
+  v_invite_record RECORD;
+  v_workspace_record RECORD;
+BEGIN
+  -- Find valid invite code
+  SELECT * INTO v_invite_record
+  FROM workspace_invite_codes
+  WHERE code = p_code
+    AND expires_at > NOW();
+  
+  IF v_invite_record IS NULL THEN
+    RAISE EXCEPTION 'Invalid or expired invite code';
+  END IF;
+  
+  -- Get workspace info
+  SELECT id, name INTO v_workspace_record
+  FROM workspaces
+  WHERE id = v_invite_record.workspace_id;
+  
+  IF v_workspace_record IS NULL THEN
+    RAISE EXCEPTION 'Workspace not found';
+  END IF;
+  
+  -- Check if user already member
+  IF EXISTS (
+    SELECT 1 FROM workspace_members 
+    WHERE workspace_id = v_invite_record.workspace_id 
+    AND user_id = p_user_id
+  ) THEN
+    RAISE EXCEPTION 'User is already a member of this workspace';
+  END IF;
+  
+  -- Add member to workspace
+  INSERT INTO workspace_members (
+    workspace_id,
+    user_id,
+    email,
+    display_name,
+    role,
+    status,
+    joined_at
+  )
+  SELECT 
+    v_invite_record.workspace_id,
+    p_user_id,
+    u.email,
+    COALESCE(p_display_name, u.raw_user_meta_data->>'display_name'),
+    'viewer', -- Default role for invite code users
+    'active',
+    NOW()
+  FROM auth.users u
+  WHERE u.id = p_user_id;
+  
+  -- Add to workspace member_ids array
+  UPDATE workspaces
+  SET member_ids = array_append(member_ids, p_user_id)
+  WHERE id = v_invite_record.workspace_id
+    AND NOT (p_user_id = ANY(member_ids));
+  
+  -- Increment used count
+  UPDATE workspace_invite_codes
+  SET used_count = used_count + 1
+  WHERE id = v_invite_record.id;
+  
+  -- Return workspace info
+  RETURN QUERY SELECT 
+    v_workspace_record.id,
+    v_workspace_record.name,
+    'viewer'::TEXT;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to cleanup expired invite codes (can be called by cron job)
+CREATE OR REPLACE FUNCTION cleanup_expired_invite_codes()
+RETURNS INTEGER AS $$
+DECLARE
+  v_deleted_count INTEGER;
+BEGIN
+  DELETE FROM workspace_invite_codes 
+  WHERE expires_at < NOW() - INTERVAL '7 days'; -- Keep expired codes for 7 days for reference
+  
+  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+  RETURN v_deleted_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
