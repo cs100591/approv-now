@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// RouteNames - Centralized route definitions
 class RouteNames {
   static const String login = '/login';
@@ -11,6 +9,7 @@ class RouteNames {
   static const String createRequest = '/create-request';
   static const String requestDetails = '/request-details';
   static const String approvalView = '/approval-view';
+  static const String myRequests = '/my-requests';
   static const String profile = '/profile';
   static const String notifications = '/notifications';
   static const String analytics = '/analytics';
@@ -18,4 +17,7 @@ class RouteNames {
   static const String workspaceSwitch = '/workspace-switch';
   static const String joinWorkspace = '/join-workspace';
   static const String settings = '/settings';
+  static const String workspaceSettings = '/workspace-settings';
+  static const String workspaceManage = '/workspace-manage';
+  static const String workspaceDetail = '/workspace-detail';
 }

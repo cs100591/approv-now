@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_widgets.dart';
+import '../../../core/utils/app_logger.dart';
 import '../../auth/auth_provider.dart';
 import '../../workspace/workspace_provider.dart';
 import '../template_provider.dart';
@@ -28,8 +30,8 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
   late final _descriptionController =
       TextEditingController(text: widget.template.description ?? '');
 
-  late List<TemplateField> _fields = List.from(widget.template.fields);
-  late List<ApprovalStep> _approvalSteps =
+  late final List<TemplateField> _fields = List.from(widget.template.fields);
+  late final List<ApprovalStep> _approvalSteps =
       List.from(widget.template.approvalSteps);
 
   bool _isLoading = false;
@@ -61,7 +63,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
             child: Row(
               children: [
                 Text(
-                  _isActive ? 'Active' : 'Inactive',
+                  _isActive ? AppLocalizations.of(context)!.active : 'Inactive',
                   style: AppTextStyles.bodySmall.copyWith(
                     color:
                         _isActive ? AppColors.success : AppColors.textSecondary,
@@ -70,7 +72,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
                 Switch(
                   value: _isActive,
                   onChanged: (value) => setState(() => _isActive = value),
-                  activeColor: AppColors.success,
+                  activeThumbColor: AppColors.success,
                 ),
               ],
             ),
@@ -83,7 +85,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Save'),
+                : Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -104,7 +106,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
           const SizedBox(height: AppSpacing.md),
           AppTextField(
             controller: _descriptionController,
-            label: 'Description',
+            label: AppLocalizations.of(context)!.description,
             hint: 'Brief description of this template',
             maxLines: 2,
           ),
@@ -162,14 +164,13 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
           const SizedBox(height: AppSpacing.md),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.05),
+              color: AppColors.error.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.error.withOpacity(0.3)),
+              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
             ),
             child: ListTile(
               leading: const Icon(Icons.delete_forever, color: AppColors.error),
-              title: const Text(
-                'Delete Template',
+              title: Text(AppLocalizations.of(context)!.deleteTemplate,
                 style: TextStyle(color: AppColors.error),
               ),
               subtitle: const Text(
@@ -238,7 +239,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
         IconButton(
           onPressed: onAction,
           icon: Icon(actionIcon, color: AppColors.primary),
-          tooltip: 'Add',
+          tooltip: AppLocalizations.of(context)!.add,
         ),
       ],
     );
@@ -254,7 +255,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
@@ -325,7 +326,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -336,7 +337,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(iconData, color: AppColors.primary, size: 20),
@@ -373,12 +374,12 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
             IconButton(
               icon: const Icon(Icons.edit, size: 18, color: AppColors.primary),
               onPressed: () => _editField(field, index),
-              tooltip: 'Edit',
+              tooltip: AppLocalizations.of(context)!.edit,
             ),
             IconButton(
               icon: const Icon(Icons.delete, size: 18, color: AppColors.error),
               onPressed: () => _removeField(index),
-              tooltip: 'Delete',
+              tooltip: AppLocalizations.of(context)!.delete,
             ),
           ],
         ),
@@ -392,7 +393,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -431,7 +432,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
         trailing: IconButton(
           icon: const Icon(Icons.delete, size: 18, color: AppColors.error),
           onPressed: () => _removeStep(index),
-          tooltip: 'Delete',
+          tooltip: AppLocalizations.of(context)!.delete,
         ),
       ),
     );
@@ -474,12 +475,30 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
         : _approvalSteps.map((s) => s.level).reduce((a, b) => a > b ? a : b) +
             1;
 
+    final workspaceProvider = context.read<WorkspaceProvider>();
+    final currentWorkspace = workspaceProvider.currentWorkspace;
+    final workspaceMembers = currentWorkspace?.members ?? [];
+    final workspaceOwner = currentWorkspace?.owner;
+
+    AppLogger.info('Adding approval step - Workspace: ${currentWorkspace?.id}');
+    AppLogger.info('Total members: ${workspaceMembers.length}');
+    AppLogger.info(
+        'Owner: ${workspaceOwner?.displayName ?? workspaceOwner?.email} (${workspaceOwner?.role})');
+
+    // Debug: print all members
+    for (final member in workspaceMembers) {
+      AppLogger.info(
+          'Member: ${member.displayName ?? member.email}, Role: ${member.role}, Status: ${member.status}');
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddApprovalStepSheet(
         level: nextLevel,
+        workspaceMembers: workspaceMembers,
+        workspaceOwner: workspaceOwner,
         onAdd: (step) {
           setState(() {
             _approvalSteps.add(step);
@@ -520,7 +539,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -535,8 +554,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
                 );
               }
             },
-            child: const Text(
-              'Delete',
+            child: Text(AppLocalizations.of(context)!.delete,
               style: TextStyle(color: AppColors.error),
             ),
           ),

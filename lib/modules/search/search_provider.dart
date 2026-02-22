@@ -1,7 +1,4 @@
 import 'package:flutter/foundation.dart';
-import '../template/template_models.dart';
-import '../request/request_models.dart';
-import '../workspace/workspace_models.dart';
 
 /// SearchProvider - Handles global search across the app
 class SearchProvider extends ChangeNotifier {
@@ -55,21 +52,24 @@ class SearchProvider extends ChangeNotifier {
   /// Search requests
   Future<List<SearchResult>> _searchRequests(
       String query, String? workspaceId) async {
-    // This would be implemented with actual repository calls
-    // For now, return empty list
+    // TODO: Implement actual search with repository
+    // Currently returns empty list as search functionality is not yet implemented
+    _setError('Search functionality is not yet implemented');
     return [];
   }
 
   /// Search templates
   Future<List<SearchResult>> _searchTemplates(
       String query, String? workspaceId) async {
-    // This would be implemented with actual repository calls
+    // TODO: Implement actual search with repository
+    _setError('Search functionality is not yet implemented');
     return [];
   }
 
   /// Search workspaces
   Future<List<SearchResult>> _searchWorkspaces(String query) async {
-    // This would be implemented with actual repository calls
+    // TODO: Implement actual search with repository
+    _setError('Search functionality is not yet implemented');
     return [];
   }
 

@@ -38,22 +38,39 @@ class FieldValue extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'fieldId': fieldId,
-        'fieldName': fieldName,
-        'fieldType': fieldType.name,
-        'value': value,
-      };
+  Map<String, dynamic> toJson() {
+    dynamic encodedValue = value;
+    if (value is DateTime) {
+      encodedValue = (value as DateTime).toIso8601String();
+    }
+    return {
+      'fieldId': fieldId,
+      'fieldName': fieldName,
+      'fieldType': fieldType.name,
+      'value': encodedValue,
+    };
+  }
 
-  factory FieldValue.fromJson(Map<String, dynamic> json) => FieldValue(
-        fieldId: json['fieldId'] as String,
-        fieldName: json['fieldName'] as String,
-        fieldType: FieldType.values.firstWhere(
-          (e) => e.name == json['fieldType'],
-          orElse: () => FieldType.text,
-        ),
-        value: json['value'],
-      );
+  factory FieldValue.fromJson(Map<String, dynamic> json) {
+    final type = FieldType.values.firstWhere(
+      (e) => e.name == json['fieldType'],
+      orElse: () => FieldType.text,
+    );
+
+    dynamic decodedValue = json['value'];
+    if (type == FieldType.date && decodedValue is String) {
+      try {
+        decodedValue = DateTime.parse(decodedValue);
+      } catch (_) {}
+    }
+
+    return FieldValue(
+      fieldId: json['fieldId'] as String,
+      fieldName: json['fieldName'] as String,
+      fieldType: type,
+      value: decodedValue,
+    );
+  }
 
   @override
   List<Object?> get props => [fieldId, fieldName, fieldType, value];

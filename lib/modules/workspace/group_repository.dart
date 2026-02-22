@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/stream_helper.dart';
 import 'member_group.dart';
 
 /// GroupRepository - Database operations for member groups
@@ -184,34 +185,12 @@ class GroupRepository {
     }
   }
 
-  /// Stream groups for workspace
+  /// Stream groups for workspace with safe lifecycle management
   Stream<List<MemberGroup>> streamWorkspaceGroups(String workspaceId) {
-    final controller = StreamController<List<MemberGroup>>();
-
-    getWorkspaceGroups(workspaceId).then((groups) {
-      if (!controller.isClosed) {
-        controller.add(groups);
-      }
-    }).catchError((error) {
-      if (!controller.isClosed) {
-        controller.addError(error);
-      }
-    });
-
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
-      try {
-        final groups = await getWorkspaceGroups(workspaceId);
-        if (!controller.isClosed) {
-          controller.add(groups);
-        }
-      } catch (e) {
-        if (!controller.isClosed) {
-          controller.addError(e);
-        }
-      }
-    });
-
-    return controller.stream;
+    return StreamHelper.createPollingStream(
+      fetchData: () => getWorkspaceGroups(workspaceId),
+      interval: const Duration(seconds: 30),
+    );
   }
 
   /// Get groups with member counts for workspace

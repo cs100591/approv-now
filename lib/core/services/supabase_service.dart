@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 import '../utils/app_logger.dart';
@@ -185,12 +186,14 @@ class SupabaseService {
     String? companyName,
   }) async {
     final userId = currentUserId;
+    final userEmail = currentUserEmail;
     if (userId == null) {
       throw StateError(
           'Cannot create workspace: User not authenticated. Please log in first.');
     }
 
     try {
+      // Insert workspace
       final response = await client
           .from(SupabaseConfig.workspacesTable)
           .insert({
@@ -204,7 +207,21 @@ class SupabaseService {
           .select()
           .single();
 
-      AppLogger.info('Created workspace: ${response['id']}');
+      final workspaceId = response['id'];
+
+      // Insert owner into workspace_members table
+      await client.from('workspace_members').insert({
+        'workspace_id': workspaceId,
+        'user_id': userId,
+        'email': userEmail ?? '',
+        'role': 'owner',
+        'status': 'active',
+        'invited_by': userId,
+        'joined_at': DateTime.now().toIso8601String(),
+      });
+
+      AppLogger.info(
+          'Created workspace: $workspaceId with owner in members table');
       return response;
     } catch (e) {
       AppLogger.error('Failed to create workspace', e);
@@ -233,9 +250,32 @@ class SupabaseService {
     }
   }
 
-  /// Delete workspace
+  /// Delete workspace with cascade delete
   Future<void> deleteWorkspace(String workspaceId) async {
     try {
+      // Delete related data first (cascade delete)
+      // 1. Delete requests
+      await client
+          .from(SupabaseConfig.requestsTable)
+          .delete()
+          .eq('workspace_id', workspaceId);
+      AppLogger.info('Deleted requests for workspace: $workspaceId');
+
+      // 2. Delete templates
+      await client
+          .from(SupabaseConfig.templatesTable)
+          .delete()
+          .eq('workspace_id', workspaceId);
+      AppLogger.info('Deleted templates for workspace: $workspaceId');
+
+      // 3. Delete workspace members
+      await client
+          .from('workspace_members')
+          .delete()
+          .eq('workspace_id', workspaceId);
+      AppLogger.info('Deleted workspace members for workspace: $workspaceId');
+
+      // 4. Finally delete workspace
       await client
           .from(SupabaseConfig.workspacesTable)
           .delete()
@@ -424,6 +464,8 @@ class SupabaseService {
     required String templateName,
     required List<Map<String, dynamic>> fieldValues,
     required List<Map<String, dynamic>> approvalSteps,
+    String status = 'pending',
+    int currentLevel = 1,
   }) async {
     final userId = currentUserId;
     final userName = currentUserEmail ?? 'Unknown';
@@ -446,8 +488,8 @@ class SupabaseService {
             'template_name': templateName,
             'submitted_by': userId,
             'submitted_by_name': userName,
-            'status': 'pending',
-            'current_level': 1,
+            'status': status,
+            'current_level': currentLevel,
             'field_values': fieldValues,
             'approval_actions': [],
             'current_approver_ids': currentApproverIds,
@@ -700,14 +742,12 @@ class SupabaseService {
   // ============================================
 
   /// Generate a random 6-character invite code (uppercase letters + numbers)
+  /// Uses cryptographically secure random number generator
   String _generateInviteCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final random = DateTime.now().millisecondsSinceEpoch;
-    var code = '';
-    for (var i = 0; i < 6; i++) {
-      code += chars[(random + i * 7) % chars.length];
-    }
-    return code;
+    final secureRandom = Random.secure();
+    return List.generate(6, (_) => chars[secureRandom.nextInt(chars.length)])
+        .join();
   }
 
   /// Create a new invite code for workspace
@@ -816,10 +856,11 @@ class SupabaseService {
   /// Validate invite code (check if valid and not expired)
   Future<Map<String, dynamic>?> validateInviteCode(String code) async {
     try {
-      // First, just get the invite code without filtering by expiration
+      // Query invite code without joining workspaces (RLS conflict fix)
       final response = await client
           .from('workspace_invite_codes')
-          .select('*, workspace:workspaces!inner(name)')
+          .select(
+              'id, workspace_id, code, created_by, created_at, expires_at, used_count')
           .eq('code', code)
           .maybeSingle();
 
@@ -853,7 +894,25 @@ class SupabaseService {
         return null;
       }
 
-      AppLogger.info('Invite code valid: $code');
+      // Try to get workspace name separately (may fail due to RLS, but that's OK)
+      String? workspaceName;
+      try {
+        final workspaceResponse = await client
+            .from('workspaces')
+            .select('name')
+            .eq('id', response['workspace_id'])
+            .maybeSingle();
+        workspaceName = workspaceResponse?['name'];
+      } catch (e) {
+        // Workspace name not accessible, but code is still valid
+        workspaceName = null;
+      }
+
+      // Add workspace info to response for compatibility
+      response['workspace'] = {'name': workspaceName ?? 'Unknown Workspace'};
+
+      AppLogger.info(
+          'Invite code valid: $code, workspace: ${response['workspace']['name']}');
       return response;
     } catch (e) {
       AppLogger.error('Failed to validate invite code', e);

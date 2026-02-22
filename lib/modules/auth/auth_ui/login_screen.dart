@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/services.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _biometricAvailable = canCheck && hasCredentials;
           _hasStoredCredentials = hasCredentials;
           _biometricIcon =
-              primaryType.name == 'face' ? Icons.face : Icons.fingerprint;
+              primaryType == 'face' ? Icons.face : Icons.fingerprint;
         });
       }
     } catch (e) {
@@ -125,18 +125,16 @@ class _LoginScreenState extends State<LoginScreen> {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Enable Biometric Login?'),
-        content: const Text(
-          'Would you like to enable fingerprint or face ID for quick login?',
-        ),
+        title: Text(AppLocalizations.of(context)!.enableBiometricLogin),
+        content: Text(AppLocalizations.of(context)!.biometricLoginDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Not Now'),
+            child: Text(AppLocalizations.of(context)!.notNow),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Enable'),
+            child: Text(AppLocalizations.of(context)!.enable),
           ),
         ],
       ),
@@ -159,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Icon(
@@ -180,8 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: AppSpacing.xs),
               Center(
-                child: Text(
-                  'Sign in to your account',
+                child: Text(AppLocalizations.of(context)!.signInToYourAccount,
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -194,33 +191,33 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppTextField(
-                      label: 'Email',
-                      hint: 'Enter your email',
+                      label: AppLocalizations.of(context)!.email,
+                      hint: AppLocalizations.of(context)!.enterYourEmail,
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
-                          return 'Email is required';
+                          return AppLocalizations.of(context)!.emailIsRequired;
                         }
                         if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value!)) {
-                          return 'Please enter a valid email';
+                          return AppLocalizations.of(context)!.pleaseEnterValidEmail;
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     AppPasswordField(
-                      label: 'Password',
-                      hint: 'Enter your password',
+                      label: AppLocalizations.of(context)!.password,
+                      hint: AppLocalizations.of(context)!.enterYourPassword,
                       controller: _passwordController,
                       textInputAction: TextInputAction.done,
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
-                          return 'Password is required';
+                          return AppLocalizations.of(context)!.passwordIsRequired;
                         }
                         if (value!.length < 6) {
-                          return 'Password must be at least 6 characters';
+                          return AppLocalizations.of(context)!.passwordMinLength;
                         }
                         return null;
                       },
@@ -229,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: AppTextButton(
-                        text: 'Forgot Password?',
+                        text: AppLocalizations.of(context)!.forgotPassword,
                         onPressed: () {},
                       ),
                     ),
@@ -242,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             margin:
                                 const EdgeInsets.only(bottom: AppSpacing.md),
                             decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.1),
+                              color: AppColors.error.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -271,7 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Consumer<AuthProvider>(
                       builder: (context, provider, child) {
                         return PrimaryButton(
-                          text: 'Sign In',
+                          text: AppLocalizations.of(context)!.signIn,
                           isLoading: provider.isLoading,
                           onPressed: _login,
                         );
@@ -293,8 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Padding(
                       padding:
                           const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Text(
-                        'OR',
+                      child: Text(AppLocalizations.of(context)!.or,
                         style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.textHint,
                         ),
@@ -329,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     child: Text(
-                      _biometricAvailable ? '' : 'OR',
+                      _biometricAvailable ? '' : AppLocalizations.of(context)!.or,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textHint,
                       ),
@@ -348,14 +344,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      "Don't have an account? ",
+                    Text(AppLocalizations.of(context)!.dontHaveAccount,
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
                     AppTextButton(
-                      text: 'Create Account',
+                      text: AppLocalizations.of(context)!.createAccount,
                       onPressed: () {
                         Navigator.of(context).pushNamed(RouteNames.register);
                       },
@@ -392,10 +387,10 @@ class _BiometricLoginButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -410,8 +405,7 @@ class _BiometricLoginButton extends StatelessWidget {
                 color: AppColors.primary,
               ),
               const SizedBox(height: 8),
-              Text(
-                'Use Biometric',
+              Text(AppLocalizations.of(context)!.useBiometric,
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),

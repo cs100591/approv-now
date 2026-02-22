@@ -66,7 +66,7 @@ class AiPreviewDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: _getHeaderColor().withOpacity(0.1),
+        color: _getHeaderColor().withValues(alpha: 0.1),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Row(
@@ -110,7 +110,7 @@ class AiPreviewDialog extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +143,7 @@ class AiPreviewDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _getMatchTypeColor().withOpacity(0.1),
+                  color: _getMatchTypeColor().withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -216,7 +216,7 @@ class AiPreviewDialog extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -224,7 +224,7 @@ class AiPreviewDialog extends StatelessWidget {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Center(
@@ -309,7 +309,7 @@ class AiPreviewDialog extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -363,7 +363,7 @@ class AiPreviewDialog extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
         border: Border(
-          top: BorderSide(color: AppColors.divider.withOpacity(0.5)),
+          top: BorderSide(color: AppColors.divider.withValues(alpha: 0.5)),
         ),
       ),
       child: Row(

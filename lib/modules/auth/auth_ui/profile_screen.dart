@@ -5,6 +5,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/widgets/app_widgets.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../core/providers/locale_provider.dart';
 import '../../auth/auth_provider.dart';
 import '../biometric_service.dart';
 
@@ -36,8 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _biometricAvailable = canCheck;
         _biometricEnabled = enabled;
-        _biometricIcon =
-            primaryType.name == 'face' ? Icons.face : Icons.fingerprint;
+        _biometricIcon = primaryType == 'face' ? Icons.face : Icons.fingerprint;
       });
     }
   }
@@ -101,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(AppLocalizations.of(context)!.profile),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -124,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     CircleAvatar(
                       radius: 50,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                       backgroundImage: user.photoUrl != null
                           ? NetworkImage(user.photoUrl!)
                           : null,
@@ -154,11 +155,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            _buildSectionTitle('Account'),
+            _buildSectionTitle(AppLocalizations.of(context)!.account),
             const SizedBox(height: AppSpacing.md),
             AppCard(
               child: Column(
                 children: [
+                  Builder(builder: (context) {
+                    final currentLocale =
+                        context.watch<LocaleProvider>().locale;
+                    return _buildListTile(
+                      icon: Icons.language,
+                      title: AppLocalizations.of(context)!.language,
+                      trailing: Text(
+                          currentLocale != null
+                              ? L10n.getLanguageName(currentLocale)
+                              : 'English',
+                          style:
+                              const TextStyle(color: AppColors.textSecondary)),
+                      onTap: () => _showLanguagePickerSheet(context),
+                    );
+                  }),
+                  const Divider(height: 1),
                   _buildListTile(
                     icon: Icons.person_outline,
                     title: 'Edit Profile',
@@ -167,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   _buildListTile(
                     icon: Icons.lock_outline,
-                    title: 'Change Password',
+                    title: AppLocalizations.of(context)!.changePassword,
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Coming soon')),
@@ -177,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   _buildListTile(
                     icon: Icons.notifications_outlined,
-                    title: 'Notifications',
+                    title: AppLocalizations.of(context)!.notifications,
                     onTap: () {
                       Navigator.pushNamed(context, RouteNames.notifications);
                     },
@@ -198,7 +215,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       trailing: Switch(
                         value: _biometricEnabled,
                         onChanged: _toggleBiometric,
-                        activeColor: AppColors.primary,
+                        activeThumbColor: AppColors.primary,
                       ),
                     ),
                   ],
@@ -206,14 +223,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            _buildSectionTitle('Workspaces'),
+            _buildSectionTitle(AppLocalizations.of(context)!.workspaces),
             const SizedBox(height: AppSpacing.md),
             AppCard(
               child: Column(
                 children: [
                   _buildListTile(
                     icon: Icons.business,
-                    title: 'Switch Workspace',
+                    title: AppLocalizations.of(context)!.switchWorkspace,
                     onTap: () {
                       Navigator.pushNamed(context, RouteNames.workspaceSwitch);
                     },
@@ -221,7 +238,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   _buildListTile(
                     icon: Icons.people_outline,
-                    title: 'Team Members',
+                    title: AppLocalizations.of(context)!.teamMembers,
                     onTap: () {
                       Navigator.pushNamed(context, RouteNames.teamMembers);
                     },
@@ -257,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
             SecondaryButton(
-              text: 'Log Out',
+              text: AppLocalizations.of(context)!.logout,
               onPressed: () => _showLogoutDialog(context),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -294,11 +311,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    Widget? trailing,
   }) {
     return ListTile(
       leading: Icon(icon, color: AppColors.primary),
       title: Text(title),
-      trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+      trailing: trailing ??
+          const Icon(Icons.chevron_right, color: AppColors.textSecondary),
       onTap: onTap,
     );
   }
@@ -325,22 +344,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Edit Profile'),
         content: AppTextField(
           controller: nameController,
-          label: 'Display Name',
+          label: AppLocalizations.of(context)!.displayName,
           hint: 'Your name',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              final newName = nameController.text.trim();
+              if (newName.isEmpty) return;
+
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Profile updated')),
-              );
+              try {
+                await authProvider.updateProfile(displayName: newName);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Profile updated successfully')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to update profile: $e')),
+                  );
+                }
+              }
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -351,12 +385,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Log Out'),
+        title: Text(AppLocalizations.of(context)!.logout),
         content: const Text('Are you sure you want to log out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -370,13 +404,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               }
             },
-            child: const Text(
-              'Log Out',
+            child: Text(AppLocalizations.of(context)!.logout,
               style: TextStyle(color: AppColors.error),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showLanguagePickerSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        final localeProvider = context.watch<LocaleProvider>();
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  AppLocalizations.of(context)!.selectLanguage,
+                  style: AppTextStyles.h3,
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: L10n.all.length,
+                  itemBuilder: (context, index) {
+                    final locale = L10n.all[index];
+                    final isSelected = localeProvider.locale?.languageCode ==
+                            locale.languageCode &&
+                        localeProvider.locale?.scriptCode == locale.scriptCode;
+
+                    return ListTile(
+                      title: Text(L10n.getLanguageName(locale)),
+                      trailing: isSelected
+                          ? const Icon(Icons.check, color: AppColors.primary)
+                          : null,
+                      onTap: () {
+                        context.read<LocaleProvider>().setLocale(locale);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

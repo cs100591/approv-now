@@ -127,6 +127,11 @@ class ApprovalEngineProvider extends ChangeNotifier {
     _state = _state.copyWith(progress: null);
     notifyListeners();
   }
+
+  void reset() {
+    _state = const ApprovalEngineState();
+    notifyListeners();
+  }
 }
 
 /// State for approval engine provider

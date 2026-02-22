@@ -23,9 +23,9 @@ class AiSuggestionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.05),
+        color: AppColors.warning.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +57,7 @@ class AiSuggestionCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           ...suggestions.map((suggestion) => _buildSuggestionItem(suggestion)),
           const SizedBox(height: AppSpacing.md),
-          Divider(color: AppColors.divider.withOpacity(0.5)),
+          Divider(color: AppColors.divider.withValues(alpha: 0.5)),
           const SizedBox(height: AppSpacing.sm),
           InkWell(
             onTap: onUseAi,
@@ -103,7 +103,7 @@ class AiSuggestionCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+          border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [
@@ -139,7 +139,8 @@ class AiSuggestionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _getScoreColor(suggestion.matchScore).withOpacity(0.1),
+                color: _getScoreColor(suggestion.matchScore)
+                    .withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(

@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/routing/route_names.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../auth/auth_provider.dart';
 import '../../template/template_provider.dart';
 import '../../workspace/workspace_provider.dart';
 import '../request_provider.dart';
 import '../request_models.dart';
+import '../../../core/widgets/shimmer_loading.dart';
+import '../../../core/routing/route_names.dart';
+import '../../../core/widgets/responsive_layout.dart';
+import 'request_detail_screen.dart';
 
 class ApprovalViewScreen extends StatefulWidget {
   const ApprovalViewScreen({super.key});
@@ -19,7 +23,7 @@ class ApprovalViewScreen extends StatefulWidget {
 }
 
 class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
-  int _selectedTab = 0;
+  String? _selectedRequestId;
 
   @override
   void initState() {
@@ -48,36 +52,51 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bodyContent = TabBarView(
+      children: [
+        _buildRequestList(RequestStatus.values),
+        _buildRequestList([RequestStatus.pending]),
+        _buildRequestList([RequestStatus.approved]),
+        _buildRequestList([RequestStatus.rejected]),
+      ],
+    );
+
     return DefaultTabController(
       length: 4,
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Requests'),
+          title: Text(AppLocalizations.of(context)!.requests),
           bottom: TabBar(
-            onTap: (index) {
-              setState(() {
-                _selectedTab = index;
-              });
-            },
-            tabs: const [
-              Tab(text: 'All'),
-              Tab(text: 'Pending'),
-              Tab(text: 'Approved'),
-              Tab(text: 'Rejected'),
+            tabs: [
+              Tab(text: AppLocalizations.of(context)!.all),
+              Tab(text: AppLocalizations.of(context)!.pending),
+              Tab(text: AppLocalizations.of(context)!.approved),
+              Tab(text: AppLocalizations.of(context)!.rejected),
             ],
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,
             indicatorColor: AppColors.primary,
           ),
         ),
-        body: TabBarView(
-          children: [
-            _buildRequestList(RequestStatus.values),
-            _buildRequestList([RequestStatus.pending]),
-            _buildRequestList([RequestStatus.approved]),
-            _buildRequestList([RequestStatus.rejected]),
-          ],
+        body: ResponsiveLayout(
+          mobile: bodyContent,
+          desktop: SplitView(
+            menuWidth: 400,
+            menu: bodyContent,
+            content: _selectedRequestId == null
+                ? Center(
+                    child: Text(
+                      'Select a request to view details',
+                      style: AppTextStyles.bodyLarge
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                  )
+                : RequestDetailScreen(
+                    key: ValueKey(_selectedRequestId),
+                    requestId: _selectedRequestId!,
+                  ),
+          ),
         ),
       ),
     );
@@ -86,38 +105,49 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
   Widget _buildRequestList(List<RequestStatus> statuses) {
     return Consumer<RequestProvider>(
       builder: (context, requestProvider, child) {
-        if (requestProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
+        Widget content;
 
-        if (requestProvider.error != null) {
-          return ErrorState(
+        if (requestProvider.isLoading && requestProvider.requests.isEmpty) {
+          content = const ShimmerCardList(
+              key: ValueKey('shimmer'), itemCount: 5, cardHeight: 180);
+        } else if (requestProvider.error != null) {
+          content = ErrorState(
+            key: const ValueKey('error'),
             message: requestProvider.error!,
             onRetry: _loadRequests,
           );
+        } else {
+          List<ApprovalRequest> requests = requestProvider.requests;
+
+          if (statuses.length < RequestStatus.values.length) {
+            requests =
+                requests.where((r) => statuses.contains(r.status)).toList();
+          }
+
+          if (requests.isEmpty && !requestProvider.isLoading) {
+            content = _buildEmptyState(statuses);
+          } else if (requests.isEmpty && requestProvider.isLoading) {
+            content = const ShimmerCardList(
+                key: ValueKey('shimmer'), itemCount: 5, cardHeight: 180);
+          } else {
+            content = RefreshIndicator(
+              key: const ValueKey('list'),
+              onRefresh: _loadRequests,
+              child: ListView.builder(
+                padding: AppSpacing.screenPadding,
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final request = requests[index];
+                  return _buildRequestCard(request);
+                },
+              ),
+            );
+          }
         }
 
-        List<ApprovalRequest> requests = requestProvider.requests;
-
-        if (statuses.length < RequestStatus.values.length) {
-          requests =
-              requests.where((r) => statuses.contains(r.status)).toList();
-        }
-
-        if (requests.isEmpty) {
-          return _buildEmptyState(statuses);
-        }
-
-        return RefreshIndicator(
-          onRefresh: _loadRequests,
-          child: ListView.builder(
-            padding: AppSpacing.screenPadding,
-            itemCount: requests.length,
-            itemBuilder: (context, index) {
-              final request = requests[index];
-              return _buildRequestCard(request);
-            },
-          ),
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: content,
         );
       },
     );
@@ -213,14 +243,14 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
                   children: [
                     Expanded(
                       child: SecondaryButton(
-                        text: 'Reject',
+                        text: AppLocalizations.of(context)!.reject,
                         onPressed: () => _rejectRequest(request),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: PrimaryButton(
-                        text: 'Approve',
+                        text: AppLocalizations.of(context)!.approve,
                         onPressed: () => _approveRequest(request),
                       ),
                     ),
@@ -241,23 +271,23 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
     switch (status) {
       case RequestStatus.draft:
         color = AppColors.textHint;
-        label = 'Draft';
+        label = AppLocalizations.of(context)!.draft;
         break;
       case RequestStatus.pending:
         color = AppColors.warning;
-        label = 'Pending';
+        label = AppLocalizations.of(context)!.pending;
         break;
       case RequestStatus.approved:
         color = AppColors.success;
-        label = 'Approved';
+        label = AppLocalizations.of(context)!.approved;
         break;
       case RequestStatus.rejected:
         color = AppColors.error;
-        label = 'Rejected';
+        label = AppLocalizations.of(context)!.rejected;
         break;
       case RequestStatus.revised:
         color = AppColors.info;
-        label = 'Revised';
+        label = AppLocalizations.of(context)!.revised;
         break;
     }
 
@@ -267,7 +297,7 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -296,24 +326,17 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
   }
 
   void _viewRequestDetails(ApprovalRequest request) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (context, scrollController) {
-          return _RequestDetailsSheet(
-            request: request,
-            scrollController: scrollController,
-            onApprove: _approveRequest,
-            onReject: _rejectRequest,
-          );
-        },
-      ),
-    );
+    if (ResponsiveLayout.isMobile(context)) {
+      Navigator.pushNamed(
+        context,
+        RouteNames.requestDetails,
+        arguments: {'requestId': request.id},
+      );
+    } else {
+      setState(() {
+        _selectedRequestId = request.id;
+      });
+    }
   }
 
   Future<void> _approveRequest(ApprovalRequest request) async {
@@ -335,7 +358,8 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
     }
 
     // Show comment dialog
-    final comment = await _showCommentDialog('Approve Request');
+    final comment =
+        await _showCommentDialog(AppLocalizations.of(context)!.approveRequest);
     if (comment == null) return;
 
     try {
@@ -382,8 +406,9 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
     }
 
     // Show comment dialog
-    final comment =
-        await _showCommentDialog('Reject Request', requireComment: true);
+    final comment = await _showCommentDialog(
+        AppLocalizations.of(context)!.rejectRequest,
+        requireComment: true);
     if (comment == null || comment.isEmpty) return;
 
     try {
@@ -432,7 +457,7 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -441,265 +466,11 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
               }
               Navigator.pop(context, controller.text.trim());
             },
-            child: const Text('Confirm'),
+            child: Text(AppLocalizations.of(context)!.confirm),
           ),
         ],
       ),
     );
-  }
-}
-
-class _RequestDetailsSheet extends StatelessWidget {
-  final ApprovalRequest request;
-  final ScrollController scrollController;
-  final Function(ApprovalRequest) onApprove;
-  final Function(ApprovalRequest) onReject;
-
-  const _RequestDetailsSheet({
-    required this.request,
-    required this.scrollController,
-    required this.onApprove,
-    required this.onReject,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.only(top: AppSpacing.md),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.divider,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              controller: scrollController,
-              padding: AppSpacing.screenPadding,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        request.templateName,
-                        style: AppTextStyles.h3,
-                      ),
-                    ),
-                    _buildStatusBadge(request.status),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Submitted by ${request.submittedByName}',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                Text(
-                  'Submitted on ${_formatFullDate(request.submittedAt)}',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textHint,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Field Values
-                Text(
-                  'Request Details',
-                  style: AppTextStyles.h4,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                ...request.fieldValues
-                    .map((fieldValue) => _buildFieldValue(fieldValue)),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Approval Actions
-                if (request.currentApprovalActions.isNotEmpty) ...[
-                  Text(
-                    'Approval History',
-                    style: AppTextStyles.h4,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  ...request.currentApprovalActions
-                      .map((action) => _buildActionItem(action)),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
-              ],
-            ),
-          ),
-
-          // Action Buttons
-          if (request.canShowActions) ...[
-            Container(
-              padding: AppSpacing.screenPadding,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SecondaryButton(
-                      text: 'Reject',
-                      onPressed: () => onReject(request),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: PrimaryButton(
-                      text: 'Approve',
-                      onPressed: () => onApprove(request),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(RequestStatus status) {
-    Color color;
-    String label;
-
-    switch (status) {
-      case RequestStatus.draft:
-        color = AppColors.textHint;
-        label = 'Draft';
-        break;
-      case RequestStatus.pending:
-        color = AppColors.warning;
-        label = 'Pending';
-        break;
-      case RequestStatus.approved:
-        color = AppColors.success;
-        label = 'Approved';
-        break;
-      case RequestStatus.rejected:
-        color = AppColors.error;
-        label = 'Rejected';
-        break;
-      case RequestStatus.revised:
-        color = AppColors.info;
-        label = 'Revised';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 4,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.bodySmall.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFieldValue(FieldValue fieldValue) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            fieldValue.fieldName,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            fieldValue.value?.toString() ?? '-',
-            style: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionItem(ApprovalAction action) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: action.approved
-                  ? AppColors.success.withOpacity(0.1)
-                  : AppColors.error.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              action.approved ? Icons.check : Icons.close,
-              color: action.approved ? AppColors.success : AppColors.error,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  action.approverName,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (action.comment != null) ...[
-                  Text(
-                    action.comment!,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-                Text(
-                  _formatFullDate(action.timestamp),
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textHint,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatFullDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
 

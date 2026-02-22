@@ -22,7 +22,22 @@ class SubscriptionProvider extends ChangeNotifier {
   bool get isLoading => _state.isLoading;
   String? get error => _state.error;
 
-  /// Load subscription for user
+  // ── Convenience entitlement getters ─────────────────────────────────────
+
+  bool get showBrandHeader => _subscriptionService.showBrandHeader;
+  bool get canUseCustomHeader => _subscriptionService.canUseCustomHeader;
+  bool get hasHash => _subscriptionService.hasHash;
+  bool get canUseEmailNotification =>
+      _subscriptionService.canUseEmailNotification;
+  bool get canExportExcel => _subscriptionService.canExportExcel;
+  bool get canUseAnalytics => _subscriptionService.canUseAnalytics;
+
+  void checkOverride(String email) {
+    _subscriptionService.checkOverride(email);
+    notifyListeners();
+  }
+
+  /// Load subscription for user from local cache
   Future<void> loadSubscription(String userId) async {
     _setLoading(true);
 
@@ -32,9 +47,21 @@ class SubscriptionProvider extends ChangeNotifier {
       if (subscription != null) {
         _subscriptionService.initialize(subscription);
         _state = _state.copyWith(subscription: subscription);
+      } else {
+        // Default to free plan
+        final freeSub = Subscription(
+          userId: userId,
+          plan: PlanType.free,
+          isActive: true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        _subscriptionService.initialize(freeSub);
+        _state = _state.copyWith(subscription: freeSub);
       }
     } catch (e) {
       _state = _state.copyWith(error: e.toString());
+      notifyListeners();
     }
 
     _setLoading(false);
@@ -61,42 +88,40 @@ class SubscriptionProvider extends ChangeNotifier {
       _state = _state.copyWith(subscription: subscription);
     } catch (e) {
       _state = _state.copyWith(error: e.toString());
+      notifyListeners();
     }
 
     _setLoading(false);
   }
 
-  /// Validate template creation
-  bool canCreateTemplate(int currentCount) {
-    return _subscriptionService.canCreateTemplate(currentCount);
-  }
+  // ── Plan-action guards ────────────────────────────────────────────────────
 
-  /// Validate workspace creation
-  bool canCreateWorkspace(int currentCount) {
-    return _subscriptionService.canCreateWorkspace(currentCount);
-  }
+  bool canCreateTemplate(int currentCount) =>
+      _subscriptionService.canCreateTemplate(currentCount);
 
-  /// Validate approval level addition
-  bool canAddApprovalLevel(int currentCount) {
-    return _subscriptionService.canAddApprovalLevel(currentCount);
-  }
+  bool canCreateWorkspace(int currentCount) =>
+      _subscriptionService.canCreateWorkspace(currentCount);
 
-  /// Validate team member invitation
-  bool canInviteTeamMember(int currentCount) {
-    return _subscriptionService.canInviteTeamMember(currentCount);
-  }
+  bool canAddApprovalLevel(int currentCount) =>
+      _subscriptionService.canAddApprovalLevel(currentCount);
 
-  /// Check custom header availability
-  bool get canUseCustomHeader => _subscriptionService.canUseCustomHeader;
-
-  /// Check if watermark should be applied
-  bool get shouldApplyWatermark => _subscriptionService.shouldApplyWatermark;
-
-  /// Check analytics availability
-  bool get canUseAnalytics => _subscriptionService.canUseAnalytics;
+  bool canInviteTeamMember(int currentCount) =>
+      _subscriptionService.canInviteTeamMember(currentCount);
 
   void _setLoading(bool loading) {
     _state = _state.copyWith(isLoading: loading);
+    notifyListeners();
+  }
+
+  void reset() {
+    _subscriptionService.initialize(Subscription(
+      userId: '',
+      plan: PlanType.free,
+      isActive: true,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ));
+    _state = const SubscriptionState();
     notifyListeners();
   }
 

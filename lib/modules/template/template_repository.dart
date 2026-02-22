@@ -1,7 +1,8 @@
 import 'dart:async';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
-import '../template/template_models.dart';
+import '../../core/utils/stream_helper.dart';
+import 'template_models.dart';
 
 /// TemplateRepository - Supabase implementation
 class TemplateRepository {
@@ -92,32 +93,12 @@ class TemplateRepository {
     }
   }
 
-  /// Stream templates for workspace
+  /// Stream templates for workspace with safe lifecycle management
   Stream<List<Template>> streamTemplatesByWorkspace(String workspaceId) {
-    final controller = StreamController<List<Template>>();
-
-    // Initial fetch
-    getTemplatesByWorkspace(workspaceId).then((templates) {
-      controller.add(templates);
-    }).catchError((error) {
-      controller.addError(error);
-    });
-
-    // Refresh every 30 seconds
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
-      try {
-        final templates = await getTemplatesByWorkspace(workspaceId);
-        if (!controller.isClosed) {
-          controller.add(templates);
-        }
-      } catch (e) {
-        if (!controller.isClosed) {
-          controller.addError(e);
-        }
-      }
-    });
-
-    return controller.stream;
+    return StreamHelper.createPollingStream(
+      fetchData: () => getTemplatesByWorkspace(workspaceId),
+      interval: const Duration(seconds: 30),
+    );
   }
 
   /// Map Supabase response to Template model

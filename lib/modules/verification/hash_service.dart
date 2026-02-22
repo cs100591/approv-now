@@ -140,16 +140,16 @@ class VerificationResult {
   final VerificationStatus status;
   final String? message;
 
-  const VerificationResult._(this.status, {this.message});
+  const VerificationResult._(this.status, [this.message]);
 
   factory VerificationResult.valid() =>
       const VerificationResult._(VerificationStatus.valid);
 
-  factory VerificationResult.invalid() =>
-      const VerificationResult._(VerificationStatus.invalid);
+  factory VerificationResult.invalid([String? message]) =>
+      VerificationResult._(VerificationStatus.invalid, message);
 
-  factory VerificationResult.superseded() =>
-      const VerificationResult._(VerificationStatus.superseded);
+  factory VerificationResult.superseded([String? message]) =>
+      VerificationResult._(VerificationStatus.superseded, message);
 
   bool get isValid => status == VerificationStatus.valid;
   bool get isInvalid => status == VerificationStatus.invalid;

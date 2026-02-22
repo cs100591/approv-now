@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import '../../core/utils/app_logger.dart';
 
 /// Service to handle deep links for invitations and other actions

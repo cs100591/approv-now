@@ -108,7 +108,7 @@ Please generate the following content (JSON format):
     {
       "level": 1,
       "name": "Step name",
-      "approvers": ["approver1@company.com"],
+      "approvers": [],
       "requireAll": false,
       "condition": "Conditional expression (optional)"
     }

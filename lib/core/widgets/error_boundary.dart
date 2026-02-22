@@ -9,10 +9,10 @@ class ErrorBoundary extends StatefulWidget {
   final Widget? fallbackWidget;
 
   const ErrorBoundary({
-    Key? key,
+    super.key,
     required this.child,
     this.fallbackWidget,
-  }) : super(key: key);
+  });
 
   @override
   State<ErrorBoundary> createState() => _ErrorBoundaryState();
@@ -143,7 +143,7 @@ void setupErrorHandling() {
               ),
               textAlign: TextAlign.center,
             ),
-            if (details.exception != null) ...[
+            ...[
               const SizedBox(height: 12),
               Text(
                 details.exception.toString(),

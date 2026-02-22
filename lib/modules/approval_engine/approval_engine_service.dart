@@ -1,6 +1,6 @@
-import 'dart:math';
 import '../request/request_models.dart';
 import '../template/template_models.dart';
+import '../../core/utils/id_generator.dart';
 
 /// ApprovalEngineService - Handles sequential approval logic
 class ApprovalEngineService {
@@ -173,8 +173,7 @@ class ApprovalEngineService {
   }
 
   String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString() +
-        Random().nextInt(1000).toString();
+    return IdGenerator.generateId();
   }
 }
 

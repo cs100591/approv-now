@@ -152,6 +152,11 @@ class RequestProvider extends ChangeNotifier {
 
       final createdRequest = await _requestRepository.createRequest(request);
 
+      // Add to local state immediately so submitRequest can find it
+      final updatedRequests = [..._state.requests, createdRequest];
+      _state = _state.copyWith(requests: updatedRequests);
+      notifyListeners();
+
       AppLogger.info('Created request: ${createdRequest.id}');
       return createdRequest;
     } catch (e) {
@@ -167,15 +172,29 @@ class RequestProvider extends ChangeNotifier {
   Future<void> submitRequest({
     required String requestId,
     required List<FieldValue> fieldValues,
+    ApprovalRequest?
+        draftRequest, // Pass the draft directly to avoid state race
   }) async {
     _setLoading(true);
 
     try {
-      // Get request from current state
-      final request = _state.requests.firstWhere(
-        (r) => r.id == requestId,
-        orElse: () => throw Exception('Request not found'),
-      );
+      // Use supplied draft request or fall back to state lookup
+      ApprovalRequest request;
+      if (draftRequest != null) {
+        request = draftRequest;
+      } else {
+        final found = _state.requests.cast<ApprovalRequest?>().firstWhere(
+              (r) => r!.id == requestId,
+              orElse: () => null,
+            );
+        if (found == null) {
+          // Try fetching from DB directly
+          request = await _requestRepository.getRequest(requestId) ??
+              (throw Exception('Request not found'));
+        } else {
+          request = found;
+        }
+      }
 
       if (!request.canEdit) {
         throw Exception('Cannot edit request in current status');
@@ -348,6 +367,16 @@ class RequestProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       AppLogger.error('Error selecting request', e);
+    }
+  }
+
+  /// Fetch a single request directly from the database
+  Future<ApprovalRequest?> fetchRequestById(String requestId) async {
+    try {
+      return await _requestRepository.getRequest(requestId);
+    } catch (e) {
+      AppLogger.error('Error fetching request by id', e);
+      return null;
     }
   }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/stream_helper.dart';
 import 'workspace_models.dart';
 import 'workspace_member.dart';
 
@@ -107,47 +108,12 @@ class WorkspaceRepository {
     }
   }
 
-  /// Stream workspaces for user
+  /// Stream workspaces for user with safe lifecycle management
   Stream<List<Workspace>> streamWorkspacesForUser(String userId) {
-    final controller = StreamController<List<Workspace>>();
-    Timer? timer;
-
-    // Initial fetch
-    getWorkspacesForUser(userId).then((workspaces) {
-      if (!controller.isClosed) {
-        controller.add(workspaces);
-      }
-    }).catchError((error) {
-      if (!controller.isClosed) {
-        controller.addError(error);
-      }
-    });
-
-    // Refresh every 30 seconds
-    timer = Timer.periodic(const Duration(seconds: 30), (t) async {
-      if (controller.isClosed) {
-        t.cancel();
-        return;
-      }
-      try {
-        final workspaces = await getWorkspacesForUser(userId);
-        if (!controller.isClosed) {
-          controller.add(workspaces);
-        }
-      } catch (e) {
-        if (!controller.isClosed) {
-          controller.addError(e);
-        }
-      }
-    });
-
-    // Clean up when stream is cancelled
-    controller.onCancel = () {
-      timer?.cancel();
-      controller.close();
-    };
-
-    return controller.stream;
+    return StreamHelper.createPollingStream(
+      fetchData: () => getWorkspacesForUser(userId),
+      interval: const Duration(seconds: 30),
+    );
   }
 
   /// Add member to workspace

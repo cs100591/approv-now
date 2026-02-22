@@ -37,7 +37,7 @@ class StatsGrid extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -55,14 +55,13 @@ class StatsGrid extends StatelessWidget {
                       myPending.toString(),
                       Icons.hourglass_empty,
                       AppColors.warning,
-                      () => Navigator.pushNamed(
-                          context, RouteNames.createRequest),
+                      () => Navigator.pushNamed(context, RouteNames.myRequests),
                     ),
                   ),
                   Container(
                     width: 1,
                     height: 80,
-                    color: AppColors.divider.withOpacity(0.5),
+                    color: AppColors.divider.withValues(alpha: 0.5),
                   ),
                   Expanded(
                     child: _buildStatCard(
@@ -79,7 +78,7 @@ class StatsGrid extends StatelessWidget {
               ),
               Divider(
                 height: 1,
-                color: AppColors.divider.withOpacity(0.5),
+                color: AppColors.divider.withValues(alpha: 0.5),
               ),
               // Second row
               Row(
@@ -91,14 +90,13 @@ class StatsGrid extends StatelessWidget {
                       myApproved.toString(),
                       Icons.check_circle,
                       AppColors.success,
-                      () => Navigator.pushNamed(
-                          context, RouteNames.createRequest),
+                      () => Navigator.pushNamed(context, RouteNames.myRequests),
                     ),
                   ),
                   Container(
                     width: 1,
                     height: 80,
-                    color: AppColors.divider.withOpacity(0.5),
+                    color: AppColors.divider.withValues(alpha: 0.5),
                   ),
                   Expanded(
                     child: _buildStatCard(
@@ -107,8 +105,7 @@ class StatsGrid extends StatelessWidget {
                       myRequests.length.toString(),
                       Icons.folder_outlined,
                       AppColors.primary,
-                      () => Navigator.pushNamed(
-                          context, RouteNames.createRequest),
+                      () => Navigator.pushNamed(context, RouteNames.myRequests),
                     ),
                   ),
                 ],
@@ -126,7 +123,7 @@ class StatsGrid extends StatelessWidget {
     String value,
     IconData icon,
     Color color,
-    VoidCallback onTap,
+    VoidCallback? onTap,
   ) {
     return InkWell(
       onTap: onTap,
@@ -139,7 +136,7 @@ class StatsGrid extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 22),

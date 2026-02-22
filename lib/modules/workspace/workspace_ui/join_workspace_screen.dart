@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -103,7 +104,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
           final workspaceName =
               (_validatedWorkspace?['workspace'] as Map<String, dynamic>?)
                       ?.cast<String, dynamic>()['name'] as String? ??
-                  'Workspace';
+                  AppLocalizations.of(context)!.workspace;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Joined $workspaceName successfully!'),
@@ -134,7 +135,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Join Workspace'),
+        title: Text(AppLocalizations.of(context)!.joinWorkspace),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
@@ -149,7 +150,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -157,7 +158,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -271,10 +272,10 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.success.withOpacity(0.3),
+                    color: AppColors.success.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -285,7 +286,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.2),
+                            color: AppColors.success.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
@@ -342,7 +343,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Join Workspace'),
+                            : Text(AppLocalizations.of(context)!.joinWorkspace),
                       ),
                     ),
                   ],
@@ -381,7 +382,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
                   const SizedBox(height: AppSpacing.xs),
                   _buildInstructionItem(
                     '3',
-                    'Click "Join Workspace" to become a member',
+                    'Click AppLocalizations.of(context)!.joinWorkspace to become a member',
                   ),
                 ],
               ),
@@ -400,7 +401,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
           width: 20,
           height: 20,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Center(

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_widgets.dart';
+import '../../../core/utils/id_generator.dart';
 import '../../auth/auth_provider.dart';
 import '../../workspace/workspace_provider.dart';
+import '../../workspace/workspace_member.dart';
 import '../template_provider.dart';
 import '../template_models.dart';
 import '../ai/smart_template_generator.dart';
@@ -46,6 +49,35 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       enableAi: false,
     );
     _nameController.addListener(_onNameChanged);
+
+    // Check permission after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkPermission();
+    });
+  }
+
+  void _checkPermission() {
+    final workspaceProvider = context.read<WorkspaceProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final currentWorkspace = workspaceProvider.currentWorkspace;
+    final currentUser = authProvider.user;
+
+    // Only owner or admin can create templates
+    final canCreate = currentUser != null &&
+        currentWorkspace != null &&
+        (currentWorkspace.createdBy == currentUser.id ||
+            currentWorkspace.ownerId == currentUser.id);
+
+    if (!canCreate) {
+      // Show error and go back
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only workspace owner or admin can create templates'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -226,7 +258,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Create Template'),
+        title: Text(AppLocalizations.of(context)!.createTemplate),
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _saveTemplate,
@@ -236,7 +268,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Save'),
+                : Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -303,7 +335,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
 
             AppTextField(
               controller: _descriptionController,
-              label: 'Description',
+              label: AppLocalizations.of(context)!.description,
               hint: 'Brief description of this template',
               maxLines: 2,
             ),
@@ -412,7 +444,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
         IconButton(
           onPressed: onAction,
           icon: Icon(actionIcon, color: AppColors.primary),
-          tooltip: 'Add',
+          tooltip: AppLocalizations.of(context)!.add,
         ),
       ],
     );
@@ -428,7 +460,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
@@ -499,7 +531,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -510,7 +542,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(iconData, color: AppColors.primary, size: 20),
@@ -547,12 +579,12 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
             IconButton(
               icon: const Icon(Icons.edit, size: 18, color: AppColors.primary),
               onPressed: () => _editField(field, index),
-              tooltip: 'Edit',
+              tooltip: AppLocalizations.of(context)!.edit,
             ),
             IconButton(
               icon: const Icon(Icons.delete, size: 18, color: AppColors.error),
               onPressed: () => _removeField(index),
-              tooltip: 'Delete',
+              tooltip: AppLocalizations.of(context)!.delete,
             ),
           ],
         ),
@@ -566,7 +598,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -602,10 +634,20 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
             color: AppColors.textSecondary,
           ),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete, size: 18, color: AppColors.error),
-          onPressed: () => _removeStep(index),
-          tooltip: 'Delete',
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, size: 18, color: AppColors.primary),
+              onPressed: () => _editStep(step, index),
+              tooltip: AppLocalizations.of(context)!.edit,
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, size: 18, color: AppColors.error),
+              onPressed: () => _removeStep(index),
+              tooltip: AppLocalizations.of(context)!.delete,
+            ),
+          ],
         ),
       ),
     );
@@ -648,12 +690,30 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
         : _approvalSteps.map((s) => s.level).reduce((a, b) => a > b ? a : b) +
             1;
 
+    final workspaceProvider = context.read<WorkspaceProvider>();
+    final currentWorkspace = workspaceProvider.currentWorkspace;
+    final workspaceMembers = currentWorkspace?.members ?? [];
+    final workspaceOwner = currentWorkspace?.owner;
+
+    AppLogger.info('Adding approval step - Workspace: ${currentWorkspace?.id}');
+    AppLogger.info('Total members: ${workspaceMembers.length}');
+    AppLogger.info(
+        'Owner: ${workspaceOwner?.displayName ?? workspaceOwner?.email} (${workspaceOwner?.role})');
+
+    // Debug: print all members
+    for (final member in workspaceMembers) {
+      AppLogger.info(
+          'Member: ${member.displayName ?? member.email}, Role: ${member.role}, Status: ${member.status}');
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddApprovalStepSheet(
         level: nextLevel,
+        workspaceMembers: workspaceMembers,
+        workspaceOwner: workspaceOwner,
         onAdd: (step) {
           setState(() {
             _approvalSteps.add(step);
@@ -681,6 +741,30 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     setState(() {
       _approvalSteps.removeAt(index);
     });
+  }
+
+  void _editStep(ApprovalStep step, int index) {
+    final workspaceProvider = context.read<WorkspaceProvider>();
+    final currentWorkspace = workspaceProvider.currentWorkspace;
+    final workspaceMembers = currentWorkspace?.members ?? [];
+    final workspaceOwner = currentWorkspace?.owner;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddApprovalStepSheet(
+        level: step.level,
+        workspaceMembers: workspaceMembers,
+        workspaceOwner: workspaceOwner,
+        existingStep: step,
+        onAdd: (updatedStep) {
+          setState(() {
+            _approvalSteps[index] = updatedStep;
+          });
+        },
+      ),
+    );
   }
 
   Future<void> _saveTemplate() async {
@@ -777,7 +861,7 @@ class _AddFieldSheetState extends State<AddFieldSheet> {
 
   // For dropdown options
   final _optionController = TextEditingController();
-  late List<String> _options = widget.field?.options?.toList() ?? [];
+  late final List<String> _options = widget.field?.options?.toList() ?? [];
 
   // For checkbox default
   late bool _checkboxDefault =
@@ -931,7 +1015,7 @@ class _AddFieldSheetState extends State<AddFieldSheet> {
                                 });
                               },
                               backgroundColor:
-                                  AppColors.primary.withOpacity(0.1),
+                                  AppColors.primary.withValues(alpha: 0.1),
                               side: BorderSide.none,
                             );
                           }).toList(),
@@ -1058,11 +1142,17 @@ class _AddFieldSheetState extends State<AddFieldSheet> {
 class AddApprovalStepSheet extends StatefulWidget {
   final int level;
   final Function(ApprovalStep) onAdd;
+  final List<WorkspaceMember> workspaceMembers;
+  final WorkspaceMember? workspaceOwner;
+  final ApprovalStep? existingStep;
 
   const AddApprovalStepSheet({
     super.key,
     required this.level,
     required this.onAdd,
+    required this.workspaceMembers,
+    this.workspaceOwner,
+    this.existingStep,
   });
 
   @override
@@ -1070,10 +1160,52 @@ class AddApprovalStepSheet extends StatefulWidget {
 }
 
 class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
-  final _nameController = TextEditingController();
-  final _approverController = TextEditingController();
-  final List<String> _approvers = [];
-  bool _requireAll = false;
+  late final _nameController = TextEditingController(
+    text: widget.existingStep?.name ?? '',
+  );
+  String? _selectedApproverId;
+  late final List<String> _approverIds =
+      widget.existingStep?.approvers.toList() ?? [];
+  late bool _requireAll = widget.existingStep?.requireAll ?? false;
+
+  @override
+  void initState() {
+    super.initState();
+    // If editing, populate the approvers
+    if (widget.existingStep != null) {
+      _approverIds.addAll(widget.existingStep!.approvers);
+    }
+  }
+
+  // Combine owner and active members for the dropdown
+  List<WorkspaceMember> get availableApprovers {
+    final List<WorkspaceMember> approvers = [];
+
+    // Find owner from members if workspaceOwner is null
+    WorkspaceMember? owner = widget.workspaceOwner;
+    if (owner == null) {
+      try {
+        owner = widget.workspaceMembers.firstWhere(
+          (m) =>
+              m.role == WorkspaceRole.owner && m.status == MemberStatus.active,
+        );
+      } catch (_) {
+        owner = null;
+      }
+    }
+
+    // Add owner first
+    if (owner != null) {
+      approvers.add(owner);
+    }
+
+    // Add other active members (excluding owner to avoid duplicates)
+    approvers.addAll(widget.workspaceMembers.where((m) =>
+        m.status == MemberStatus.active &&
+        (owner == null || m.userId != owner.userId)));
+
+    return approvers;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1128,50 +1260,111 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
                     ),
                     const SizedBox(height: AppSpacing.md),
 
-                    // Add Approver
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppTextField(
-                            controller: _approverController,
-                            label: 'Approver Email',
-                            hint: 'manager@company.com',
-                            onChanged: (_) => setState(() {}),
+                    // Add Approver from Workspace Members
+                    if (availableApprovers.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning, color: AppColors.error),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                'No workspace members available. Please add members first.',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              initialValue: _selectedApproverId,
+                              decoration: InputDecoration(
+                                labelText: 'Select Approver',
+                                hintText: 'Choose from workspace members',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: AppColors.divider,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.sm,
+                                ),
+                              ),
+                              items: availableApprovers.map((member) {
+                                final bool isOwner =
+                                    widget.workspaceOwner?.userId ==
+                                        member.userId;
+                                return DropdownMenuItem<String>(
+                                  value: member.userId,
+                                  child: Text(
+                                    '${member.displayName ?? member.email}${isOwner ? ' (Owner)' : ''}',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedApproverId = value);
+                              },
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        IconButton(
-                          onPressed: _approverController.text.isEmpty
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _approvers
-                                        .add(_approverController.text.trim());
-                                    _approverController.clear();
-                                  });
-                                },
-                          icon: const Icon(Icons.add_circle,
-                              color: AppColors.primary),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: AppSpacing.sm),
+                          IconButton(
+                            onPressed: _selectedApproverId == null ||
+                                    _approverIds.contains(_selectedApproverId)
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _approverIds.add(_selectedApproverId!);
+                                      _selectedApproverId = null;
+                                    });
+                                  },
+                            icon: const Icon(Icons.add_circle,
+                                color: AppColors.primary),
+                          ),
+                        ],
+                      ),
 
                     // Approvers List
-                    if (_approvers.isNotEmpty) ...[
+                    if (_approverIds.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.md),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: _approvers.map((approver) {
+                        children: _approverIds.map((approverId) {
+                          final member = widget.workspaceMembers.firstWhere(
+                            (m) => m.userId == approverId,
+                            orElse: () => WorkspaceMember(
+                              userId: approverId,
+                              email: 'Unknown',
+                              role: WorkspaceRole.viewer,
+                              status: MemberStatus.active,
+                              invitedAt: DateTime.now(),
+                              invitedBy: 'system',
+                            ),
+                          );
                           return Chip(
-                            label: Text(approver),
+                            label: Text(member.displayName ?? member.email),
                             deleteIcon: const Icon(Icons.close, size: 18),
                             onDeleted: () {
                               setState(() {
-                                _approvers.remove(approver);
+                                _approverIds.remove(approverId);
                               });
                             },
-                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            backgroundColor:
+                                AppColors.primary.withValues(alpha: 0.1),
                             side: BorderSide.none,
                           );
                         }).toList(),
@@ -1191,7 +1384,9 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
                     const SizedBox(height: AppSpacing.xl),
 
                     PrimaryButton(
-                      text: 'Add Step',
+                      text: widget.existingStep != null
+                          ? 'Save Changes'
+                          : 'Add Step',
                       onPressed: () {
                         if (_nameController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -1200,7 +1395,7 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
                           );
                           return;
                         }
-                        if (_approvers.isEmpty) {
+                        if (_approverIds.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content:
@@ -1210,10 +1405,11 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
                         }
 
                         final step = ApprovalStep(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          id: widget.existingStep?.id ??
+                              IdGenerator.generateShortId(),
                           level: widget.level,
                           name: _nameController.text,
-                          approvers: List.from(_approvers),
+                          approvers: List.from(_approverIds),
                           requireAll: _requireAll,
                         );
 

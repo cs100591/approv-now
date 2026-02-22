@@ -37,7 +37,8 @@ class ActivityList extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+              border:
+                  Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
             ),
             child: Column(
               children: [
@@ -119,7 +120,7 @@ class ActivityList extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+            border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
           ),
           child: Row(
             children: [
@@ -127,7 +128,7 @@ class ActivityList extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(statusIcon, color: statusColor, size: 20),

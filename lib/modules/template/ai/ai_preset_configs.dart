@@ -122,9 +122,8 @@ final List<AiPresetConfig> aiPresetConfigs = [
           placeholder: 'Phone or email'),
     ],
     approvalSteps: [
-      const ApprovalStepConfig('Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('HR Approval', ['hr@company.com'],
-          condition: 'days > 3'),
+      const ApprovalStepConfig('Manager Approval', []),
+      const ApprovalStepConfig('HR Approval', [], condition: 'days > 3'),
     ],
   ),
 
@@ -158,8 +157,8 @@ final List<AiPresetConfig> aiPresetConfigs = [
           placeholder: 'If applicable, enter project name'),
     ],
     approvalSteps: [
-      const ApprovalStepConfig('Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('Finance Approval', ['finance@company.com']),
+      const ApprovalStepConfig('Manager Approval', []),
+      const ApprovalStepConfig('Finance Approval', []),
     ],
   ),
 
@@ -195,10 +194,9 @@ final List<AiPresetConfig> aiPresetConfigs = [
           placeholder: 'Explain the necessity and purpose of this purchase'),
     ],
     approvalSteps: [
-      const ApprovalStepConfig(
-          'Department Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('Finance Approval', ['finance@company.com']),
-      const ApprovalStepConfig('CEO Approval', ['ceo@company.com'],
+      const ApprovalStepConfig('Department Manager Approval', []),
+      const ApprovalStepConfig('Finance Approval', []),
+      const ApprovalStepConfig('CEO Approval', [],
           condition: 'total_amount > 5000'),
     ],
   ),
@@ -227,8 +225,8 @@ final List<AiPresetConfig> aiPresetConfigs = [
           options: ['Flight', 'High-speed Rail', 'Train', 'Bus', 'Self-drive']),
     ],
     approvalSteps: [
-      const ApprovalStepConfig('Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('Director Approval', ['director@company.com'],
+      const ApprovalStepConfig('Manager Approval', []),
+      const ApprovalStepConfig('Director Approval', [],
           condition: 'budget > 5000'),
     ],
   ),
@@ -254,7 +252,7 @@ final List<AiPresetConfig> aiPresetConfigs = [
       const FieldConfig('project', 'Related Project/Task', FieldType.text),
     ],
     approvalSteps: [
-      const ApprovalStepConfig('Manager Approval', ['manager@company.com']),
+      const ApprovalStepConfig('Manager Approval', []),
     ],
   ),
 
@@ -277,11 +275,9 @@ final List<AiPresetConfig> aiPresetConfigs = [
       const FieldConfig('contract', 'Related Contract', FieldType.file),
     ],
     approvalSteps: [
-      const ApprovalStepConfig(
-          'Department Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('Finance Approval', ['finance@company.com']),
-      const ApprovalStepConfig('CEO Approval', ['ceo@company.com'],
-          condition: 'amount > 10000'),
+      const ApprovalStepConfig('Department Manager Approval', []),
+      const ApprovalStepConfig('Finance Approval', []),
+      const ApprovalStepConfig('CEO Approval', [], condition: 'amount > 10000'),
     ],
   ),
 
@@ -319,9 +315,9 @@ final List<AiPresetConfig> aiPresetConfigs = [
           required: true, placeholder: 'Detail your budget needs and usage'),
     ],
     approvalSteps: [
-      const ApprovalStepConfig('Director Approval', ['director@company.com']),
-      const ApprovalStepConfig('Finance Approval', ['finance@company.com']),
-      const ApprovalStepConfig('CEO Approval', ['ceo@company.com']),
+      const ApprovalStepConfig('Director Approval', []),
+      const ApprovalStepConfig('Finance Approval', []),
+      const ApprovalStepConfig('CEO Approval', []),
     ],
   ),
 
@@ -353,11 +349,10 @@ final List<AiPresetConfig> aiPresetConfigs = [
       const FieldConfig('payment_terms', 'Payment Terms', FieldType.multiline),
     ],
     approvalSteps: [
-      const ApprovalStepConfig(
-          'Department Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('Legal Approval', ['legal@company.com']),
-      const ApprovalStepConfig('Finance Approval', ['finance@company.com']),
-      const ApprovalStepConfig('CEO Approval', ['ceo@company.com']),
+      const ApprovalStepConfig('Department Manager Approval', []),
+      const ApprovalStepConfig('Legal Approval', []),
+      const ApprovalStepConfig('Finance Approval', []),
+      const ApprovalStepConfig('CEO Approval', []),
     ],
   ),
 
@@ -382,9 +377,8 @@ final List<AiPresetConfig> aiPresetConfigs = [
           options: ['Sedan', 'Minivan', 'Van', 'Truck', 'Any']),
     ],
     approvalSteps: [
-      const ApprovalStepConfig(
-          'Department Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('Admin Approval', ['admin@company.com']),
+      const ApprovalStepConfig('Department Manager Approval', []),
+      const ApprovalStepConfig('Admin Approval', []),
     ],
   ),
 
@@ -411,9 +405,8 @@ final List<AiPresetConfig> aiPresetConfigs = [
       const FieldConfig('return_date', 'Expected Return Date', FieldType.date),
     ],
     approvalSteps: [
-      const ApprovalStepConfig(
-          'Department Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('Admin Approval', ['admin@company.com']),
+      const ApprovalStepConfig('Department Manager Approval', []),
+      const ApprovalStepConfig('Admin Approval', []),
     ],
   ),
 
@@ -437,10 +430,9 @@ final List<AiPresetConfig> aiPresetConfigs = [
       const FieldConfig('resume', 'Resume', FieldType.file, required: true),
     ],
     approvalSteps: [
-      const ApprovalStepConfig(
-          'Department Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('HR Approval', ['hr@company.com']),
-      const ApprovalStepConfig('CEO Approval', ['ceo@company.com']),
+      const ApprovalStepConfig('Department Manager Approval', []),
+      const ApprovalStepConfig('HR Approval', []),
+      const ApprovalStepConfig('CEO Approval', []),
     ],
   ),
 
@@ -470,9 +462,9 @@ final List<AiPresetConfig> aiPresetConfigs = [
       const FieldConfig('details', 'Details', FieldType.multiline),
     ],
     approvalSteps: [
-      const ApprovalStepConfig('Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('HR Approval', ['hr@company.com']),
-      const ApprovalStepConfig('Director Approval', ['director@company.com']),
+      const ApprovalStepConfig('Manager Approval', []),
+      const ApprovalStepConfig('HR Approval', []),
+      const ApprovalStepConfig('Director Approval', []),
     ],
   ),
 
@@ -497,9 +489,8 @@ final List<AiPresetConfig> aiPresetConfigs = [
           required: true, placeholder: 'Explain the necessity of this hiring'),
     ],
     approvalSteps: [
-      const ApprovalStepConfig(
-          'Department Manager Approval', ['manager@company.com']),
-      const ApprovalStepConfig('HR Approval', ['hr@company.com']),
+      const ApprovalStepConfig('Department Manager Approval', []),
+      const ApprovalStepConfig('HR Approval', []),
     ],
   ),
 
@@ -524,9 +515,9 @@ final List<AiPresetConfig> aiPresetConfigs = [
       const FieldConfig('proposal', 'Project Proposal', FieldType.file),
     ],
     approvalSteps: [
-      const ApprovalStepConfig('Director Approval', ['director@company.com']),
-      const ApprovalStepConfig('Finance Approval', ['finance@company.com']),
-      const ApprovalStepConfig('CEO Approval', ['ceo@company.com']),
+      const ApprovalStepConfig('Director Approval', []),
+      const ApprovalStepConfig('Finance Approval', []),
+      const ApprovalStepConfig('CEO Approval', []),
     ],
   ),
 
@@ -548,7 +539,7 @@ final List<AiPresetConfig> aiPresetConfigs = [
           'expected_date', 'Expected Completion Date', FieldType.date),
     ],
     approvalSteps: [
-      const ApprovalStepConfig('Manager Approval', ['manager@company.com']),
+      const ApprovalStepConfig('Manager Approval', []),
     ],
   ),
 ];

@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../../core/utils/app_logger.dart';
 import 'member_group.dart';
 import 'group_repository.dart';
-import 'workspace_member.dart';
 import 'workspace_repository.dart';
 
 class GroupState {
@@ -51,6 +50,13 @@ class GroupProvider extends ChangeNotifier {
   GroupState _state = const GroupState();
   StreamSubscription<List<MemberGroup>>? _groupsSubscription;
   String? _currentWorkspaceId;
+  bool _isDisposed = false;
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      _safeNotifyListeners();
+    }
+  }
 
   GroupProvider({
     GroupRepository? groupRepository,
@@ -70,7 +76,7 @@ class GroupProvider extends ChangeNotifier {
 
     _currentWorkspaceId = workspaceId;
     _state = _state.copyWith(isLoading: true);
-    notifyListeners();
+    _safeNotifyListeners();
 
     try {
       final groupsWithMembers =
@@ -88,14 +94,14 @@ class GroupProvider extends ChangeNotifier {
         isLoading: false,
         error: null,
       );
-      notifyListeners();
+      _safeNotifyListeners();
     } catch (e) {
       AppLogger.error('Failed to load workspace groups', e);
       _state = _state.copyWith(
         isLoading: false,
         error: e.toString(),
       );
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
@@ -113,7 +119,7 @@ class GroupProvider extends ChangeNotifier {
           isLoading: false,
           error: null,
         );
-        notifyListeners();
+        _safeNotifyListeners();
 
         _loadGroupMemberCounts();
       },
@@ -123,22 +129,31 @@ class GroupProvider extends ChangeNotifier {
           isLoading: false,
           error: error.toString(),
         );
-        notifyListeners();
+        _safeNotifyListeners();
       },
     );
   }
 
   /// Load member counts for all groups
   Future<void> _loadGroupMemberCounts() async {
+    // Guard against disposed provider
+    if (_isDisposed) return;
+
     final memberIds = <String, List<String>>{};
 
     for (final group in _state.groups) {
+      // Check if disposed before each async operation
+      if (_isDisposed) return;
+
       final ids = await _groupRepository.getGroupMemberIds(group.id);
       memberIds[group.id] = ids;
     }
 
+    // Final check before updating state
+    if (_isDisposed) return;
+
     _state = _state.copyWith(groupMemberIds: memberIds);
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Create group
@@ -160,13 +175,13 @@ class GroupProvider extends ChangeNotifier {
 
       final groups = [..._state.groups, group];
       _state = _state.copyWith(groups: groups);
-      notifyListeners();
+      _safeNotifyListeners();
 
       return group;
     } catch (e) {
       AppLogger.error('Failed to create group', e);
       _state = _state.copyWith(error: e.toString());
-      notifyListeners();
+      _safeNotifyListeners();
       return null;
     }
   }
@@ -192,13 +207,13 @@ class GroupProvider extends ChangeNotifier {
       }).toList();
 
       _state = _state.copyWith(groups: groups);
-      notifyListeners();
+      _safeNotifyListeners();
 
       return true;
     } catch (e) {
       AppLogger.error('Failed to update group', e);
       _state = _state.copyWith(error: e.toString());
-      notifyListeners();
+      _safeNotifyListeners();
       return false;
     }
   }
@@ -217,13 +232,13 @@ class GroupProvider extends ChangeNotifier {
         groupMemberIds: memberIds,
         clearSelectedGroup: _state.selectedGroup?.id == groupId,
       );
-      notifyListeners();
+      _safeNotifyListeners();
 
       return true;
     } catch (e) {
       AppLogger.error('Failed to delete group', e);
       _state = _state.copyWith(error: e.toString());
-      notifyListeners();
+      _safeNotifyListeners();
       return false;
     }
   }
@@ -248,13 +263,13 @@ class GroupProvider extends ChangeNotifier {
       }
 
       _state = _state.copyWith(groupMemberIds: memberIds);
-      notifyListeners();
+      _safeNotifyListeners();
 
       return true;
     } catch (e) {
       AppLogger.error('Failed to add member to group', e);
       _state = _state.copyWith(error: e.toString());
-      notifyListeners();
+      _safeNotifyListeners();
       return false;
     }
   }
@@ -276,13 +291,13 @@ class GroupProvider extends ChangeNotifier {
           currentIds.where((id) => id != workspaceMemberId).toList();
 
       _state = _state.copyWith(groupMemberIds: memberIds);
-      notifyListeners();
+      _safeNotifyListeners();
 
       return true;
     } catch (e) {
       AppLogger.error('Failed to remove member from group', e);
       _state = _state.copyWith(error: e.toString());
-      notifyListeners();
+      _safeNotifyListeners();
       return false;
     }
   }
@@ -303,17 +318,18 @@ class GroupProvider extends ChangeNotifier {
   /// Select group
   void selectGroup(MemberGroup? group) {
     _state = _state.copyWith(selectedGroup: group);
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Clear error
   void clearError() {
     _state = _state.copyWith(error: null);
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _groupsSubscription?.cancel();
     super.dispose();
   }

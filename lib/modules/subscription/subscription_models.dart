@@ -5,14 +5,57 @@ enum PlanType {
   pro,
 }
 
+extension PlanTypeExt on PlanType {
+  String get displayName {
+    switch (this) {
+      case PlanType.free:
+        return 'Free';
+      case PlanType.starter:
+        return 'Starter';
+      case PlanType.pro:
+        return 'Pro';
+    }
+  }
+
+  String get price {
+    switch (this) {
+      case PlanType.free:
+        return 'Free';
+      case PlanType.starter:
+        return '\$5.99/mo';
+      case PlanType.pro:
+        return '\$15.99/mo';
+    }
+  }
+}
+
 /// Feature entitlements by plan
+/// All limits are enforced per-user (subscription owner), not per-workspace.
 class PlanEntitlements {
-  final int maxTemplates;
+  // Workspace & Template limits
+  final int maxTemplates; // -1 = unlimited
   final int maxApprovalLevels;
-  final int maxWorkspaces;
-  final int maxTeamMembers;
+  final int maxWorkspaces; // owned workspaces
+  final int maxTeamMembers; // per workspace
+
+  // PDF Header behaviour
+  /// true  → PDF shows full "Approv Now" brand header (large)
+  /// false → PDF shows workspace-name header (Starter) or custom (Pro)
+  final bool showBrandHeader;
+
+  /// true  → Pro plan: full custom header with logo + description
   final bool customHeader;
-  final bool watermark;
+
+  // Verification hash on PDF
+  final bool hasHash;
+
+  // Email notifications
+  final bool emailNotification;
+
+  // Excel export
+  final bool excelExport;
+
+  // Analytics / stats
   final bool analytics;
 
   const PlanEntitlements({
@@ -20,50 +63,71 @@ class PlanEntitlements {
     required this.maxApprovalLevels,
     required this.maxWorkspaces,
     required this.maxTeamMembers,
+    required this.showBrandHeader,
     required this.customHeader,
-    required this.watermark,
+    required this.hasHash,
+    required this.emailNotification,
+    required this.excelExport,
     required this.analytics,
   });
 
   factory PlanEntitlements.forPlan(PlanType plan) {
     switch (plan) {
+      // ── Free ────────────────────────────────────────────────────────────
       case PlanType.free:
         return const PlanEntitlements(
-          maxTemplates: 3,
-          maxApprovalLevels: 2,
+          maxTemplates: 1,
+          maxApprovalLevels: 3,
           maxWorkspaces: 1,
-          maxTeamMembers: 3,
+          maxTeamMembers: 5,
+          showBrandHeader: true, // small "Approv Now" header
           customHeader: false,
-          watermark: true,
+          hasHash: true,
+          emailNotification: false,
+          excelExport: false,
           analytics: false,
         );
+
+      // ── Starter ─────────────────────────────────────────────────────────
       case PlanType.starter:
         return const PlanEntitlements(
-          maxTemplates: 10,
+          maxTemplates: 5,
           maxApprovalLevels: 5,
           maxWorkspaces: 3,
-          maxTeamMembers: 10,
+          maxTeamMembers: 15,
+          showBrandHeader: false, // workspace name header instead
           customHeader: false,
-          watermark: false,
+          hasHash: true,
+          emailNotification: true,
+          excelExport: true,
           analytics: true,
         );
+
+      // ── Pro ──────────────────────────────────────────────────────────────
       case PlanType.pro:
         return const PlanEntitlements(
-          maxTemplates: 100,
+          maxTemplates: -1, // unlimited
           maxApprovalLevels: 10,
-          maxWorkspaces: 10,
-          maxTeamMembers: 50,
-          customHeader: true,
-          watermark: false,
+          maxWorkspaces: -1, // unlimited
+          maxTeamMembers: -1, // unlimited
+          showBrandHeader: false,
+          customHeader: true, // workspace name + description + logo
+          hasHash: true,
+          emailNotification: true,
+          excelExport: true,
           analytics: true,
         );
     }
   }
 
-  /// Check if plan has unlimited team members
-  bool get hasUnlimitedTeamMembers => maxTeamMembers >= 1000;
+  bool get hasUnlimitedTemplates => maxTemplates == -1;
+  bool get hasUnlimitedWorkspaces => maxWorkspaces == -1;
+  bool get hasUnlimitedTeamMembers => maxTeamMembers == -1;
 
-  /// Get display string for team member limit
+  String get templatesDisplay =>
+      hasUnlimitedTemplates ? 'Unlimited' : '$maxTemplates';
+  String get workspacesDisplay =>
+      hasUnlimitedWorkspaces ? 'Unlimited' : '$maxWorkspaces';
   String get teamMembersDisplay =>
       hasUnlimitedTeamMembers ? 'Unlimited' : '$maxTeamMembers';
 }

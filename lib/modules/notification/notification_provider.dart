@@ -40,6 +40,15 @@ class NotificationProvider extends ChangeNotifier {
     loadNotifications();
   }
 
+  /// Clear state (on logout)
+  void clear() {
+    _currentUserId = null;
+    _subscription?.cancel();
+    _subscription = null;
+    _state = const NotificationState();
+    notifyListeners();
+  }
+
   /// Subscribe to real-time notification updates
   void _subscribeToNotifications(String userId) {
     _subscription?.cancel();

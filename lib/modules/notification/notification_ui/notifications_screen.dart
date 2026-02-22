@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -42,7 +43,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(AppLocalizations.of(context)!.notifications),
         actions: [
           Consumer<NotificationProvider>(
             builder: (context, notificationProvider, child) {
@@ -66,7 +67,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Consumer<NotificationProvider>(
               builder: (context, notificationProvider, child) {
                 if (notificationProvider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(child: CircularProgressIndicator());
                 }
 
                 if (notificationProvider.error != null) {
@@ -130,7 +131,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 onSelected: (selected) {
                   setState(() => _filter = filter);
                 },
-                selectedColor: AppColors.primary.withOpacity(0.2),
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
                 checkmarkColor: AppColors.primary,
                 labelStyle: TextStyle(
                   color:
@@ -148,11 +149,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   String _getFilterLabel(NotificationFilter filter) {
     switch (filter) {
       case NotificationFilter.all:
-        return 'All';
+        return AppLocalizations.of(context)!.all;
       case NotificationFilter.invitations:
         return 'Invitations';
       case NotificationFilter.requests:
-        return 'Requests';
+        return AppLocalizations.of(context)!.requests;
     }
   }
 
@@ -200,10 +201,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+          border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -220,7 +221,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.1),
+                      color: AppColors.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.mail, color: AppColors.warning),
@@ -338,7 +339,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(iconData, color: iconColor),

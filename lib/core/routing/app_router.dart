@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 import '../../modules/auth/auth_ui/auth_screens.dart';
 import '../../modules/auth/auth_ui/profile_screen.dart';
 import '../../modules/workspace/workspace_ui/dashboard_screen.dart';
 import '../../modules/workspace/workspace_ui/workspace_switch_screen.dart';
 import '../../modules/workspace/workspace_ui/team_members_screen.dart';
 import '../../modules/workspace/workspace_ui/join_workspace_screen.dart';
+import '../../modules/workspace/workspace_ui/workspace_settings_screen.dart';
+import '../../modules/workspace/workspace_ui/workspace_manage_screen.dart';
+import '../../modules/workspace/workspace_ui/workspace_detail_screen.dart';
 import '../../modules/template/template_ui/templates_list_screen.dart';
 import '../../modules/template/template_ui/create_template_screen.dart';
 import '../../modules/template/template_ui/edit_template_screen.dart';
 import '../../modules/template/template_models.dart';
 import '../../modules/request/request_ui/create_request_screen.dart';
+import '../../modules/request/request_ui/my_requests_screen.dart';
 import '../../modules/request/request_ui/approval_view_screen.dart';
+import '../../modules/request/request_ui/request_detail_screen.dart';
 import '../../modules/notification/notification_ui/notifications_screen.dart';
 import '../../modules/analytics/analytics_ui/analytics_screen.dart';
 import 'route_names.dart';
@@ -81,6 +87,12 @@ class AppRouter {
           settings: settings,
         );
 
+      case RouteNames.myRequests:
+        return MaterialPageRoute(
+          builder: (_) => const MyRequestsScreen(),
+          settings: settings,
+        );
+
       case RouteNames.workspaceSwitch:
         return MaterialPageRoute(
           builder: (_) => const WorkspaceSwitchScreen(),
@@ -117,7 +129,43 @@ class AppRouter {
           settings: settings,
         );
 
+      case RouteNames.workspaceSettings:
+        return MaterialPageRoute(
+          builder: (_) => const WorkspaceSettingsScreen(),
+          settings: settings,
+        );
+
+      case RouteNames.workspaceManage:
+        return MaterialPageRoute(
+          builder: (_) => const WorkspaceManageScreen(),
+          settings: settings,
+        );
+
+      case RouteNames.workspaceDetail:
+        String workspaceId = '';
+        final args = settings.arguments;
+        if (args is Map<String, dynamic>) {
+          workspaceId = args['workspaceId'] ?? '';
+        } else if (args is String) {
+          workspaceId = args;
+        }
+        return MaterialPageRoute(
+          builder: (_) => WorkspaceDetailScreen(workspaceId: workspaceId),
+          settings: settings,
+        );
+
       case RouteNames.requestDetails:
+        String requestId = '';
+        final args = settings.arguments;
+        if (args is Map<String, dynamic>) {
+          requestId = args['requestId'] ?? '';
+        } else if (args is String) {
+          requestId = args;
+        }
+        return MaterialPageRoute(
+          builder: (_) => RequestDetailScreen(requestId: requestId),
+          settings: settings,
+        );
       case RouteNames.forgotPassword:
       case RouteNames.settings:
         return MaterialPageRoute(

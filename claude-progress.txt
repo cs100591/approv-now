@@ -544,6 +544,43 @@ flutter build ios --release        # iOS
 - No email sending (emailsEnabled = false)
 - WorkspaceService still has empty in-memory list (not used but could confuse)
 
+---
+
+### Session: Fix Test Errors and Cleanup
+**Date:** 2026-02-22
+**Session Goal:** Fix workspace service test errors and cleanup backup files
+**Completed:**
+- ✅ Fixed `workspace_service_test.dart` - Updated method calls to use correct parameter names
+- ✅ Fixed test parameter types - Changed `userId` from nullable to non-nullable with `!` operator
+- ✅ Deleted backup file `dashboard_screen.dart.bak`
+- ✅ All 52 tests passing (11 auth + 9 workspace + 32 plan enforcement)
+
+**Files Modified:**
+- `test/workspace_service_test.dart` - Fixed all test method signatures
+
+**Files Deleted:**
+- `lib/modules/workspace/workspace_ui/dashboard_screen.dart.bak`
+
+---
+
+### Session: Fix Flutter Web CanvasKit Rendering Crash
+**Date:** 2026-02-22
+**Session Goal:** Fix Flutter Web text rendering crash in CanvasKit renderer
+**Completed:**
+- ✅ Updated `web/index.html` - Added CanvasKit configuration to limit maximumSurfaces
+- ✅ Updated `dashboard_screen.dart` - Wrapped widgets with RepaintBoundary to prevent rendering loops
+- ✅ This should resolve the text_painter/paragraph hitTest loop crash
+
+**Files Modified:**
+- `web/index.html` - Added flutterConfiguration for CanvasKit
+- `lib/modules/workspace/workspace_ui/dashboard_screen.dart` - Added RepaintBoundary wrappers
+
+**Technical Details:**
+The crash was caused by Flutter Web's CanvasKit renderer entering an infinite loop during text layout/hitTest. Common causes:
+1. Nested scrollables without proper constraints
+2. Text rendering without RepaintBoundary
+3. CanvasKit surface management issues
+
 **Next Steps:**
 - Test login flow with multiple accounts
 - Test member invitation workflow

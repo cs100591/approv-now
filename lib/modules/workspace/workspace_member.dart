@@ -105,11 +105,9 @@ class WorkspaceMember {
   bool get canManageMembers =>
       role == WorkspaceRole.owner || role == WorkspaceRole.admin;
 
-  /// Check if member can create templates
+  /// Check if member can create templates (Admin only)
   bool get canCreateTemplate =>
-      role == WorkspaceRole.owner ||
-      role == WorkspaceRole.admin ||
-      role == WorkspaceRole.editor;
+      role == WorkspaceRole.owner || role == WorkspaceRole.admin;
 
   /// Check if member can delete templates
   bool get canDeleteTemplate =>

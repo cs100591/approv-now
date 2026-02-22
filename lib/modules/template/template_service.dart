@@ -1,38 +1,20 @@
-import 'dart:math';
+import '../../core/utils/id_generator.dart';
 import 'template_models.dart';
 
-/// TemplateService - Business logic for template management
+/// TemplateService - Stateless business logic for template management
+///
+/// This service is now stateless. All data operations are performed on objects
+/// passed as parameters. Data persistence is handled by TemplateRepository.
 class TemplateService {
-  final List<Template> _templates = [];
-
-  // Get all templates
-  List<Template> getTemplates() {
-    return List.unmodifiable(_templates);
-  }
-
-  // Get templates by workspace
-  List<Template> getTemplatesByWorkspace(String workspaceId) {
-    return _templates.where((t) => t.workspaceId == workspaceId).toList();
-  }
-
-  // Get template by ID
-  Template? getTemplateById(String templateId) {
-    try {
-      return _templates.firstWhere((t) => t.id == templateId);
-    } catch (e) {
-      return null;
-    }
-  }
-
   // Create new template
-  Future<Template> createTemplate({
+  Template createTemplate({
     required String workspaceId,
     required String name,
     String? description,
     required String createdBy,
-  }) async {
-    final template = Template(
-      id: _generateId(),
+  }) {
+    return Template(
+      id: IdGenerator.generateId(),
       workspaceId: workspaceId,
       name: name,
       description: description,
@@ -40,37 +22,26 @@ class TemplateService {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-
-    _templates.add(template);
-    return template;
   }
 
   // Update template
-  Future<Template> updateTemplate({
-    required String templateId,
+  Template updateTemplate({
+    required Template existingTemplate,
     String? name,
     String? description,
     bool? isActive,
-  }) async {
-    final index = _templates.indexWhere((t) => t.id == templateId);
-    if (index == -1) {
-      throw Exception('Template not found');
-    }
-
-    final updated = _templates[index].copyWith(
+  }) {
+    return existingTemplate.copyWith(
       name: name,
       description: description,
       isActive: isActive,
       updatedAt: DateTime.now(),
     );
-
-    _templates[index] = updated;
-    return updated;
   }
 
   // Add field to template
-  Future<Template> addField({
-    required String templateId,
+  Template addField({
+    required Template existingTemplate,
     required String name,
     required String label,
     required FieldType type,
@@ -78,75 +49,51 @@ class TemplateService {
     String? placeholder,
     List<String>? options,
     Map<String, dynamic> validation = const {},
-  }) async {
-    final index = _templates.indexWhere((t) => t.id == templateId);
-    if (index == -1) {
-      throw Exception('Template not found');
-    }
-
-    final template = _templates[index];
+  }) {
     final newField = TemplateField(
-      id: _generateId(),
+      id: IdGenerator.generateId(),
       name: name,
       label: label,
       type: type,
       required: required,
-      order: template.fields.length,
+      order: existingTemplate.fields.length,
       placeholder: placeholder,
       options: options,
       validation: validation,
     );
 
-    final updatedFields = [...template.fields, newField];
-    final updated = template.copyWith(
+    final updatedFields = [...existingTemplate.fields, newField];
+    return existingTemplate.copyWith(
       fields: updatedFields,
       updatedAt: DateTime.now(),
     );
-
-    _templates[index] = updated;
-    return updated;
   }
 
   // Remove field from template
-  Future<Template> removeField({
-    required String templateId,
+  Template removeField({
+    required Template existingTemplate,
     required String fieldId,
-  }) async {
-    final index = _templates.indexWhere((t) => t.id == templateId);
-    if (index == -1) {
-      throw Exception('Template not found');
-    }
-
-    final template = _templates[index];
+  }) {
     final updatedFields =
-        template.fields.where((f) => f.id != fieldId).toList();
+        existingTemplate.fields.where((f) => f.id != fieldId).toList();
 
     // Reorder remaining fields
     for (int i = 0; i < updatedFields.length; i++) {
       updatedFields[i] = updatedFields[i].copyWith(order: i);
     }
 
-    final updated = template.copyWith(
+    return existingTemplate.copyWith(
       fields: updatedFields,
       updatedAt: DateTime.now(),
     );
-
-    _templates[index] = updated;
-    return updated;
   }
 
   // Reorder fields
-  Future<Template> reorderFields({
-    required String templateId,
+  Template reorderFields({
+    required Template existingTemplate,
     required List<String> fieldIds,
-  }) async {
-    final index = _templates.indexWhere((t) => t.id == templateId);
-    if (index == -1) {
-      throw Exception('Template not found');
-    }
-
-    final template = _templates[index];
-    final fieldMap = {for (var f in template.fields) f.id: f};
+  }) {
+    final fieldMap = {for (var f in existingTemplate.fields) f.id: f};
 
     final reorderedFields = fieldIds.asMap().entries.map((entry) {
       final field = fieldMap[entry.value];
@@ -154,33 +101,24 @@ class TemplateService {
       return field.copyWith(order: entry.key);
     }).toList();
 
-    final updated = template.copyWith(
+    return existingTemplate.copyWith(
       fields: reorderedFields,
       updatedAt: DateTime.now(),
     );
-
-    _templates[index] = updated;
-    return updated;
   }
 
   // Add approval step
-  Future<Template> addApprovalStep({
-    required String templateId,
+  Template addApprovalStep({
+    required Template existingTemplate,
     required String name,
     required List<String> approvers,
     bool requireAll = false,
     String? condition,
-  }) async {
-    final index = _templates.indexWhere((t) => t.id == templateId);
-    if (index == -1) {
-      throw Exception('Template not found');
-    }
-
-    final template = _templates[index];
-    final level = template.maxApprovalLevel + 1;
+  }) {
+    final level = existingTemplate.maxApprovalLevel + 1;
 
     final newStep = ApprovalStep(
-      id: _generateId(),
+      id: IdGenerator.generateId(),
       level: level,
       name: name,
       approvers: approvers,
@@ -188,42 +126,60 @@ class TemplateService {
       condition: condition,
     );
 
-    final updatedSteps = [...template.approvalSteps, newStep];
-    final updated = template.copyWith(
+    final updatedSteps = [...existingTemplate.approvalSteps, newStep];
+    return existingTemplate.copyWith(
       approvalSteps: updatedSteps,
       updatedAt: DateTime.now(),
     );
-
-    _templates[index] = updated;
-    return updated;
   }
 
   // Remove approval step
-  Future<Template> removeApprovalStep({
-    required String templateId,
+  Template removeApprovalStep({
+    required Template existingTemplate,
     required String stepId,
-  }) async {
-    final index = _templates.indexWhere((t) => t.id == templateId);
-    if (index == -1) {
-      throw Exception('Template not found');
-    }
-
-    final template = _templates[index];
+  }) {
     final updatedSteps =
-        template.approvalSteps.where((s) => s.id != stepId).toList();
+        existingTemplate.approvalSteps.where((s) => s.id != stepId).toList();
 
     // Reorder levels
     for (int i = 0; i < updatedSteps.length; i++) {
       updatedSteps[i] = updatedSteps[i].copyWith(level: i + 1);
     }
 
-    final updated = template.copyWith(
+    return existingTemplate.copyWith(
       approvalSteps: updatedSteps,
       updatedAt: DateTime.now(),
     );
+  }
 
-    _templates[index] = updated;
-    return updated;
+  // Update approval step
+  Template updateApprovalStep({
+    required Template existingTemplate,
+    required String stepId,
+    String? name,
+    List<String>? approvers,
+    bool? requireAll,
+    String? condition,
+  }) {
+    final stepIndex =
+        existingTemplate.approvalSteps.indexWhere((s) => s.id == stepId);
+    if (stepIndex == -1) {
+      throw Exception('Approval step not found: $stepId');
+    }
+
+    final updatedSteps =
+        List<ApprovalStep>.from(existingTemplate.approvalSteps);
+    updatedSteps[stepIndex] = updatedSteps[stepIndex].copyWith(
+      name: name,
+      approvers: approvers,
+      requireAll: requireAll,
+      condition: condition,
+    );
+
+    return existingTemplate.copyWith(
+      approvalSteps: updatedSteps,
+      updatedAt: DateTime.now(),
+    );
   }
 
   // Validate template rules
@@ -258,13 +214,20 @@ class TemplateService {
     );
   }
 
-  // Delete template
-  Future<void> deleteTemplate(String templateId) async {
-    _templates.removeWhere((t) => t.id == templateId);
+  // Check if field name is unique in template
+  bool isFieldNameUnique(Template template, String fieldName,
+      {String? excludeFieldId}) {
+    return !template.fields
+        .any((f) => f.name == fieldName && f.id != excludeFieldId);
   }
 
-  String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString() +
-        Random().nextInt(1000).toString();
+  // Get next field order
+  int getNextFieldOrder(Template template) {
+    return template.fields.length;
+  }
+
+  // Get next approval level
+  int getNextApprovalLevel(Template template) {
+    return template.maxApprovalLevel + 1;
   }
 }

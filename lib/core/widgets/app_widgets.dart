@@ -128,13 +128,13 @@ class _AppCards {
     bool hasShadow = true,
   }) =>
       AppCard(
-        child: child,
         padding: padding,
         margin: margin,
         backgroundColor: backgroundColor,
         borderRadius: borderRadius,
         onTap: onTap,
         hasShadow: hasShadow,
+        child: child,
       );
 
   StatsCard stats({

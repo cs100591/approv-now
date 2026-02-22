@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent;
 import '../../core/utils/app_logger.dart';
 import '../../core/services/supabase_service.dart';
 import 'auth_models.dart';
@@ -14,9 +15,22 @@ class AuthService {
   })  : _supabase = supabase ?? SupabaseService(),
         _authRepository = authRepository ?? AuthRepository();
 
-  /// Stream of authentication state changes
+  /// Stream of authentication state changes.
+  ///
+  /// We only surface events that represent a meaningful auth state change:
+  ///  - signedIn / userUpdated → emit the new User
+  ///  - signedOut              → emit null
+  ///  - tokenRefreshed         → SKIP (session stays the same, no UI change needed)
+  ///  - passwordRecovery / mfaChallengeVerified → treat as signedIn
+  ///
+  /// Skipping tokenRefreshed is critical: without this, a background token
+  /// refresh can fire a spurious null→user sequence that momentarily flips
+  /// the UI to the login screen and back.
   Stream<User?> get authStateChanges {
-    return _supabase.authStateChanges.map((event) {
+    return _supabase.authStateChanges.where((event) {
+      // Skip token refresh — it doesn't change who is logged in.
+      return event.event != AuthChangeEvent.tokenRefreshed;
+    }).map((event) {
       final supabaseUser = event.session?.user;
       if (supabaseUser == null) return null;
       return _mapSupabaseUser(supabaseUser);

@@ -1,0 +1,28 @@
+{
+  "name": "approve-now-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for Approve Now app",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:login": "playwright test tests/login.spec.js",
+    "test:invite": "playwright test tests/invite-code.spec.js",
+    "test:workspace": "playwright test tests/workspace-switch.spec.js",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen"
+  },
+  "keywords": [
+    "playwright",
+    "e2e",
+    "testing",
+    "flutter"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

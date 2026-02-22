@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -74,19 +75,19 @@ class AnalyticsScreen extends StatelessWidget {
                     AppColors.primary,
                   ),
                   _buildStatCard(
-                    'Pending',
+                    AppLocalizations.of(context)!.pending,
                     pendingCount.toString(),
                     Icons.pending_actions,
                     AppColors.warning,
                   ),
                   _buildStatCard(
-                    'Approved',
+                    AppLocalizations.of(context)!.approved,
                     approvedCount.toString(),
                     Icons.check_circle,
                     AppColors.success,
                   ),
                   _buildStatCard(
-                    'Rejected',
+                    AppLocalizations.of(context)!.rejected,
                     rejectedCount.toString(),
                     Icons.cancel,
                     AppColors.error,
@@ -117,11 +118,17 @@ class AnalyticsScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildLegendItem('Approved', AppColors.success),
+                          _buildLegendItem(
+                              AppLocalizations.of(context)!.approved,
+                              AppColors.success),
                           const SizedBox(width: AppSpacing.lg),
-                          _buildLegendItem('Rejected', AppColors.error),
+                          _buildLegendItem(
+                              AppLocalizations.of(context)!.rejected,
+                              AppColors.error),
                           const SizedBox(width: AppSpacing.lg),
-                          _buildLegendItem('Pending', AppColors.warning),
+                          _buildLegendItem(
+                              AppLocalizations.of(context)!.pending,
+                              AppColors.warning),
                         ],
                       ),
                     ],
@@ -137,7 +144,8 @@ class AnalyticsScreen extends StatelessWidget {
                 AppCard(
                   child: Column(
                     children: [
-                      _buildInfoRow('Workspace', currentWorkspace.name),
+                      _buildInfoRow(AppLocalizations.of(context)!.workspace,
+                          currentWorkspace.name),
                       const Divider(),
                       _buildInfoRow(
                           'Plan', currentWorkspace.plan.toUpperCase()),
@@ -302,14 +310,19 @@ class AnalyticsScreen extends StatelessWidget {
       );
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildPieSlice(AppColors.success, approved / total, 'Approved'),
-        _buildPieSlice(AppColors.error, rejected / total, 'Rejected'),
-        _buildPieSlice(AppColors.warning, pending / total, 'Pending'),
-      ],
-    );
+    return Builder(builder: (context) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildPieSlice(AppColors.success, approved / total,
+              AppLocalizations.of(context)!.approved),
+          _buildPieSlice(AppColors.error, rejected / total,
+              AppLocalizations.of(context)!.rejected),
+          _buildPieSlice(AppColors.warning, pending / total,
+              AppLocalizations.of(context)!.pending),
+        ],
+      );
+    });
   }
 
   Widget _buildPieSlice(Color color, double percentage, String label) {
@@ -419,8 +432,8 @@ class AnalyticsScreen extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppColors.primary.withOpacity(0.3),
-            AppColors.primary.withOpacity(0.05),
+            AppColors.primary.withValues(alpha: 0.3),
+            AppColors.primary.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(8),
@@ -438,7 +451,7 @@ class AnalyticsScreen extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
             child: Text(
               name.split(' ').map((n) => n[0]).join(),
               style: TextStyle(color: AppColors.primary),
@@ -470,7 +483,7 @@ class AnalyticsScreen extends StatelessWidget {
               vertical: 4,
             ),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(

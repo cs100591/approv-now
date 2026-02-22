@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -41,9 +42,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _initializeDashboard() async {
     final workspaceProvider = context.read<WorkspaceProvider>();
     final authProvider = context.read<AuthProvider>();
+    final subscriptionProvider = context.read<SubscriptionProvider>();
 
     final user = authProvider.user;
     if (user == null) return;
+
+    subscriptionProvider.checkOverride(user.email);
 
     await Future.delayed(const Duration(milliseconds: 500));
 
@@ -102,6 +106,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return;
         }
 
+        if (!mounted) return;
         setState(() => _isCreatingDefaultWorkspace = true);
 
         try {
@@ -169,6 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _retryInitialization() async {
+    if (!mounted) return;
     setState(() {
       _loadingError = null;
       _retryCount++;
@@ -185,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Text(AppLocalizations.of(context)!.dashboard),
         elevation: 0,
         actions: [
           const NotificationBadge(),
@@ -198,17 +204,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           PopupMenuButton<String>(
             onSelected: (value) => _onMenuSelected(context, value),
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'workspace',
+              PopupMenuItem(
+                value: 'manage',
                 child: Row(
                   children: [
                     Icon(Icons.business),
                     SizedBox(width: 8),
-                    Text('Switch Workspace'),
+                    Text(AppLocalizations.of(context)!.manageWorkspaces),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'analytics',
                 child: Row(
                   children: [
@@ -218,24 +224,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'join',
                 child: Row(
                   children: [
                     Icon(Icons.group_add),
                     SizedBox(width: 8),
-                    Text('Join Workspace'),
+                    Text(AppLocalizations.of(context)!.joinWorkspace),
                   ],
                 ),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'logout',
                 child: Row(
                   children: [
                     Icon(Icons.logout, color: AppColors.error),
                     SizedBox(width: 8),
-                    Text('Logout', style: TextStyle(color: AppColors.error)),
+                    Text(AppLocalizations.of(context)!.logout, style: TextStyle(color: AppColors.error)),
                   ],
                 ),
               ),
@@ -243,33 +249,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: _isCreatingDefaultWorkspace
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Setting up your workspace...'),
-                ],
-              ),
-            )
-          : isLoading && workspaceProvider.workspaces.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text('Loading your workspace...'),
-                    ],
-                  ),
-                )
-              : _loadingError != null
-                  ? _buildErrorState()
-                  : workspaceProvider.workspaces.isEmpty
-                      ? _buildEmptyState()
-                      : _buildDashboardContent(),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _isCreatingDefaultWorkspace
+            ? Center(
+                key: ValueKey('creating'),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Setting up your workspace...'),
+                  ],
+                ),
+              )
+            : isLoading && workspaceProvider.workspaces.isEmpty
+                ? Center(
+                    key: ValueKey('loading'),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Loading your workspace...'),
+                      ],
+                    ),
+                  )
+                : _loadingError != null
+                    ? _buildErrorState()
+                    : workspaceProvider.workspaces.isEmpty
+                        ? _buildEmptyState()
+                        : _buildDashboardContent(),
+      ),
     );
   }
 
@@ -295,7 +306,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ElevatedButton.icon(
               onPressed: _retryInitialization,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(AppLocalizations.of(context)!.retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -360,7 +371,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _checkAndCreateDefaultWorkspace();
               },
               icon: const Icon(Icons.add_business),
-              label: const Text('Create Workspace'),
+              label: Text(AppLocalizations.of(context)!.createWorkspace),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -380,26 +391,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            // Workspace Header
-            const WorkspaceHeader(),
-            const SizedBox(height: 16),
-            // Pending Approvals Banner
-            const PendingApprovalBanner(),
-            const SizedBox(height: 16),
-            // Stats Grid
-            const StatsGrid(),
-            const SizedBox(height: 24),
-            // Activity List
-            const ActivityList(),
-            const SizedBox(height: 24),
-            // Quick Actions
-            const QuickActionsBar(),
-            const SizedBox(height: 32),
-          ],
+        child: RepaintBoundary(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              // Workspace Header
+              const RepaintBoundary(child: WorkspaceHeader()),
+              const SizedBox(height: 16),
+              // Pending Approvals Banner
+              const RepaintBoundary(child: PendingApprovalBanner()),
+              const SizedBox(height: 16),
+              // Stats Grid
+              const RepaintBoundary(child: StatsGrid()),
+              const SizedBox(height: 24),
+              // Activity List
+              const RepaintBoundary(child: ActivityList()),
+              const SizedBox(height: 24),
+              // Quick Actions
+              const RepaintBoundary(child: QuickActionsBar()),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
@@ -416,6 +429,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'join':
         Navigator.pushNamed(context, RouteNames.joinWorkspace);
         break;
+      case 'manage':
+        Navigator.pushNamed(context, RouteNames.workspaceManage);
+        break;
       case 'logout':
         _showLogoutConfirm(context);
         break;
@@ -426,12 +442,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
+        title: Text(AppLocalizations.of(context)!.logout),
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -440,7 +456,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.pushReplacementNamed(context, RouteNames.login);
             },
             child:
-                const Text('Logout', style: TextStyle(color: AppColors.error)),
+                Text(AppLocalizations.of(context)!.logout, style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),

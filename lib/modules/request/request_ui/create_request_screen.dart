@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -64,7 +65,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('New Request'),
+        title: Text(AppLocalizations.of(context)!.newRequest),
         actions: [
           if (_selectedTemplate != null)
             TextButton(
@@ -75,7 +76,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Submit'),
+                  : Text(AppLocalizations.of(context)!.submit),
             ),
         ],
       ),
@@ -89,7 +90,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     return Consumer<TemplateProvider>(
       builder: (context, templateProvider, child) {
         if (templateProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator());
         }
 
         // Show error if template not found
@@ -204,7 +205,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
         // Form Fields
         Text(
-          'Request Details',
+          AppLocalizations.of(context)!.requestDetails,
           style: AppTextStyles.h4,
         ),
         const SizedBox(height: AppSpacing.md),
@@ -226,10 +227,13 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         ],
 
         // Submit Button
-        PrimaryButton(
-          text: 'Submit Request',
-          onPressed: _isLoading ? null : _submitRequest,
-          isLoading: _isLoading,
+        SizedBox(
+          width: double.infinity,
+          child: PrimaryButton(
+            text: AppLocalizations.of(context)!.submitRequest,
+            onPressed: _isLoading ? null : _submitRequest,
+            isLoading: _isLoading,
+          ),
         ),
         const SizedBox(height: AppSpacing.xl),
       ],
@@ -436,7 +440,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Center(
@@ -470,7 +474,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
             ),
           ),
           if (currentStep < totalSteps)
-            Icon(Icons.arrow_downward, color: AppColors.textHint, size: 16),
+            const SizedBox(
+              width: 24,
+              child: Icon(Icons.arrow_downward,
+                  color: AppColors.textHint, size: 16),
+            ),
         ],
       ),
     );
@@ -516,7 +524,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       }).toList();
 
       // Create draft request first
-      await requestProvider.createDraftRequest(
+      final createdRequest = await requestProvider.createDraftRequest(
         workspaceId: workspaceProvider.currentWorkspace!.id,
         template: _selectedTemplate!,
         submittedBy: authProvider.user!.id,
@@ -524,25 +532,16 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
             authProvider.user!.displayName ?? authProvider.user!.email,
       );
 
-      // Get the created request and submit it
-      final requests = requestProvider.requests;
-      final matchingRequests = requests
-          .where(
-            (r) =>
-                r.templateId == _selectedTemplate!.id &&
-                r.status == RequestStatus.draft,
-          )
-          .toList();
-
-      if (matchingRequests.isEmpty) {
+      if (createdRequest == null) {
         throw StateError('Failed to create draft request. Please try again.');
       }
 
-      final newRequest = matchingRequests.last;
+      final newRequest = createdRequest;
 
       await requestProvider.submitRequest(
         requestId: newRequest.id,
         fieldValues: fieldValues,
+        draftRequest: newRequest,
       );
 
       if (mounted) {

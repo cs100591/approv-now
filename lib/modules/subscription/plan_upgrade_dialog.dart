@@ -44,7 +44,6 @@ class PlanUpgradeDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final comparisons = PlanGuardService.getPlanComparisons();
     final nextPlan = _getNextPlan();
 
     return Dialog(
@@ -60,7 +59,7 @@ class PlanUpgradeDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
                 ),
@@ -191,10 +190,10 @@ class PlanUpgradeDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -318,7 +317,7 @@ class PlanUpgradeDialog extends StatelessWidget {
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: isCurrent
-                            ? AppColors.primary.withOpacity(0.05)
+                            ? AppColors.primary.withValues(alpha: 0.05)
                             : AppColors.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
@@ -404,7 +403,8 @@ class PlanUpgradeDialog extends StatelessWidget {
                                     Icon(
                                       Icons.remove_circle,
                                       size: 16,
-                                      color: AppColors.error.withOpacity(0.5),
+                                      color: AppColors.error
+                                          .withValues(alpha: 0.5),
                                     ),
                                     const SizedBox(width: AppSpacing.sm),
                                     Text(

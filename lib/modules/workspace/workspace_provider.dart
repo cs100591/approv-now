@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 import 'workspace_models.dart';
 import 'workspace_service.dart';
 import 'workspace_repository.dart';
@@ -14,6 +15,7 @@ class WorkspaceProvider extends ChangeNotifier {
   String? _currentUserId;
   StreamSubscription<List<Workspace>>? _workspacesSubscription;
   StreamSubscription<Workspace?>? _currentWorkspaceSubscription;
+  Timer? _loadingTimeoutTimer;
 
   WorkspaceState _state = const WorkspaceState();
 
@@ -33,14 +35,15 @@ class WorkspaceProvider extends ChangeNotifier {
   bool get isLoading => _state.isLoading;
   String? get error => _state.error;
 
-  /// Set current user and start listening to their workspaces
+  /// Set current user and start listening to their workspaces.
+  /// Always re-subscribes even for the same userId (covers re-login after logout).
   void setCurrentUser(String? userId) {
-    if (_currentUserId == userId) return;
-
     _currentUserId = userId;
     _cancelSubscriptions();
 
     if (userId != null) {
+      _state = const WorkspaceState(); // Reset state for fresh user session
+      notifyListeners();
       _subscribeToWorkspaces(userId);
     } else {
       _state = const WorkspaceState();
@@ -65,9 +68,14 @@ class WorkspaceProvider extends ChangeNotifier {
     _currentWorkspaceSubscription?.cancel();
     _workspacesSubscription = null;
     _currentWorkspaceSubscription = null;
+    _loadingTimeoutTimer?.cancel();
+    _loadingTimeoutTimer = null;
   }
 
   void _subscribeToWorkspaces(String userId) {
+    _loadingTimeoutTimer?.cancel();
+    _loadingTimeoutTimer = null;
+
     _setLoading(true);
 
     _workspacesSubscription =
@@ -87,6 +95,9 @@ class WorkspaceProvider extends ChangeNotifier {
           currentWs = workspaces.first;
         }
 
+        _loadingTimeoutTimer?.cancel();
+        _loadingTimeoutTimer = null;
+
         _state = _state.copyWith(
           workspaces: workspaces,
           currentWorkspace: currentWs,
@@ -100,6 +111,8 @@ class WorkspaceProvider extends ChangeNotifier {
       },
       onError: (error) {
         AppLogger.error('Error loading workspaces stream', error);
+        _loadingTimeoutTimer?.cancel();
+        _loadingTimeoutTimer = null;
         _state = _state.copyWith(
           error: 'Failed to load workspaces: ${error.toString()}',
           isLoading: false,
@@ -108,8 +121,7 @@ class WorkspaceProvider extends ChangeNotifier {
       },
     );
 
-    // Timeout for initial load
-    Future.delayed(const Duration(seconds: 10), () {
+    _loadingTimeoutTimer = Timer(const Duration(seconds: 10), () {
       if (_state.isLoading && _state.workspaces.isEmpty) {
         AppLogger.warning('Workspace loading timeout - showing empty state');
         _state = _state.copyWith(
@@ -181,7 +193,7 @@ class WorkspaceProvider extends ChangeNotifier {
 
     try {
       // Create workspace via service (local logic)
-      final workspace = await _workspaceService.createWorkspace(
+      final workspace = _workspaceService.createWorkspace(
         name: name,
         description: description,
         companyName: companyName,
@@ -218,14 +230,14 @@ class WorkspaceProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      // Update service state
-      await _workspaceService.switchWorkspace(workspaceId);
-
-      // Find workspace in local state
+      // Find workspace in local state first
       final workspace = _state.workspaces.firstWhere(
         (w) => w.id == workspaceId,
-        orElse: () => throw Exception('Workspace not found'),
+        orElse: () => throw Exception('Workspace not found: $workspaceId'),
       );
+
+      // Update service state (synchronous, no await needed)
+      _workspaceService.switchWorkspace(workspaceId);
 
       _state = _state.copyWith(currentWorkspace: workspace);
       AppLogger.info('Switched to workspace: $workspaceId');
@@ -251,9 +263,15 @@ class WorkspaceProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      // Update via service
-      final workspace = await _workspaceService.updateWorkspaceHeader(
-        workspaceId: workspaceId,
+      // Find existing workspace from state
+      final existingWorkspace = _state.workspaces.firstWhere(
+        (w) => w.id == workspaceId,
+        orElse: () => throw Exception('Workspace not found: $workspaceId'),
+      );
+
+      // Update via service (synchronous, no await needed)
+      final workspace = _workspaceService.updateWorkspaceHeader(
+        existingWorkspace: existingWorkspace,
         name: name,
         description: description,
         logoUrl: logoUrl,
@@ -282,6 +300,44 @@ class WorkspaceProvider extends ChangeNotifier {
       AppLogger.error('Error updating workspace', e);
       _state = _state.copyWith(error: e.toString());
       notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Upload a logo image for the workspace to Supabase Storage
+  /// and update the workspace's logoUrl.
+  Future<String?> uploadWorkspaceLogo({
+    required String workspaceId,
+    required Uint8List imageBytes,
+    required String fileName,
+  }) async {
+    _setLoading(true);
+    try {
+      // Upload to Supabase Storage bucket 'workspace-logos'
+      final supabase = SupabaseService();
+      final path = '$workspaceId/$fileName';
+      await supabase.client.storage
+          .from('workspace-logos')
+          .uploadBinary(path, imageBytes,
+              fileOptions: const FileOptions(
+                cacheControl: '3600',
+                upsert: true,
+              ));
+
+      final logoUrl =
+          supabase.client.storage.from('workspace-logos').getPublicUrl(path);
+
+      // Update workspace record
+      await updateWorkspaceHeader(workspaceId: workspaceId, logoUrl: logoUrl);
+
+      AppLogger.info('Logo uploaded for workspace: $workspaceId → $logoUrl');
+      return logoUrl;
+    } catch (e) {
+      AppLogger.error('Error uploading workspace logo', e);
+      _state = _state.copyWith(error: 'Failed to upload logo: $e');
+      notifyListeners();
+      return null;
     } finally {
       _setLoading(false);
     }
@@ -547,6 +603,38 @@ class WorkspaceProvider extends ChangeNotifier {
     } catch (e) {
       AppLogger.error('Error declining invitation', e);
       rethrow;
+    }
+  }
+
+  /// Delete current workspace (only owner can delete)
+  Future<void> deleteWorkspace() async {
+    if (_state.currentWorkspace == null) {
+      throw StateError('No workspace selected');
+    }
+
+    _setLoading(true);
+
+    try {
+      final workspaceId = _state.currentWorkspace!.id;
+      await _workspaceRepository.deleteWorkspace(workspaceId);
+
+      // Remove from local state
+      final workspaces =
+          _state.workspaces.where((w) => w.id != workspaceId).toList();
+
+      _state = _state.copyWith(
+        workspaces: workspaces,
+        currentWorkspace: workspaces.isNotEmpty ? workspaces.first : null,
+      );
+
+      AppLogger.info('Deleted workspace: $workspaceId');
+    } catch (e) {
+      AppLogger.error('Error deleting workspace', e);
+      _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+      rethrow;
+    } finally {
+      _setLoading(false);
     }
   }
 

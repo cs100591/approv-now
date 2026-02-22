@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:provider/provider.dart' show Consumer2;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../../core/widgets/plan_limit_widgets.dart';
 import '../../auth/auth_provider.dart';
+import '../../request/request_provider.dart';
+import '../../template/template_provider.dart';
 import '../../subscription/subscription_provider.dart';
-import '../../subscription/subscription_models.dart';
 import '../../subscription/plan_upgrade_dialog.dart';
 import '../../plan_enforcement/plan_guard_service.dart';
 import '../workspace_provider.dart';
@@ -39,12 +40,12 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Switch Workspace'),
+        title: Text(AppLocalizations.of(context)!.switchWorkspace),
       ),
       body: Consumer2<WorkspaceProvider, SubscriptionProvider>(
         builder: (context, workspaceProvider, subscriptionProvider, child) {
           if (workspaceProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
 
           final workspaces = workspaceProvider.workspaces;
@@ -62,7 +63,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
               message: 'No Workspaces',
               subMessage: 'Create your first workspace to get started',
               action: PrimaryButton(
-                text: 'Create Workspace',
+                text: AppLocalizations.of(context)!.createWorkspace,
                 onPressed: () => _handleCreatePressed(),
               ),
             );
@@ -84,7 +85,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                         currentPlan: currentPlan,
                         action: PlanAction.createWorkspace,
                         currentCount: workspaceCount,
-                        label: 'Workspaces',
+                        label: AppLocalizations.of(context)!.workspaces,
                         showUpgradeButton: true,
                         onUpgradePressed: () => _showUpgradeDialog(context),
                       ),
@@ -103,7 +104,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                             onPressed: () => _showCreateWorkspaceDialog(),
                           )
                         : PlanLimitReachedWidget(
-                            resourceName: 'Workspace',
+                            resourceName: AppLocalizations.of(context)!.workspace,
                             onUpgrade: () => _showUpgradeDialog(context),
                           ),
                   );
@@ -161,7 +162,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
           height: 48,
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withOpacity(0.1)
+                ? AppColors.primary.withValues(alpha: 0.1)
                 : AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: isSelected
@@ -202,11 +203,11 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  'Active',
+                  AppLocalizations.of(context)!.active,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -238,7 +239,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                 vertical: 2,
               ),
               decoration: BoxDecoration(
-                color: _getPlanColor(workspace.plan).withOpacity(0.1),
+                color: _getPlanColor(workspace.plan).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -274,9 +275,19 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
 
   Future<void> _switchWorkspace(Workspace workspace) async {
     final workspaceProvider = context.read<WorkspaceProvider>();
+    final requestProvider = context.read<RequestProvider>();
+    final templateProvider = context.read<TemplateProvider>();
+    final authProvider = context.read<AuthProvider>();
 
     try {
       await workspaceProvider.switchWorkspace(workspace.id);
+
+      // Update other providers with new workspace context
+      final user = authProvider.user;
+      if (user != null) {
+        templateProvider.setCurrentWorkspace(workspace.id);
+        requestProvider.setCurrentWorkspace(workspace.id, approverId: user.id);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -299,7 +310,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Create New Workspace'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -320,8 +331,8 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -332,7 +343,10 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
 
               if (authProvider.user == null) return;
 
-              Navigator.pop(context);
+              // Capture the ScaffoldMessenger before the async operation
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+              Navigator.pop(dialogContext);
 
               try {
                 await workspaceProvider.createWorkspace(
@@ -345,20 +359,20 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                 );
 
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     const SnackBar(
                         content: Text('Workspace created successfully')),
                   );
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(content: Text('Error: $e')),
                   );
                 }
               }
             },
-            child: const Text('Create'),
+            child: Text(AppLocalizations.of(context)!.create),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/stream_helper.dart';
 import '../template/template_models.dart';
 import 'request_models.dart';
 
@@ -14,12 +15,40 @@ class RequestRepository {
   /// Create a new request
   Future<ApprovalRequest> createRequest(ApprovalRequest request) async {
     try {
+      // Get approval steps from template if templateId is provided
+      List<Map<String, dynamic>> approvalSteps = [];
+      try {
+        final templateResponse = await _supabase.client
+            .from('templates')
+            .select('approval_steps')
+            .eq('id', request.templateId!)
+            .single();
+
+        if (templateResponse != null &&
+            templateResponse['approval_steps'] != null) {
+          final steps = templateResponse['approval_steps'] as List<dynamic>;
+          approvalSteps = steps
+              .map((step) => {
+                    'step_id': step['id'] ?? step['step_id'],
+                    'name': step['name'],
+                    'approvers': step['approvers'],
+                    'require_all': step['require_all'] ?? false,
+                    'condition': step['condition'],
+                  })
+              .toList();
+        }
+      } catch (e) {
+        AppLogger.warning('Could not fetch template approval steps: $e');
+      }
+
       final response = await _supabase.createRequest(
         workspaceId: request.workspaceId,
         templateId: request.templateId,
         templateName: request.templateName,
         fieldValues: request.fieldValues.map((f) => f.toJson()).toList(),
-        approvalSteps: [], // TODO: Get from template
+        approvalSteps: approvalSteps,
+        status: request.status.name,
+        currentLevel: request.currentLevel,
       );
 
       return _mapToRequest(response);
@@ -110,60 +139,23 @@ class RequestRepository {
     }
   }
 
-  /// Stream requests for workspace
+  /// Stream requests for workspace with safe lifecycle management
   Stream<List<ApprovalRequest>> streamRequestsByWorkspace(String workspaceId) {
-    final controller = StreamController<List<ApprovalRequest>>();
-
-    getRequestsByWorkspace(workspaceId).then((requests) {
-      controller.add(requests);
-    }).catchError((error) {
-      controller.addError(error);
-    });
-
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
-      try {
-        final requests = await getRequestsByWorkspace(workspaceId);
-        if (!controller.isClosed) {
-          controller.add(requests);
-        }
-      } catch (e) {
-        if (!controller.isClosed) {
-          controller.addError(e);
-        }
-      }
-    });
-
-    return controller.stream;
+    return StreamHelper.createPollingStream(
+      fetchData: () => getRequestsByWorkspace(workspaceId),
+      interval: const Duration(seconds: 30),
+    );
   }
 
-  /// Stream pending requests for approver
+  /// Stream pending requests for approver with safe lifecycle management
   Stream<List<ApprovalRequest>> streamPendingRequestsForApprover(
     String workspaceId,
     String approverId,
   ) {
-    final controller = StreamController<List<ApprovalRequest>>();
-
-    getPendingRequestsForApprover(workspaceId, approverId).then((requests) {
-      controller.add(requests);
-    }).catchError((error) {
-      controller.addError(error);
-    });
-
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
-      try {
-        final requests =
-            await getPendingRequestsForApprover(workspaceId, approverId);
-        if (!controller.isClosed) {
-          controller.add(requests);
-        }
-      } catch (e) {
-        if (!controller.isClosed) {
-          controller.addError(e);
-        }
-      }
-    });
-
-    return controller.stream;
+    return StreamHelper.createPollingStream(
+      fetchData: () => getPendingRequestsForApprover(workspaceId, approverId),
+      interval: const Duration(seconds: 30),
+    );
   }
 
   /// Map Supabase response to ApprovalRequest model

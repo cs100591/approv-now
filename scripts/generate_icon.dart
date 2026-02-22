@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 void main() async {
   // Create a 1024x1024 icon
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
-  final size = const Size(1024, 1024);
 
   // Background - gradient blue
   final paint = Paint()
@@ -44,7 +42,7 @@ void main() async {
 
   // Add small accent circle
   final accentPaint = Paint()
-    ..color = Color(0xFFFFFFFF).withOpacity(0.3)
+    ..color = Color(0xFFFFFFFF).withValues(alpha: 0.3)
     ..style = PaintingStyle.fill;
 
   canvas.drawCircle(Offset(824, 200), 60, accentPaint);
@@ -74,7 +72,10 @@ void main() async {
   final file2 = File('assets/icon/app_icon_foreground.png');
   await file2.writeAsBytes(buffer2);
 
+  // ignore: avoid_print
   print('Icons created successfully!');
+  // ignore: avoid_print
   print('app_icon.png: ${file.path}');
+  // ignore: avoid_print
   print('app_icon_foreground.png: ${file2.path}');
 }

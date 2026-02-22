@@ -39,8 +39,7 @@ class AuthRepository {
   }
 
   Future<void> clearUser() async {
-    final prefs = await _preferences;
-    await prefs.remove(AppConstants.userDataKey);
+    await clearAuthData();
   }
 
   Future<void> clearAuthData() async {

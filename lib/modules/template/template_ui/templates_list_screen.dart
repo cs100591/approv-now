@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -38,23 +39,35 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final workspaceProvider = context.watch<WorkspaceProvider>();
+    final currentWorkspace = workspaceProvider.currentWorkspace;
+    final currentUser = context.watch<AuthProvider>().user;
+
+    // Check if user can create template
+    final canCreateTemplate = currentUser != null &&
+        currentWorkspace != null &&
+        (currentWorkspace.createdBy == currentUser.id ||
+            currentWorkspace.ownerId == currentUser.id);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Templates'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.pushNamed(context, RouteNames.createTemplate);
-            },
-          ),
-        ],
+        title: Text(AppLocalizations.of(context)!.templates),
+        actions: canCreateTemplate
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () {
+                    Navigator.pushNamed(context, RouteNames.createTemplate);
+                  },
+                ),
+              ]
+            : null,
       ),
       body: Consumer<TemplateProvider>(
         builder: (context, templateProvider, child) {
           if (templateProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
 
           if (templateProvider.error != null) {
@@ -70,13 +83,17 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
             return EmptyState(
               icon: Icons.description_outlined,
               message: 'No Templates',
-              subMessage: 'Create your first template to get started',
-              action: PrimaryButton(
-                text: 'Create Template',
-                onPressed: () {
-                  Navigator.pushNamed(context, RouteNames.createTemplate);
-                },
-              ),
+              subMessage: canCreateTemplate
+                  ? 'Create your first template to get started'
+                  : 'Contact workspace admin to create templates',
+              action: canCreateTemplate
+                  ? PrimaryButton(
+                      text: AppLocalizations.of(context)!.createTemplate,
+                      onPressed: () {
+                        Navigator.pushNamed(context, RouteNames.createTemplate);
+                      },
+                    )
+                  : null,
             );
           }
 
@@ -93,13 +110,15 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, RouteNames.createTemplate);
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('New Template'),
-      ),
+      floatingActionButton: canCreateTemplate
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.pushNamed(context, RouteNames.createTemplate);
+              },
+              icon: const Icon(Icons.add),
+              label: Text(AppLocalizations.of(context)!.newTemplate),
+            )
+          : null,
     );
   }
 
@@ -146,7 +165,7 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
                 if (template.isActive)
                   _buildInfoChip(
                     Icons.circle,
-                    'Active',
+                    AppLocalizations.of(context)!.active,
                     color: AppColors.success,
                   )
                 else
@@ -162,33 +181,33 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
         trailing: PopupMenuButton<String>(
           onSelected: (value) => _onMenuSelected(value, template),
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'use',
               child: Row(
                 children: [
                   Icon(Icons.play_arrow),
                   SizedBox(width: 8),
-                  Text('Use Template'),
+                  Text(AppLocalizations.of(context)!.useTemplate),
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'edit',
               child: Row(
                 children: [
                   Icon(Icons.edit),
                   SizedBox(width: 8),
-                  Text('Edit'),
+                  Text(AppLocalizations.of(context)!.edit),
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: Row(
                 children: [
                   Icon(Icons.delete, color: AppColors.error),
                   SizedBox(width: 8),
-                  Text('Delete', style: TextStyle(color: AppColors.error)),
+                  Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: AppColors.error)),
                 ],
               ),
             ),
@@ -206,7 +225,7 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: (color ?? AppColors.textSecondary).withOpacity(0.1),
+        color: (color ?? AppColors.textSecondary).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
@@ -274,12 +293,12 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Template'),
+        title: Text(AppLocalizations.of(context)!.deleteTemplate),
         content: Text('Are you sure you want to delete "${template.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -288,8 +307,7 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
                   .read<TemplateProvider>()
                   .deleteTemplate(template.id);
             },
-            child: const Text(
-              'Delete',
+            child: Text(AppLocalizations.of(context)!.delete,
               style: TextStyle(color: AppColors.error),
             ),
           ),

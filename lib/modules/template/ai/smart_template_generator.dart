@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../core/utils/app_logger.dart';
 import 'ai_service.dart';
@@ -175,15 +174,7 @@ class SmartTemplateGenerator {
           order: 2,
         ),
       ],
-      approvalSteps: [
-        ApprovalStep(
-          id: 'generic_step_${DateTime.now().millisecondsSinceEpoch}',
-          level: 1,
-          name: 'Manager Approval',
-          approvers: ['manager@company.com'],
-          requireAll: false,
-        ),
-      ],
+      approvalSteps: [], // Admin will add approvers manually with UUIDs
       confidence: 0.3,
       source: 'fallback',
       generatedAt: DateTime.now(),

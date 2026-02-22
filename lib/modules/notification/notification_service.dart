@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/stream_helper.dart';
 import 'notification_models.dart';
 
 /// NotificationRepository - Database operations for notifications
@@ -71,44 +72,12 @@ class NotificationRepository {
     }
   }
 
-  /// Stream notifications for user
+  /// Stream notifications for user with safe lifecycle management
   Stream<List<AppNotification>> streamUserNotifications(String userId) {
-    final controller = StreamController<List<AppNotification>>();
-    Timer? timer;
-
-    getUserNotifications(userId).then((notifications) {
-      if (!controller.isClosed) {
-        controller.add(notifications);
-      }
-    }).catchError((error) {
-      if (!controller.isClosed) {
-        controller.addError(error);
-      }
-    });
-
-    timer = Timer.periodic(const Duration(seconds: 30), (t) async {
-      if (controller.isClosed) {
-        t.cancel();
-        return;
-      }
-      try {
-        final notifications = await getUserNotifications(userId);
-        if (!controller.isClosed) {
-          controller.add(notifications);
-        }
-      } catch (e) {
-        if (!controller.isClosed) {
-          controller.addError(e);
-        }
-      }
-    });
-
-    controller.onCancel = () {
-      timer?.cancel();
-      controller.close();
-    };
-
-    return controller.stream;
+    return StreamHelper.createPollingStream(
+      fetchData: () => getUserNotifications(userId),
+      interval: const Duration(seconds: 30),
+    );
   }
 
   /// Mark notification as read

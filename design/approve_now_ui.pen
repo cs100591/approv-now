@@ -1,0 +1,163 @@
+{
+  "version": "1.0",
+  "nodes": [
+    {
+      "id": "loginScreen",
+      "type": "frame",
+      "name": "01 - Login Screen",
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 812,
+      "fill": "#F8FAFC",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": 24,
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "id": "logoSection",
+          "type": "frame",
+          "layout": "vertical",
+          "gap": 8,
+          "alignItems": "center",
+          "width": "fill_container",
+          "children": [
+            {"id": "appLogo", "type": "frame", "width": 80, "height": 80, "fill": "#1E3A8A", "cornerRadius": 16},
+            {"id": "appTitle", "type": "text", "content": "Approve Now", "fill": "#0F172A", "fontFamily": "Space Grotesk", "fontSize": 24, "fontWeight": "700"},
+            {"id": "appSubtitle", "type": "text", "content": "Streamlined approvals for modern teams", "fill": "#64748B", "fontFamily": "Inter", "fontSize": 14}
+          ]
+        },
+        {
+          "id": "formContainer",
+          "type": "frame",
+          "layout": "vertical",
+          "gap": 16,
+          "width": "fill_container",
+          "children": [
+            {
+              "id": "emailInput",
+              "type": "frame",
+              "layout": "vertical",
+              "gap": 6,
+              "width": "fill_container",
+              "children": [
+                {"id": "emailLabel", "type": "text", "content": "Email", "fill": "#0F172A", "fontFamily": "Inter", "fontSize": 14, "fontWeight": "500"},
+                {"id": "emailField", "type": "frame", "width": "fill_container", "height": 48, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 8, "padding": [0, 16], "alignItems": "center", "children": [{"id": "emailPlaceholder", "type": "text", "content": "Enter your email", "fill": "#64748B", "fontFamily": "Inter", "fontSize": 14}]}
+              ]
+            },
+            {
+              "id": "passwordInput",
+              "type": "frame",
+              "layout": "vertical",
+              "gap": 6,
+              "width": "fill_container",
+              "children": [
+                {"id": "passwordLabel", "type": "text", "content": "Password", "fill": "#0F172A", "fontFamily": "Inter", "fontSize": 14, "fontWeight": "500"},
+                {"id": "passwordField", "type": "frame", "width": "fill_container", "height": 48, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 8, "padding": [0, 16], "alignItems": "center", "justifyContent": "space_between", "children": [{"id": "passwordPlaceholder", "type": "text", "content": "Enter your password", "fill": "#64748B", "fontFamily": "Inter", "fontSize": 14}, {"id": "eyeIcon", "type": "icon_font", "iconFontFamily": "lucide", "iconFontName": "eye", "width": 20, "height": 20, "fill": "#64748B"}]}
+              ]
+            },
+            {
+              "id": "rememberRow",
+              "type": "frame",
+              "layout": "horizontal",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {"id": "rememberMe", "type": "frame", "layout": "horizontal", "gap": 8, "alignItems": "center", "children": [{"id": "checkbox", "type": "frame", "width": 18, "height": 18, "stroke": {"fill": "#E2E8F0", "thickness": 2}, "cornerRadius": 4}, {"id": "rememberText", "type": "text", "content": "Remember me", "fill": "#64748B", "fontFamily": "Inter", "fontSize": 14}]},
+                {"id": "forgotPassword", "type": "text", "content": "Forgot password?", "fill": "#1E3A8A", "fontFamily": "Inter", "fontSize": 14, "fontWeight": "500"}
+              ]
+            },
+            {"id": "loginButton", "type": "frame", "width": "fill_container", "height": 48, "fill": "#1E3A8A", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"id": "loginText", "type": "text", "content": "Sign In", "fill": "#FFFFFF", "fontFamily": "Inter", "fontSize": 16, "fontWeight": "600"}]}
+          ]
+        },
+        {"id": "divider", "type": "frame", "layout": "horizontal", "width": "fill_container", "gap": 16, "alignItems": "center", "children": [{"id": "line1", "type": "frame", "width": "fill_container", "height": 1, "fill": "#E2E8F0"}, {"id": "orText", "type": "text", "content": "or", "fill": "#64748B", "fontFamily": "Inter", "fontSize": 14}, {"id": "line2", "type": "frame", "width": "fill_container", "height": 1, "fill": "#E2E8F0"}]},
+        {"id": "signupRow", "type": "frame", "layout": "horizontal", "gap": 4, "children": [{"id": "signupText", "type": "text", "content": "Don't have an account?", "fill": "#64748B", "fontFamily": "Inter", "fontSize": 14}, {"id": "signupLink", "type": "text", "content": "Sign Up", "fill": "#1E3A8A", "fontFamily": "Inter", "fontSize": 14, "fontWeight": "600"}]}
+      ]
+    },
+    {
+      "id": "dashboardScreen",
+      "type": "frame",
+      "name": "02 - Dashboard",
+      "x": 500,
+      "y": 0,
+      "width": 1440,
+      "height": 900,
+      "fill": "#F8FAFC",
+      "layout": "horizontal",
+      "children": [
+        {
+          "id": "sidebar",
+          "type": "frame",
+          "width": 260,
+          "height": "fill_container",
+          "fill": "#FFFFFF",
+          "padding": [24, 20],
+          "gap": 32,
+          "layout": "vertical",
+          "stroke": {"align": "outside", "fill": "#E2E8F0", "thickness": {"right": 1}},
+          "children": [
+            {"id": "logoSection", "type": "frame", "layout": "horizontal", "gap": 12, "alignItems": "center", "children": [{"id": "logoIcon", "type": "frame", "width": 32, "height": 32, "fill": "#1E3A8A", "cornerRadius": 6}, {"id": "logoText", "type": "text", "content": "Approve Now", "fill": "#0F172A", "fontFamily": "Space Grotesk", "fontSize": 18, "fontWeight": "600"}]},
+            {"id": "navSection", "type": "frame", "layout": "vertical", "width": "fill_container", "gap": 4, "children": [
+              {"id": "navDashboard", "type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [12, 16], "gap": 12, "fill": "#EFF6FF", "cornerRadius": 8, "alignItems": "center", "children": [{"type": "text", "content": "◆", "fill": "#1E3A8A", "fontSize": 18}, {"type": "text", "content": "Dashboard", "fill": "#1E3A8A", "fontSize": 14, "fontWeight": "500"}]},
+              {"id": "navTemplates", "type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [12, 16], "gap": 12, "alignItems": "center", "children": [{"type": "text", "content": "▢", "fill": "#64748B", "fontSize": 18}, {"type": "text", "content": "Templates", "fill": "#64748B", "fontSize": 14}]},
+              {"id": "navRequests", "type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [12, 16], "gap": 12, "alignItems": "center", "children": [{"type": "text", "content": "◈", "fill": "#64748B", "fontSize": 18}, {"type": "text", "content": "Requests", "fill": "#64748B", "fontSize": 14}]},
+              {"id": "navWorkspaces", "type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [12, 16], "gap": 12, "alignItems": "center", "children": [{"type": "text", "content": "⊡", "fill": "#64748B", "fontSize": 18}, {"type": "text", "content": "Workspaces", "fill": "#64748B", "fontSize": 14}]},
+              {"id": "navTeam", "type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [12, 16], "gap": 12, "alignItems": "center", "children": [{"type": "text", "content": "👥", "fill": "#64748B", "fontSize": 18}, {"type": "text", "content": "Team", "fill": "#64748B", "fontSize": 14}]}
+            ]},
+            {"id": "userSection", "type": "frame", "layout": "horizontal", "width": "fill_container", "padding": 16, "gap": 12, "stroke": {"align": "outside", "fill": "#E2E8F0", "thickness": {"top": 1}}, "alignItems": "center", "children": [{"id": "userAvatar", "type": "frame", "width": 36, "height": 36, "fill": "#1E3A8A", "cornerRadius": 18, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "JD", "fill": "#FFFFFF", "fontSize": 14, "fontWeight": "600"}]}, {"id": "userInfo", "type": "frame", "layout": "vertical", "gap": 2, "children": [{"type": "text", "content": "John Doe", "fill": "#0F172A", "fontSize": 14, "fontWeight": "500"}, {"type": "text", "content": "john@company.com", "fill": "#64748B", "fontSize": 12}]}]}
+          ]
+        },
+        {
+          "id": "mainContent",
+          "type": "frame",
+          "layout": "vertical",
+          "width": "fill_container",
+          "height": "fill_container",
+          "padding": [32, 40],
+          "gap": 32,
+          "children": [
+            {"id": "header", "type": "frame", "layout": "horizontal", "width": "fill_container", "justifyContent": "space_between", "alignItems": "center", "children": [{"id": "headerLeft", "type": "frame", "layout": "vertical", "gap": 4, "children": [{"type": "text", "content": "Dashboard", "fill": "#0F172A", "fontSize": 28, "fontWeight": "600", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "Welcome back! Here's what's happening today.", "fill": "#64748B", "fontSize": 14}]}, {"id": "headerRight", "type": "frame", "layout": "horizontal", "gap": 12, "alignItems": "center", "children": [{"id": "notifBtn", "type": "frame", "width": 40, "height": 40, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "🔔", "fontSize": 18}]}, {"id": "newRequestBtn", "type": "frame", "layout": "horizontal", "padding": [12, 20], "gap": 8, "fill": "#1E3A8A", "cornerRadius": 8, "alignItems": "center", "children": [{"type": "text", "content": "+", "fill": "#FFFFFF", "fontSize": 18}, {"type": "text", "content": "New Request", "fill": "#FFFFFF", "fontSize": 14, "fontWeight": "500"}]}]}]},
+            {"id": "statsRow", "type": "frame", "layout": "horizontal", "width": "fill_container", "gap": 24, "children": [
+              {"id": "statCard1", "type": "frame", "layout": "vertical", "width": "fill_container", "padding": 24, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 16, "children": [{"type": "frame", "layout": "horizontal", "justifyContent": "space_between", "alignItems": "center", "children": [{"type": "text", "content": "Pending Approvals", "fill": "#64748B", "fontSize": 13}, {"type": "frame", "width": 40, "height": 40, "fill": "#FEF3C7", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "⏳", "fontSize": 20}]}]}, {"type": "text", "content": "12", "fill": "#0F172A", "fontSize": 36, "fontWeight": "700", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "+3 from yesterday", "fill": "#22C55E", "fontSize": 13}]},
+              {"id": "statCard2", "type": "frame", "layout": "vertical", "width": "fill_container", "padding": 24, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 16, "children": [{"type": "frame", "layout": "horizontal", "justifyContent": "space_between", "alignItems": "center", "children": [{"type": "text", "content": "Approved Today", "fill": "#64748B", "fontSize": 13}, {"type": "frame", "width": 40, "height": 40, "fill": "#DCFCE7", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "✓", "fill": "#22C55E", "fontSize": 20}]}]}, {"type": "text", "content": "28", "fill": "#0F172A", "fontSize": 36, "fontWeight": "700", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "+8 from yesterday", "fill": "#22C55E", "fontSize": 13}]},
+              {"id": "statCard3", "type": "frame", "layout": "vertical", "width": "fill_container", "padding": 24, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 16, "children": [{"type": "frame", "layout": "horizontal", "justifyContent": "space_between", "alignItems": "center", "children": [{"type": "text", "content": "Avg. Approval Time", "fill": "#64748B", "fontSize": 13}, {"type": "frame", "width": 40, "height": 40, "fill": "#EFF6FF", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "⚡", "fill": "#1E3A8A", "fontSize": 20}]}]}, {"type": "text", "content": "4.2h", "fill": "#0F172A", "fontSize": 36, "fontWeight": "700", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "-1.5h from last week", "fill": "#22C55E", "fontSize": 13}]},
+              {"id": "statCard4", "type": "frame", "layout": "vertical", "width": "fill_container", "padding": 24, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 16, "children": [{"type": "frame", "layout": "horizontal", "justifyContent": "space_between", "alignItems": "center", "children": [{"type": "text", "content": "Active Templates", "fill": "#64748B", "fontSize": 13}, {"type": "frame", "width": 40, "height": 40, "fill": "#F3E8FF", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "📋", "fontSize": 20}]}]}, {"type": "text", "content": "8", "fill": "#0F172A", "fontSize": 36, "fontWeight": "700", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "2 new this month", "fill": "#1E3A8A", "fontSize": 13}]}
+            ]},
+            {"id": "contentRow", "type": "frame", "layout": "horizontal", "width": "fill_container", "gap": 24, "height": "fill_container", "children": [
+              {"id": "recentActivity", "type": "frame", "layout": "vertical", "width": "fill_container", "padding": 24, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 20, "height": "fill_container", "children": [{"type": "frame", "layout": "horizontal", "width": "fill_container", "justifyContent": "space_between", "alignItems": "center", "children": [{"type": "text", "content": "Recent Activity", "fill": "#0F172A", "fontSize": 18, "fontWeight": "600", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "View All →", "fill": "#1E3A8A", "fontSize": 14, "fontWeight": "500"}]}, {"type": "frame", "layout": "vertical", "width": "fill_container", "gap": 0, "children": [{"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [16, 0], "gap": 12, "alignItems": "center", "stroke": {"align": "outside", "fill": "#F1F5F9", "thickness": {"bottom": 1}}, "children": [{"type": "frame", "width": 40, "height": 40, "fill": "#EFF6FF", "cornerRadius": 20, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "SM", "fill": "#1E3A8A", "fontSize": 14, "fontWeight": "600"}]}, {"type": "frame", "layout": "vertical", "width": "fill_container", "gap": 2, "children": [{"type": "text", "content": "Sarah Miller approved Budget Request #284", "fill": "#0F172A", "fontSize": 14}, {"type": "text", "content": "2 minutes ago", "fill": "#64748B", "fontSize": 12}]}]}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [16, 0], "gap": 12, "alignItems": "center", "stroke": {"align": "outside", "fill": "#F1F5F9", "thickness": {"bottom": 1}}, "children": [{"type": "frame", "width": 40, "height": 40, "fill": "#F0FDF4", "cornerRadius": 20, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "JD", "fill": "#22C55E", "fontSize": 14, "fontWeight": "600"}]}, {"type": "frame", "layout": "vertical", "width": "fill_container", "gap": 2, "children": [{"type": "text", "content": "John Doe submitted Leave Request", "fill": "#0F172A", "fontSize": 14}, {"type": "text", "content": "15 minutes ago", "fill": "#64748B", "fontSize": 12}]}]}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [16, 0], "gap": 12, "alignItems": "center", "stroke": {"align": "outside", "fill": "#F1F5F9", "thickness": {"bottom": 1}}, "children": [{"type": "frame", "width": 40, "height": 40, "fill": "#FEF2F2", "cornerRadius": 20, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "AK", "fill": "#EF4444", "fontSize": 14, "fontWeight": "600"}]}, {"type": "frame", "layout": "vertical", "width": "fill_container", "gap": 2, "children": [{"type": "text", "content": "Alex Kim rejected Expense Claim #92", "fill": "#0F172A", "fontSize": 14}, {"type": "text", "content": "1 hour ago", "fill": "#64748B", "fontSize": 12}]}]}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [16, 0], "gap": 12, "alignItems": "center", "children": [{"type": "frame", "width": 40, "height": 40, "fill": "#F3E8FF", "cornerRadius": 20, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "EW", "fill": "#8B5CF6", "fontSize": 14, "fontWeight": "600"}]}, {"type": "frame", "layout": "vertical", "width": "fill_container", "gap": 2, "children": [{"type": "text", "content": "Emma Wilson created new template", "fill": "#0F172A", "fontSize": 14}, {"type": "text", "content": "3 hours ago", "fill": "#64748B", "fontSize": 12}]}]}]}]},
+              {"id": "quickActions", "type": "frame", "layout": "vertical", "width": 320, "padding": 24, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 20, "children": [{"type": "text", "content": "Quick Actions", "fill": "#0F172A", "fontSize": 18, "fontWeight": "600", "fontFamily": "Space Grotesk"}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": 16, "gap": 12, "fill": "#F8FAFC", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 8, "alignItems": "center", "children": [{"type": "frame", "width": 40, "height": 40, "fill": "#EFF6FF", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "➕", "fill": "#1E3A8A", "fontSize": 18}]}, {"type": "text", "content": "Create New Template", "fill": "#0F172A", "fontSize": 14, "fontWeight": "500"}]}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": 16, "gap": 12, "fill": "#F8FAFC", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 8, "alignItems": "center", "children": [{"type": "frame", "width": 40, "height": 40, "fill": "#F0FDF4", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "📄", "fontSize": 18}]}, {"type": "text", "content": "Submit New Request", "fill": "#0F172A", "fontSize": 14, "fontWeight": "500"}]}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": 16, "gap": 12, "fill": "#F8FAFC", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 8, "alignItems": "center", "children": [{"type": "frame", "width": 40, "height": 40, "fill": "#FEF3C7", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "👥", "fontSize": 18}]}, {"type": "text", "content": "Invite Team Member", "fill": "#0F172A", "fontSize": 14, "fontWeight": "500"}]}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": 16, "gap": 12, "fill": "#F8FAFC", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 8, "alignItems": "center", "children": [{"type": "frame", "width": 40, "height": 40, "fill": "#F3E8FF", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "⚙️", "fontSize": 18}]}, {"type": "text", "content": "Workspace Settings", "fill": "#0F172A", "fontSize": 14, "fontWeight": "500"}]}]}
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mobileDashboard",
+      "type": "frame",
+      "name": "03 - Mobile Dashboard",
+      "x": 0,
+      "y": 1000,
+      "width": 375,
+      "height": 812,
+      "fill": "#F8FAFC",
+      "layout": "vertical",
+      "children": [
+        {"id": "mHeader", "type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [16, 20], "gap": 12, "fill": "#FFFFFF", "stroke": {"align": "outside", "fill": "#E2E8F0", "thickness": {"bottom": 1}}, "alignItems": "center", "justifyContent": "space_between", "children": [{"id": "mLogo", "type": "frame", "layout": "horizontal", "gap": 8, "alignItems": "center", "children": [{"type": "frame", "width": 28, "height": 28, "fill": "#1E3A8A", "cornerRadius": 6}, {"type": "text", "content": "Approve Now", "fill": "#0F172A", "fontSize": 16, "fontWeight": "600", "fontFamily": "Space Grotesk"}]}, {"type": "frame", "width": 36, "height": 36, "fill": "#F1F5F9", "cornerRadius": 8, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "🔔", "fontSize": 16}]}]},
+        {"id": "mContent", "type": "frame", "layout": "vertical", "width": "fill_container", "padding": 20, "gap": 20, "children": [
+          {"type": "text", "content": "Good morning, John! 👋", "fill": "#0F172A", "fontSize": 20, "fontWeight": "600", "fontFamily": "Space Grotesk"},
+          {"id": "mStatsScroll", "type": "frame", "layout": "horizontal", "width": "fill_container", "gap": 12, "children": [
+            {"type": "frame", "layout": "vertical", "width": 140, "padding": 16, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 8, "children": [{"type": "text", "content": "12", "fill": "#0F172A", "fontSize": 28, "fontWeight": "700", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "Pending", "fill": "#64748B", "fontSize": 13}]},
+            {"type": "frame", "layout": "vertical", "width": 140, "padding": 16, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 8, "children": [{"type": "text", "content": "28", "fill": "#0F172A", "fontSize": 28, "fontWeight": "700", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "Approved", "fill": "#64748B", "fontSize": 13}]},
+            {"type": "frame", "layout": "vertical", "width": 140, "padding": 16, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 8, "children": [{"type": "text", "content": "4.2h", "fill": "#0F172A", "fontSize": 28, "fontWeight": "700", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "Avg Time", "fill": "#64748B", "fontSize": 13}]}
+          ]},
+          {"id": "mRecentSection", "type": "frame", "layout": "vertical", "width": "fill_container", "gap": 12, "children": [{"type": "frame", "layout": "horizontal", "width": "fill_container", "justifyContent": "space_between", "alignItems": "center", "children": [{"type": "text", "content": "Recent Activity", "fill": "#0F172A", "fontSize": 16, "fontWeight": "600", "fontFamily": "Space Grotesk"}, {"type": "text", "content": "View All", "fill": "#1E3A8A", "fontSize": 14}]}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": 16, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 12, "alignItems": "center", "children": [{"type": "frame", "width": 44, "height": 44, "fill": "#1E3A8A", "cornerRadius": 22, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "SM", "fill": "#FFFFFF", "fontSize": 14, "fontWeight": "600"}]}, {"type": "frame", "layout": "vertical", "width": "fill_container", "gap": 2, "children": [{"type": "text", "content": "Sarah Miller approved Budget #284", "fill": "#0F172A", "fontSize": 14}, {"type": "text", "content": "2 min ago", "fill": "#64748B", "fontSize": 12}]}]}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "padding": 16, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 12, "alignItems": "center", "children": [{"type": "frame", "width": 44, "height": 44, "fill": "#22C55E", "cornerRadius": 22, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "JD", "fill": "#FFFFFF", "fontSize": 14, "fontWeight": "600"}]}, {"type": "frame", "layout": "vertical", "width": "fill_container", "gap": 2, "children": [{"type": "text", "content": "John Doe submitted Leave Request", "fill": "#0F172A", "fontSize": 14}, {"type": "text", "content": "15 min ago", "fill": "#64748B", "fontSize": 12}]}]}]},
+          {"id": "mActionsSection", "type": "frame", "layout": "vertical", "width": "fill_container", "gap": 12, "children": [{"type": "text", "content": "Quick Actions", "fill": "#0F172A", "fontSize": 16, "fontWeight": "600", "fontFamily": "Space Grotesk"}, {"type": "frame", "layout": "horizontal", "width": "fill_container", "gap": 12, "children": [{"type": "frame", "layout": "vertical", "width": "fill_container", "padding": 16, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 8, "alignItems": "center", "children": [{"type": "frame", "width": 44, "height": 44, "fill": "#EFF6FF", "cornerRadius": 10, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "➕", "fill": "#1E3A8A", "fontSize": 20}]}, {"type": "text", "content": "New Request", "fill": "#0F172A", "fontSize": 13}]}, {"type": "frame", "layout": "vertical", "width": "fill_container", "padding": 16, "fill": "#FFFFFF", "stroke": {"fill": "#E2E8F0", "thickness": 1}, "cornerRadius": 12, "gap": 8, "alignItems": "center", "children": [{"type": "frame", "width": 44, "height": 44, "fill": "#F0FDF4", "cornerRadius": 10, "alignItems": "center", "justifyContent": "center", "children": [{"type": "text", "content": "📄", "fontSize": 20}]}, {"type": "text", "content": "Templates", "fill": "#0F172A", "fontSize": 13}]}]}]}
+        ]},
+        {"id": "mBottomNav", "type": "frame", "layout": "horizontal", "width": "fill_container", "padding": [12, 20], "fill": "#FFFFFF", "stroke": {"align": "outside", "fill": "#E2E8F0", "thickness": {"top": 1}}, "justifyContent": "space_between", "children": [{"type": "frame", "layout": "vertical", "gap": 4, "alignItems": "center", "children": [{"type": "text", "content": "◆", "fill": "#1E3A8A", "fontSize": 24}, {"type": "text", "content": "Home", "fill": "#1E3A8A", "fontSize": 11}]}, {"type": "frame", "layout": "vertical", "gap": 4, "alignItems": "center", "children": [{"type": "text", "content": "▢", "fill": "#94A3B8", "fontSize": 24}, {"type": "text", "content": "Templates", "fill": "#94A3B8", "fontSize": 11}]}, {"type": "frame", "layout": "vertical", "gap": 4, "alignItems": "center", "children": [{"type": "text", "content": "◈", "fill": "#94A3B8", "fontSize": 24}, {"type": "text", "content": "Requests", "fill": "#94A3B8", "fontSize": 11}]}, {"type": "frame", "layout": "vertical", "gap": 4, "alignItems": "center", "children": [{"type": "text", "content": "👤", "fill": "#94A3B8", "fontSize": 24}, {"type": "text", "content": "Profile", "fill": "#94A3B8", "fontSize": 11}]}]}
+      ]
+    }
+  ]
+}

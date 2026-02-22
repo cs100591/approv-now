@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/routing/route_names.dart';
@@ -16,7 +17,7 @@ class QuickActionsBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -37,7 +38,7 @@ class QuickActionsBar extends StatelessWidget {
               Expanded(
                 child: _buildActionButton(
                   context,
-                  'New Request',
+                  AppLocalizations.of(context)!.newRequest,
                   Icons.add_circle_outline,
                   AppColors.primary,
                   () => Navigator.pushNamed(context, RouteNames.createRequest),
@@ -47,7 +48,7 @@ class QuickActionsBar extends StatelessWidget {
               Expanded(
                 child: _buildActionButton(
                   context,
-                  'Templates',
+                  AppLocalizations.of(context)!.templates,
                   Icons.description_outlined,
                   AppColors.info,
                   () => Navigator.pushNamed(context, RouteNames.templates),
@@ -83,7 +84,7 @@ class QuickActionsBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(

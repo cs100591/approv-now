@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -59,7 +59,9 @@ dependencies:
   go_router: ^13.0.1
   
   # Utilities
-  intl: ^0.19.0
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
   uuid: ^4.3.3
   equatable: ^2.0.5
   freezed_annotation: ^2.4.1
@@ -77,14 +79,21 @@ dependencies:
   share_plus: ^10.0.0
   file_picker: ^8.1.2
   path_provider: ^2.1.4
-  permission_handler: ^11.3.1
   
-  # Notifications
-  flutter_local_notifications: ^18.0.0
+  # Excel Export
+  excel: ^4.0.6
   
-  # Biometric Authentication
-  local_auth: ^2.3.0
-  flutter_secure_storage: ^9.2.2
+  # Image Upload (Workspace Logo)
+  image_picker: ^1.1.2
+  # permission_handler: ^11.3.1 # Not web-compatible, not currently used
+  
+  # Notifications - disabled, not web-compatible and not currently used
+  # flutter_local_notifications: ^18.0.0
+  
+  # Biometric Authentication - native only, disabled for web compatibility
+  # To re-enable for mobile builds, uncomment these:
+  # local_auth: ^2.3.0
+  # flutter_secure_storage: ^9.2.2
   
 dev_dependencies:
   flutter_test:
@@ -106,6 +115,7 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  generate: true
   
   # fonts:
   #   - family: Inter

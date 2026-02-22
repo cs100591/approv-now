@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:provider/provider.dart' show Consumer2;
 import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../../core/widgets/plan_limit_widgets.dart';
-import '../../subscription/subscription_models.dart';
 import '../../subscription/subscription_provider.dart';
 import '../../subscription/plan_upgrade_dialog.dart';
 import '../../plan_enforcement/plan_guard_service.dart';
@@ -40,7 +39,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Team Members'),
+        title: Text(AppLocalizations.of(context)!.teamMembers),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add),
@@ -51,7 +50,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
       body: Consumer2<WorkspaceProvider, SubscriptionProvider>(
         builder: (context, workspaceProvider, subscriptionProvider, child) {
           if (workspaceProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
 
           final currentWorkspace = workspaceProvider.currentWorkspace;
@@ -94,7 +93,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                         currentPlan: currentPlan,
                         action: PlanAction.inviteTeamMember,
                         currentCount: memberCount,
-                        label: 'Team Members',
+                        label: AppLocalizations.of(context)!.teamMembers,
                         showUpgradeButton: true,
                         onUpgradePressed: () => _showUpgradeDialog(context),
                       ),
@@ -109,7 +108,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                     padding: const EdgeInsets.only(top: AppSpacing.lg),
                     child: canInvite
                         ? SecondaryButton(
-                            text: 'Invite New Member',
+                            text: AppLocalizations.of(context)!.inviteNewMember,
                             onPressed: () => _showInviteCodeDialog(),
                           )
                         : PlanLimitReachedWidget(
@@ -172,9 +171,9 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -207,8 +206,8 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
         contentPadding: const EdgeInsets.all(AppSpacing.md),
         leading: CircleAvatar(
           backgroundColor: isPending
-              ? AppColors.textSecondary.withOpacity(0.1)
-              : AppColors.primary.withOpacity(0.1),
+              ? AppColors.textSecondary.withValues(alpha: 0.1)
+              : AppColors.primary.withValues(alpha: 0.1),
           child: Text(
             displayName[0].toUpperCase(),
             style: TextStyle(
@@ -247,7 +246,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -265,8 +264,8 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
             : PopupMenuButton<String>(
                 onSelected: (value) => _onMemberAction(value, member),
                 itemBuilder: (context) => [
-                  if (member.isActive)
-                    const PopupMenuItem(
+                  if (member.userId != null && member.userId!.isNotEmpty)
+                    PopupMenuItem(
                       value: 'change_role',
                       child: Row(
                         children: [
@@ -276,13 +275,13 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                         ],
                       ),
                     ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'remove',
                     child: Row(
                       children: [
                         Icon(Icons.remove_circle, color: AppColors.error),
                         SizedBox(width: 8),
-                        Text('Remove',
+                        Text(AppLocalizations.of(context)!.remove,
                             style: TextStyle(color: AppColors.error)),
                       ],
                     ),
@@ -316,7 +315,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
         vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -349,7 +348,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -373,8 +372,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                 );
               }
             },
-            child: const Text(
-              'Remove',
+            child: Text(AppLocalizations.of(context)!.remove,
               style: TextStyle(color: AppColors.error),
             ),
           ),
@@ -433,7 +431,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
         ],
       ),
@@ -457,9 +455,10 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.info.withOpacity(0.1),
+                color: AppColors.info.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.info.withOpacity(0.3)),
+                border:
+                    Border.all(color: AppColors.info.withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,7 +491,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -539,7 +538,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                   width: 2,
                 ),
               ),
@@ -590,7 +589,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Done'),
+            child: Text(AppLocalizations.of(context)!.done),
           ),
         ],
       ),

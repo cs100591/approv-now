@@ -85,6 +85,7 @@ class TemplateProvider extends ChangeNotifier {
     } catch (e) {
       AppLogger.error('Error loading templates', e);
       _state = _state.copyWith(error: e.toString());
+      notifyListeners();
     }
 
     _setLoading(false);
@@ -102,6 +103,7 @@ class TemplateProvider extends ChangeNotifier {
       _subscribeToTemplates(workspaceId);
     } catch (e) {
       _state = _state.copyWith(error: e.toString());
+      notifyListeners();
     }
 
     _setLoading(false);
@@ -116,7 +118,7 @@ class TemplateProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final template = await _templateService.createTemplate(
+      final template = _templateService.createTemplate(
         workspaceId: workspaceId,
         name: name,
         description: description,
@@ -125,7 +127,9 @@ class TemplateProvider extends ChangeNotifier {
 
       await _templateRepository.createTemplate(template);
 
-      // Real-time subscription will update the state automatically
+      // Immediately refresh templates list to show new template
+      await loadTemplatesByWorkspace(workspaceId);
+
       AppLogger.info('Created template: ${template.id}');
       return template;
     } catch (e) {
@@ -167,6 +171,9 @@ class TemplateProvider extends ChangeNotifier {
       // Save to Firestore
       await _templateRepository.createTemplate(template);
 
+      // Immediately refresh templates list to show new template
+      await loadTemplatesByWorkspace(workspaceId);
+
       AppLogger.info(
           'Created template with ${fields.length} fields and ${approvalSteps.length} steps: ${template.id}');
       return template;
@@ -189,8 +196,14 @@ class TemplateProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final template = await _templateService.updateTemplate(
-        templateId: templateId,
+      // Find existing template from state
+      final existingTemplate = _state.templates.firstWhere(
+        (t) => t.id == templateId,
+        orElse: () => throw Exception('Template not found: $templateId'),
+      );
+
+      final template = _templateService.updateTemplate(
+        existingTemplate: existingTemplate,
         name: name,
         description: description,
         isActive: isActive,
@@ -232,8 +245,14 @@ class TemplateProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final template = await _templateService.addField(
-        templateId: templateId,
+      // Find existing template from state
+      final existingTemplate = _state.templates.firstWhere(
+        (t) => t.id == templateId,
+        orElse: () => throw Exception('Template not found: $templateId'),
+      );
+
+      final template = _templateService.addField(
+        existingTemplate: existingTemplate,
         name: name,
         label: label,
         type: type,
@@ -268,8 +287,14 @@ class TemplateProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final template = await _templateService.removeField(
-        templateId: templateId,
+      // Find existing template from state
+      final existingTemplate = _state.templates.firstWhere(
+        (t) => t.id == templateId,
+        orElse: () => throw Exception('Template not found: $templateId'),
+      );
+
+      final template = _templateService.removeField(
+        existingTemplate: existingTemplate,
         fieldId: fieldId,
       );
 
@@ -298,8 +323,14 @@ class TemplateProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final template = await _templateService.reorderFields(
-        templateId: templateId,
+      // Find existing template from state
+      final existingTemplate = _state.templates.firstWhere(
+        (t) => t.id == templateId,
+        orElse: () => throw Exception('Template not found: $templateId'),
+      );
+
+      final template = _templateService.reorderFields(
+        existingTemplate: existingTemplate,
         fieldIds: fieldIds,
       );
 
@@ -331,8 +362,14 @@ class TemplateProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final template = await _templateService.addApprovalStep(
-        templateId: templateId,
+      // Find existing template from state
+      final existingTemplate = _state.templates.firstWhere(
+        (t) => t.id == templateId,
+        orElse: () => throw Exception('Template not found: $templateId'),
+      );
+
+      final template = _templateService.addApprovalStep(
+        existingTemplate: existingTemplate,
         name: name,
         approvers: approvers,
         requireAll: requireAll,
@@ -364,8 +401,14 @@ class TemplateProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final template = await _templateService.removeApprovalStep(
-        templateId: templateId,
+      // Find existing template from state
+      final existingTemplate = _state.templates.firstWhere(
+        (t) => t.id == templateId,
+        orElse: () => throw Exception('Template not found: $templateId'),
+      );
+
+      final template = _templateService.removeApprovalStep(
+        existingTemplate: existingTemplate,
         stepId: stepId,
       );
 
@@ -411,7 +454,7 @@ class TemplateProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      await _templateService.deleteTemplate(templateId);
+      // Delete directly via repository (service method removed)
       await _templateRepository.deleteTemplate(templateId);
 
       final templates =

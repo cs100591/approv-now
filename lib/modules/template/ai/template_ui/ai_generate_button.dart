@@ -112,13 +112,13 @@ class AiGenerateButton extends StatelessWidget {
 
     switch (matchStatus) {
       case MatchStatus.matched:
-        return AppColors.success.withOpacity(0.1);
+        return AppColors.success.withValues(alpha: 0.1);
       case MatchStatus.suggested:
-        return AppColors.warning.withOpacity(0.1);
+        return AppColors.warning.withValues(alpha: 0.1);
       case MatchStatus.generating:
       case MatchStatus.none:
       default:
-        return AppColors.primary.withOpacity(0.1);
+        return AppColors.primary.withValues(alpha: 0.1);
     }
   }
 

@@ -1,11 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/utils/app_logger.dart';
 import 'core/widgets/error_boundary.dart';
+import 'core/providers/locale_provider.dart';
 import 'core/services/supabase_service.dart';
 
 // Auth Module
@@ -27,7 +29,6 @@ import 'modules/template/template_repository.dart';
 
 // Request Module
 import 'modules/request/request_provider.dart';
-import 'modules/request/request_service.dart';
 import 'modules/request/request_repository.dart';
 
 // Approval Engine Module
@@ -53,7 +54,6 @@ import 'modules/subscription/subscription_repository.dart';
 
 // Notification Module
 import 'modules/notification/notification_provider.dart';
-import 'modules/notification/notification_service.dart';
 
 // Analytics Module
 import 'modules/analytics/analytics_service.dart';
@@ -67,6 +67,12 @@ void main() async {
   // Setup global error handling
   setupErrorHandling();
 
+  // Catch async errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppLogger.error('❌ Uncaught platform error', error, stack);
+    return true;
+  };
+
   // Initialize Supabase
   try {
     final supabaseService = SupabaseService();
@@ -74,18 +80,12 @@ void main() async {
     AppLogger.info('✅ Supabase initialized successfully');
     AppLogger.info(
         '📱 Project: ${supabaseService.currentUserId ?? "Not logged in"}');
+
+    runApp(const MyApp());
   } catch (e) {
     AppLogger.error('❌ Supabase initialization failed: $e');
-    AppLogger.warning('⚠️ Continuing without Supabase...');
+    runApp(SupabaseInitializationErrorApp(error: e));
   }
-
-  // Catch async errors
-  PlatformDispatcher.instance.onError = (error, stack) {
-    AppLogger.error('❌ Uncaught platform error', error, stack);
-    return true;
-  };
-
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -100,6 +100,9 @@ class MyApp extends StatelessWidget {
 
         // Plan Guard Service (singleton)
         Provider(create: (_) => PlanGuardService()),
+
+        // Locale Provider
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
 
         // Hash Service (singleton)
         Provider(create: (_) => HashService()),
@@ -179,14 +182,77 @@ class MyApp extends StatelessWidget {
           create: (_) => NotificationProvider(),
         ),
       ],
-      child: MaterialApp(
-        title: 'Approv Now',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        home: AuthWrapper(
-          child: const DashboardScreen(),
+      child: Builder(builder: (context) {
+        final localeProvider = context.watch<LocaleProvider>();
+        return MaterialApp(
+          title: 'Approv Now',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          locale: localeProvider.locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: AuthWrapper(
+            child: const DashboardScreen(),
+          ),
+          onGenerateRoute: AppRouter.onGenerateRoute,
+        );
+      }),
+    );
+  }
+}
+
+class SupabaseInitializationErrorApp extends StatelessWidget {
+  final Object error;
+
+  const SupabaseInitializationErrorApp({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 50),
+                const SizedBox(height: 16),
+                Text(
+                  'Fatal Application Error',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'The application could not start due to a critical error during initialization.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  color: Colors.grey[100],
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      'Error details: $error',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: Colors.red[800]),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        onGenerateRoute: AppRouter.onGenerateRoute,
       ),
     );
   }

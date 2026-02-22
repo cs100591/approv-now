@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "nodes": [
+    {
+      "id": "dashboard",
+      "type": "frame",
+      "name": "Dashboard",
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 900,
+      "fill": "#F8FAFC",
+      "layout": "horizontal"
+    }
+  ]
+}

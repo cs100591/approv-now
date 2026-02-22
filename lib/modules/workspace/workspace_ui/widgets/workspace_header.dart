@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../subscription/subscription_provider.dart';
+import '../../../template/template_provider.dart';
+import '../../../request/request_provider.dart';
+import '../../../auth/auth_provider.dart';
 import '../../workspace_provider.dart';
 
 class WorkspaceHeader extends StatelessWidget {
@@ -30,7 +34,7 @@ class WorkspaceHeader extends StatelessWidget {
             color: AppColors.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -43,7 +47,7 @@ class WorkspaceHeader extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -59,13 +63,81 @@ class WorkspaceHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      currentWorkspace.name,
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w600,
+                    PopupMenuButton<String>(
+                      onSelected: (workspaceId) async {
+                        final authUser = context.read<AuthProvider>().user;
+                        if (authUser == null) return;
+
+                        await workspaceProvider.switchWorkspace(workspaceId);
+                        if (context.mounted) {
+                          context
+                              .read<TemplateProvider>()
+                              .setCurrentWorkspace(workspaceId);
+                          context.read<RequestProvider>().setCurrentWorkspace(
+                                workspaceId,
+                                approverId: authUser.id,
+                              );
+                        }
+                      },
+                      offset: const Offset(0, 40),
+                      itemBuilder: (context) {
+                        return workspaceProvider.workspaces.map((ws) {
+                          final isSelected = ws.id == currentWorkspace.id;
+                          return PopupMenuItem<String>(
+                            value: ws.id,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.business,
+                                  size: 18,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    ws.name,
+                                    style: TextStyle(
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  const Icon(
+                                    Icons.check,
+                                    size: 16,
+                                    color: AppColors.primary,
+                                  ),
+                              ],
+                            ),
+                          );
+                        }).toList();
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              currentWorkspace.name,
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_drop_down,
+                            color: AppColors.textSecondary,
+                          ),
+                        ],
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Row(
@@ -77,7 +149,7 @@ class WorkspaceHeader extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: _getPlanColor(currentPlan.name)
-                                .withOpacity(0.1),
+                                .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -106,7 +178,7 @@ class WorkspaceHeader extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 2),
                                 Text(
-                                  'Upgrade',
+                                  AppLocalizations.of(context)!.upgrade,
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: AppColors.primary,

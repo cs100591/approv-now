@@ -1,39 +1,40 @@
-import 'dart:math';
 import '../subscription/subscription_models.dart';
 import '../workspace/workspace_models.dart';
 
 /// PlanGuardService - Enforces plan limits before actions
 class PlanGuardService {
-  /// Check if user can create a template
+  // ── Template ──────────────────────────────────────────────────────────────
+
   static bool canCreateTemplate({
     required PlanType currentPlan,
     required int currentTemplateCount,
   }) {
-    final entitlements = PlanEntitlements.forPlan(currentPlan);
-    return currentTemplateCount < entitlements.maxTemplates;
+    final e = PlanEntitlements.forPlan(currentPlan);
+    if (e.maxTemplates == -1) return true;
+    return currentTemplateCount < e.maxTemplates;
   }
 
-  /// Check if user can add approval level
+  // ── Approval level ─────────────────────────────────────────────────────────
+
   static bool canAddApprovalLevel({
     required PlanType currentPlan,
     required int currentLevelCount,
   }) {
-    final entitlements = PlanEntitlements.forPlan(currentPlan);
-    return currentLevelCount < entitlements.maxApprovalLevels;
+    final e = PlanEntitlements.forPlan(currentPlan);
+    return currentLevelCount < e.maxApprovalLevels;
   }
 
-  /// Check if user can create workspace
-  /// Note: This counts only OWNED workspaces, not joined workspaces
+  // ── Workspace ─────────────────────────────────────────────────────────────
+
   static bool canCreateWorkspace({
     required PlanType currentPlan,
     required int currentWorkspaceCount,
   }) {
-    final entitlements = PlanEntitlements.forPlan(currentPlan);
-    return currentWorkspaceCount < entitlements.maxWorkspaces;
+    final e = PlanEntitlements.forPlan(currentPlan);
+    if (e.maxWorkspaces == -1) return true;
+    return currentWorkspaceCount < e.maxWorkspaces;
   }
 
-  /// Check if user can create workspace (from workspace list)
-  /// Only counts workspaces where user is the owner
   static bool canCreateWorkspaceFromList({
     required PlanType currentPlan,
     required List<Workspace> workspaces,
@@ -46,62 +47,55 @@ class PlanGuardService {
     );
   }
 
-  /// Check if user can join a workspace (always allowed - no limit on joined workspaces)
-  static bool canJoinWorkspace() {
-    // Users can join unlimited workspaces via invitation
-    return true;
-  }
+  /// Users can always join workspaces via invitation — no limit
+  static bool canJoinWorkspace() => true;
 
-  /// Count owned workspaces
-  static int countOwnedWorkspaces(List<Workspace> workspaces, String userId) {
-    return workspaces.where((w) => w.ownerId == userId).length;
-  }
+  static int countOwnedWorkspaces(List<Workspace> workspaces, String userId) =>
+      workspaces.where((w) => w.ownerId == userId).length;
 
-  /// Count joined workspaces (not owned)
-  static int countJoinedWorkspaces(List<Workspace> workspaces, String userId) {
-    return workspaces.where((w) => w.ownerId != userId).length;
-  }
+  static int countJoinedWorkspaces(List<Workspace> workspaces, String userId) =>
+      workspaces.where((w) => w.ownerId != userId).length;
 
-  /// Get owned workspaces
   static List<Workspace> getOwnedWorkspaces(
-      List<Workspace> workspaces, String userId) {
-    return workspaces.where((w) => w.ownerId == userId).toList();
-  }
+          List<Workspace> workspaces, String userId) =>
+      workspaces.where((w) => w.ownerId == userId).toList();
 
-  /// Get joined workspaces (not owned)
   static List<Workspace> getJoinedWorkspaces(
-      List<Workspace> workspaces, String userId) {
-    return workspaces.where((w) => w.ownerId != userId).toList();
-  }
+          List<Workspace> workspaces, String userId) =>
+      workspaces.where((w) => w.ownerId != userId).toList();
 
-  /// Check if user can invite team member
+  // ── Team member ────────────────────────────────────────────────────────────
+
   static bool canInviteTeamMember({
     required PlanType currentPlan,
     required int currentMemberCount,
   }) {
-    final entitlements = PlanEntitlements.forPlan(currentPlan);
-    return currentMemberCount < entitlements.maxTeamMembers;
+    final e = PlanEntitlements.forPlan(currentPlan);
+    if (e.maxTeamMembers == -1) return true;
+    return currentMemberCount < e.maxTeamMembers;
   }
 
-  /// Check if custom header is available
-  static bool canUseCustomHeader(PlanType currentPlan) {
-    final entitlements = PlanEntitlements.forPlan(currentPlan);
-    return entitlements.customHeader;
-  }
+  // ── Feature flags ──────────────────────────────────────────────────────────
 
-  /// Check if watermark should be applied
-  static bool shouldApplyWatermark(PlanType currentPlan) {
-    final entitlements = PlanEntitlements.forPlan(currentPlan);
-    return entitlements.watermark;
-  }
+  static bool showBrandHeader(PlanType p) =>
+      PlanEntitlements.forPlan(p).showBrandHeader;
 
-  /// Check if analytics is available
-  static bool canUseAnalytics(PlanType currentPlan) {
-    final entitlements = PlanEntitlements.forPlan(currentPlan);
-    return entitlements.analytics;
-  }
+  static bool canUseCustomHeader(PlanType p) =>
+      PlanEntitlements.forPlan(p).customHeader;
 
-  /// Validate action or throw exception
+  static bool hasHash(PlanType p) => PlanEntitlements.forPlan(p).hasHash;
+
+  static bool canUseEmailNotification(PlanType p) =>
+      PlanEntitlements.forPlan(p).emailNotification;
+
+  static bool canExportExcel(PlanType p) =>
+      PlanEntitlements.forPlan(p).excelExport;
+
+  static bool canUseAnalytics(PlanType p) =>
+      PlanEntitlements.forPlan(p).analytics;
+
+  // ── Validate or throw ──────────────────────────────────────────────────────
+
   static void validateOrThrow({
     required PlanType currentPlan,
     required PlanAction action,
@@ -117,7 +111,7 @@ class PlanGuardService {
         );
         if (!canPerform) {
           throw PlanLimitExceededException(
-            'Template limit reached for ${currentPlan.name} plan. '
+            'Template limit reached for ${currentPlan.displayName} plan. '
             'Upgrade to create more templates.',
           );
         }
@@ -130,8 +124,7 @@ class PlanGuardService {
         );
         if (!canPerform) {
           throw PlanLimitExceededException(
-            'Approval level limit reached for ${currentPlan.name} plan. '
-            'Upgrade to add more levels.',
+            'Approval level limit reached. Upgrade your plan.',
           );
         }
         break;
@@ -143,7 +136,7 @@ class PlanGuardService {
         );
         if (!canPerform) {
           throw PlanLimitExceededException(
-            'Workspace limit reached for ${currentPlan.name} plan. '
+            'Workspace limit reached for ${currentPlan.displayName} plan. '
             'Upgrade to create more workspaces.',
           );
         }
@@ -156,8 +149,7 @@ class PlanGuardService {
         );
         if (!canPerform) {
           throw PlanLimitExceededException(
-            'Team member limit reached for ${currentPlan.name} plan. '
-            'Upgrade to invite more team members.',
+            'Team member limit reached. Upgrade your plan.',
           );
         }
         break;
@@ -166,78 +158,79 @@ class PlanGuardService {
         canPerform = canUseCustomHeader(currentPlan);
         if (!canPerform) {
           throw PlanLimitExceededException(
-            'Custom headers are only available on Pro plan. '
-            'Upgrade to access this feature.',
+            'Custom headers are only available on Pro plan.',
+          );
+        }
+        break;
+
+      case PlanAction.exportExcel:
+        canPerform = canExportExcel(currentPlan);
+        if (!canPerform) {
+          throw PlanLimitExceededException(
+            'Excel export is available on Starter and Pro plans.',
           );
         }
         break;
     }
   }
 
-  /// Get remaining quota
+  // ── Quota helpers ──────────────────────────────────────────────────────────
+
   static int getRemainingQuota({
     required PlanType currentPlan,
     required PlanAction action,
     required int currentCount,
   }) {
-    final entitlements = PlanEntitlements.forPlan(currentPlan);
+    final e = PlanEntitlements.forPlan(currentPlan);
 
     switch (action) {
       case PlanAction.createTemplate:
-        return entitlements.maxTemplates - currentCount;
+        if (e.maxTemplates == -1) return 999999;
+        return (e.maxTemplates - currentCount).clamp(0, e.maxTemplates);
       case PlanAction.addApprovalLevel:
-        return entitlements.maxApprovalLevels - currentCount;
+        return (e.maxApprovalLevels - currentCount)
+            .clamp(0, e.maxApprovalLevels);
       case PlanAction.createWorkspace:
-        return entitlements.maxWorkspaces - currentCount;
+        if (e.maxWorkspaces == -1) return 999999;
+        return (e.maxWorkspaces - currentCount).clamp(0, e.maxWorkspaces);
       case PlanAction.inviteTeamMember:
-        return entitlements.maxTeamMembers - currentCount;
+        if (e.maxTeamMembers == -1) return 999999;
+        return (e.maxTeamMembers - currentCount).clamp(0, e.maxTeamMembers);
       default:
         return 0;
     }
   }
 
-  /// Get plan limits as map
-  static Map<String, dynamic> getPlanLimits(PlanType plan) {
-    final entitlements = PlanEntitlements.forPlan(plan);
-    return {
-      'maxTemplates': entitlements.maxTemplates,
-      'maxApprovalLevels': entitlements.maxApprovalLevels,
-      'maxWorkspaces': entitlements.maxWorkspaces,
-      'maxTeamMembers': entitlements.maxTeamMembers,
-    };
-  }
-
-  /// Get usage percentage for a resource
   static double getUsagePercentage({
     required PlanType currentPlan,
     required PlanAction action,
     required int currentCount,
   }) {
-    final entitlements = PlanEntitlements.forPlan(currentPlan);
+    final e = PlanEntitlements.forPlan(currentPlan);
     int max;
 
     switch (action) {
       case PlanAction.createTemplate:
-        max = entitlements.maxTemplates;
+        max = e.maxTemplates;
         break;
       case PlanAction.addApprovalLevel:
-        max = entitlements.maxApprovalLevels;
+        max = e.maxApprovalLevels;
         break;
       case PlanAction.createWorkspace:
-        max = entitlements.maxWorkspaces;
+        max = e.maxWorkspaces;
         break;
       case PlanAction.inviteTeamMember:
-        max = entitlements.maxTeamMembers;
+        max = e.maxTeamMembers;
         break;
       default:
         return 0.0;
     }
 
+    if (max == -1) return 0.0; // unlimited — never at limit
     if (max == 0) return 1.0;
     return (currentCount / max).clamp(0.0, 1.0);
   }
 
-  /// Check if usage is approaching limit (80% threshold)
   static bool isApproachingLimit({
     required PlanType currentPlan,
     required PlanAction action,
@@ -252,50 +245,54 @@ class PlanGuardService {
     return percentage >= threshold && percentage < 1.0;
   }
 
-  /// Get plan comparison data for upgrade dialog
+  // ── Plan comparison data ───────────────────────────────────────────────────
+
   static List<PlanComparison> getPlanComparisons() {
     return [
       PlanComparison(
         plan: PlanType.free,
         price: 'Free',
         features: [
-          '3 templates',
-          '2 approval levels',
           '1 workspace',
-          '3 team members',
-          'Basic analytics',
+          '1 template',
+          'Basic approval flow',
+          'PDF with Approv Now header',
+          'Verification hash',
         ],
         limitations: [
-          'PDF watermark',
-          'No custom headers',
+          'No email notifications',
+          'No custom header',
+          'No Excel export',
         ],
       ),
       PlanComparison(
         plan: PlanType.starter,
-        price: '\$9/month',
+        price: '\$5.99/month',
         features: [
-          '10 templates',
-          '5 approval levels',
           '3 workspaces',
-          '10 team members',
-          'Full analytics',
-          'No watermark',
+          '5 templates',
+          'PDF with workspace name header',
+          'Email notifications',
+          'Excel export',
+          'Basic analytics',
+          'Verification hash',
         ],
         limitations: [
-          'No custom headers',
+          'No custom branding / logo',
         ],
       ),
       PlanComparison(
         plan: PlanType.pro,
-        price: '\$29/month',
+        price: '\$15.99/month',
         features: [
-          '100 templates',
-          '10 approval levels',
-          '10 workspaces',
-          '50 team members',
+          'Unlimited workspaces',
+          'Unlimited templates',
+          'Custom PDF header (name + description + logo)',
+          'Workspace branding & logo',
+          'Email notifications',
+          'Excel export',
           'Full analytics',
-          'Custom PDF headers',
-          'Priority support',
+          'Verification hash',
         ],
         limitations: [],
       ),
@@ -310,12 +307,12 @@ enum PlanAction {
   createWorkspace,
   inviteTeamMember,
   useCustomHeader,
+  exportExcel,
 }
 
 /// Exception thrown when plan limit is exceeded
 class PlanLimitExceededException implements Exception {
   final String message;
-
   PlanLimitExceededException(this.message);
 
   @override
@@ -336,14 +333,5 @@ class PlanComparison {
     required this.limitations,
   });
 
-  String get planName {
-    switch (plan) {
-      case PlanType.free:
-        return 'Free';
-      case PlanType.starter:
-        return 'Starter';
-      case PlanType.pro:
-        return 'Pro';
-    }
-  }
+  String get planName => plan.displayName;
 }
