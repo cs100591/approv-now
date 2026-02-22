@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../modules/auth/auth_ui/auth_screens.dart';
 import '../../modules/auth/auth_ui/profile_screen.dart';
-import '../../modules/workspace/workspace_ui/dashboard_screen.dart';
+import '../../core/widgets/app_shell.dart';
 import '../../modules/workspace/workspace_ui/workspace_switch_screen.dart';
 import '../../modules/workspace/workspace_ui/team_members_screen.dart';
 import '../../modules/workspace/workspace_ui/join_workspace_screen.dart';
@@ -19,6 +19,7 @@ import '../../modules/request/request_ui/approval_view_screen.dart';
 import '../../modules/request/request_ui/request_detail_screen.dart';
 import '../../modules/notification/notification_ui/notifications_screen.dart';
 import '../../modules/analytics/analytics_ui/analytics_screen.dart';
+import '../../modules/dev/mock_data_screen.dart';
 import 'route_names.dart';
 
 /// AppRouter - Handles all app routing
@@ -41,7 +42,7 @@ class AppRouter {
 
       case RouteNames.dashboard:
         return MaterialPageRoute(
-          builder: (_) => const DashboardScreen(),
+          builder: (_) => const AppShell(),
           settings: settings,
         );
 
@@ -175,6 +176,13 @@ class AppRouter {
               child: Text('${settings.name} - Coming Soon'),
             ),
           ),
+          settings: settings,
+        );
+
+      // Mock data generation (for development only - remove in production)
+      case '/mock-data':
+        return MaterialPageRoute(
+          builder: (_) => const MockDataScreen(),
           settings: settings,
         );
 
