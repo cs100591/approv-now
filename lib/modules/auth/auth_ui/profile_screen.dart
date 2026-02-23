@@ -60,8 +60,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() => _biometricEnabled = true);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Biometric login enabled'),
+              SnackBar(
+                content:
+                    Text(AppLocalizations.of(context)!.biometricLoginEnabled),
                 backgroundColor: AppColors.success,
               ),
             );
@@ -80,8 +81,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _biometricEnabled = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Biometric login disabled'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.biometricLoginDisabled),
             backgroundColor: AppColors.success,
           ),
         );
@@ -95,8 +96,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = authProvider.user;
 
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Not logged in')),
+      return Scaffold(
+        body: Center(child: Text(AppLocalizations.of(context)!.notLoggedIn)),
       );
     }
 
@@ -169,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   _buildListTile(
                     icon: Icons.person_outline,
-                    title: 'Edit Profile',
+                    title: AppLocalizations.of(context)!.editProfile,
                     onTap: () => _showEditProfileDialog(context),
                   ),
                   const Divider(height: 1),
@@ -187,18 +188,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.notifications_outlined,
                     title: AppLocalizations.of(context)!.notifications,
                     onTap: () {
-                      Navigator.pushNamed(context, RouteNames.notifications);
+                      Navigator.pushNamed(
+                          context, RouteNames.notificationSettings);
                     },
                   ),
                   if (_biometricAvailable) ...[
                     const Divider(height: 1),
                     ListTile(
                       leading: Icon(_biometricIcon, color: AppColors.primary),
-                      title: const Text('Biometric Login'),
+                      title: Text(AppLocalizations.of(context)!.biometricLogin),
                       subtitle: Text(
                         _biometricIcon == Icons.face
-                            ? 'Face ID'
-                            : 'Fingerprint',
+                            ? AppLocalizations.of(context)!.faceId
+                            : AppLocalizations.of(context)!.fingerprint,
                         style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -332,7 +334,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Profile'),
+        title: Text(AppLocalizations.of(context)!.editProfile),
         content: AppTextField(
           controller: nameController,
           label: AppLocalizations.of(context)!.displayName,
@@ -356,8 +358,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 }
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Profile updated successfully')),
+                    SnackBar(
+                        content:
+                            Text(AppLocalizations.of(context)!.profileUpdated)),
                   );
                 }
               } catch (e) {
@@ -380,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppLocalizations.of(context)!.logout),
-        content: const Text('Are you sure you want to log out?'),
+        content: Text(AppLocalizations.of(context)!.logoutConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

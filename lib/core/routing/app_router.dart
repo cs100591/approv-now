@@ -17,6 +17,7 @@ import '../../modules/request/request_ui/my_requests_screen.dart';
 import '../../modules/request/request_ui/approval_view_screen.dart';
 import '../../modules/request/request_ui/request_detail_screen.dart';
 import '../../modules/notification/notification_ui/notifications_screen.dart';
+import '../../modules/notification/notification_ui/notification_settings_screen.dart';
 import '../../modules/analytics/analytics_ui/analytics_screen.dart';
 import 'route_names.dart';
 
@@ -107,6 +108,12 @@ class AppRouter {
       case RouteNames.notifications:
         return MaterialPageRoute(
           builder: (_) => const NotificationsScreen(),
+          settings: settings,
+        );
+
+      case RouteNames.notificationSettings:
+        return MaterialPageRoute(
+          builder: (_) => const NotificationSettingsScreen(),
           settings: settings,
         );
 

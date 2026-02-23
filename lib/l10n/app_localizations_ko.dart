@@ -254,7 +254,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String failedToUpdateProfile(Object error) {
-    return '프로필 업데이트 실패: $error';
+    return '프로필 업데이트 실패';
   }
 
   @override
@@ -323,7 +323,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '귀하의 요금제에서 허용하는 최대 워크스페이스 수에 도달했습니다.';
 
   @override
-  String get defaultWorkspaceCreated => '환영합니다! 기본 워크스페이스가 성공적으로 생성되었습니다.';
+  String get defaultWorkspaceCreated => '기본 워크스페이스가 생성되었습니다';
 
   @override
   String get failedToCreateWorkspace => '워크스페이스 생성에 실패했습니다. 다시 시도해주세요.';
@@ -832,11 +832,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get invitationAccepted => '초대가 수락되었습니다!';
+  String get invitationAccepted => '초대가 수락되었습니다';
 
   @override
   String failedToAcceptInvitation(Object error) {
-    return '초대 수락 실패: $error';
+    return '초대 수락 실패';
   }
 
   @override
@@ -850,7 +850,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String failedToDeclineInvitation(Object error) {
-    return '초대 거절 실패: $error';
+    return '초대 거절 실패';
   }
 
   @override
@@ -1066,4 +1066,99 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get total => '총계';
+
+  @override
+  String get biometricLoginEnabled => '생체 인식 로그인이 활성화되었습니다';
+
+  @override
+  String get biometricLoginDisabled => '생체 인식 로그인이 비활성화되었습니다';
+
+  @override
+  String get editProfile => '프로필 편집';
+
+  @override
+  String get profileUpdated => '프로필이 업데이트되었습니다';
+
+  @override
+  String get logoutConfirmation => '로그아웃하시겠습니까?';
+
+  @override
+  String get notificationSettings => '알림 설정';
+
+  @override
+  String get settingsSaved => '설정이 저장되었습니다';
+
+  @override
+  String get pushNotifications => '푸시 알림';
+
+  @override
+  String get pushNotificationsSubtitle => '푸시 알림 받기';
+
+  @override
+  String get emailNotifications => '이메일 알림';
+
+  @override
+  String get emailNotificationsSubtitle => '이메일 알림 받기';
+
+  @override
+  String get emailNotificationsProOnly => '이메일 알림은 Pro 요금제에서만 사용 가능합니다';
+
+  @override
+  String get pro => 'Pro';
+
+  @override
+  String get notificationTypes => '알림 유형';
+
+  @override
+  String get requestUpdates => '요청 업데이트';
+
+  @override
+  String get requestUpdatesSubtitle => '요청 상태 업데이트 받기';
+
+  @override
+  String get invitationUpdates => '초대 업데이트';
+
+  @override
+  String get invitationUpdatesSubtitle => '워크스페이스 초대 받기';
+
+  @override
+  String get mentionUpdates => '멘션 업데이트';
+
+  @override
+  String get mentionUpdatesSubtitle => '멘션될 때 알림 받기';
+
+  @override
+  String get proFeature => 'Pro 기능';
+
+  @override
+  String get proFeatureMessage => '이 기능은 Pro 구독이 필요합니다';
+
+  @override
+  String get upgradeToPro => 'Pro로 업그레이드';
+
+  @override
+  String get notificationSettingsInfo => '알림 수신 방식 사용자 지정';
+
+  @override
+  String get workspaceCreated => '워크스페이스가 생성되었습니다';
+
+  @override
+  String joinedWorkspace(Object workspaceName) {
+    return '워크스페이스에 참여했습니다';
+  }
+
+  @override
+  String get deleteWorkspace => '워크스페이스 삭제';
+
+  @override
+  String get workspaceDeleted => '워크스페이스가 삭제되었습니다';
+
+  @override
+  String get failedToDeleteWorkspace => '워크스페이스 삭제 실패';
+
+  @override
+  String get permissionDenied => '권한이 거부되었습니다';
+
+  @override
+  String get ok => '확인';
 }

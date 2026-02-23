@@ -54,7 +54,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 onPressed: () {
                   notificationProvider.markAllAsRead();
                 },
-                child: const Text('Mark all read'),
+                child: Text(AppLocalizations.of(context)!.markAllRead),
               );
             },
           ),
@@ -83,9 +83,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 if (notifications.isEmpty) {
                   return EmptyState(
                     icon: Icons.notifications_none,
-                    message: 'No Notifications',
+                    message: AppLocalizations.of(context)!.noNotifications,
                     subMessage: _filter == NotificationFilter.all
-                        ? "You're all caught up!"
+                        ? AppLocalizations.of(context)!.allCaughtUp
                         : 'No ${_filter.name} notifications',
                   );
                 }
@@ -193,7 +193,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       onDismissed: (direction) {
         notificationProvider.dismissNotification(notification.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invitation dismissed')),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!.invitationDismissed)),
         );
       },
       child: Container(
@@ -285,7 +286,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         foregroundColor: AppColors.error,
                         side: const BorderSide(color: AppColors.error),
                       ),
-                      child: const Text('Decline'),
+                      child: Text(AppLocalizations.of(context)!.decline),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -297,7 +298,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         backgroundColor: AppColors.success,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text('Accept'),
+                      child: Text(AppLocalizations.of(context)!.accept),
                     ),
                   ),
                 ],
@@ -328,7 +329,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       onDismissed: (direction) {
         notificationProvider.dismissNotification(notification.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notification dismissed')),
+          SnackBar(
+              content:
+                  Text(AppLocalizations.of(context)!.notificationDismissed)),
         );
       },
       child: AppCard(
@@ -406,7 +409,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         final requestId = notification.actionData['request_id'];
         if (requestId != null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Opening request $requestId...')),
+            SnackBar(
+                content: Text(
+                    AppLocalizations.of(context)!.openingRequest(requestId))),
           );
         }
         break;
@@ -435,8 +440,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     if (inviteToken == null || userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to accept invitation'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.unableToAcceptInvitation),
           backgroundColor: AppColors.error,
         ),
       );
@@ -454,8 +459,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invitation accepted!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.invitationAccepted),
             backgroundColor: AppColors.success,
           ),
         );
@@ -496,7 +501,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invitation declined')),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!.invitationDeclined)),
         );
       }
     } catch (e) {

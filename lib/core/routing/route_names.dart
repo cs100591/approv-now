@@ -12,6 +12,7 @@ class RouteNames {
   static const String myRequests = '/my-requests';
   static const String profile = '/profile';
   static const String notifications = '/notifications';
+  static const String notificationSettings = '/notification-settings';
   static const String analytics = '/analytics';
   static const String teamMembers = '/team-members';
   static const String workspaceSwitch = '/workspace-switch';

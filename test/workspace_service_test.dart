@@ -104,7 +104,7 @@ void main() {
         () => workspaceService.inviteMember(
           existingWorkspace: workspace,
           email: 'member@example.com',
-          role: WorkspaceRole.viewer,
+          role: WorkspaceRole.editor,
           invitedBy: 'user123',
         ),
         throwsException,

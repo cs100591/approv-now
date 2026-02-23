@@ -603,7 +603,7 @@ abstract class AppLocalizations {
   /// No description provided for @failedToUpdateProfile.
   ///
   /// In en, this message translates to:
-  /// **'Failed to update profile: {error}'**
+  /// **'Failed to update profile'**
   String failedToUpdateProfile(Object error);
 
   /// No description provided for @settingsComingSoon.
@@ -795,7 +795,7 @@ abstract class AppLocalizations {
   /// No description provided for @noWorkspaceSelected.
   ///
   /// In en, this message translates to:
-  /// **'No Workspace Selected'**
+  /// **'No workspace selected'**
   String get noWorkspaceSelected;
 
   /// No description provided for @selectWorkspaceFirst.
@@ -1683,7 +1683,7 @@ abstract class AppLocalizations {
   /// No description provided for @failedToAcceptInvitation.
   ///
   /// In en, this message translates to:
-  /// **'Failed to accept invitation: {error}'**
+  /// **'Failed to accept invitation'**
   String failedToAcceptInvitation(Object error);
 
   /// No description provided for @unableToAcceptInvitation.
@@ -1707,7 +1707,7 @@ abstract class AppLocalizations {
   /// No description provided for @failedToDeclineInvitation.
   ///
   /// In en, this message translates to:
-  /// **'Failed to decline invitation: {error}'**
+  /// **'Failed to decline invitation'**
   String failedToDeclineInvitation(Object error);
 
   /// No description provided for @justNow.
@@ -2093,6 +2093,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total'**
   String get total;
+
+  /// No description provided for @biometricLoginEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric login enabled'**
+  String get biometricLoginEnabled;
+
+  /// No description provided for @biometricLoginDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric login disabled'**
+  String get biometricLoginDisabled;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile'**
+  String get editProfile;
+
+  /// No description provided for @profileUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated successfully'**
+  String get profileUpdated;
+
+  /// No description provided for @logoutConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to log out?'**
+  String get logoutConfirmation;
+
+  /// No description provided for @notificationSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Settings'**
+  String get notificationSettings;
+
+  /// No description provided for @settingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings saved'**
+  String get settingsSaved;
+
+  /// No description provided for @pushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Push Notifications'**
+  String get pushNotifications;
+
+  /// No description provided for @pushNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive push notifications on your device'**
+  String get pushNotificationsSubtitle;
+
+  /// No description provided for @emailNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Notifications'**
+  String get emailNotifications;
+
+  /// No description provided for @emailNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive email notifications'**
+  String get emailNotificationsSubtitle;
+
+  /// No description provided for @emailNotificationsProOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Pro to enable email notifications'**
+  String get emailNotificationsProOnly;
+
+  /// No description provided for @pro.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro'**
+  String get pro;
+
+  /// No description provided for @notificationTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Types'**
+  String get notificationTypes;
+
+  /// No description provided for @requestUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Updates'**
+  String get requestUpdates;
+
+  /// No description provided for @requestUpdatesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New requests, approvals, and rejections'**
+  String get requestUpdatesSubtitle;
+
+  /// No description provided for @invitationUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace Invitations'**
+  String get invitationUpdates;
+
+  /// No description provided for @invitationUpdatesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When you are invited to a workspace'**
+  String get invitationUpdatesSubtitle;
+
+  /// No description provided for @mentionUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Mentions'**
+  String get mentionUpdates;
+
+  /// No description provided for @mentionUpdatesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone mentions you in comments'**
+  String get mentionUpdatesSubtitle;
+
+  /// No description provided for @proFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro Feature'**
+  String get proFeature;
+
+  /// No description provided for @proFeatureMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Email notifications are available for Pro users only. Upgrade to Pro to enable this feature.'**
+  String get proFeatureMessage;
+
+  /// No description provided for @upgradeToPro.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Pro'**
+  String get upgradeToPro;
+
+  /// No description provided for @notificationSettingsInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'You can view all your notifications in the Notifications tab.'**
+  String get notificationSettingsInfo;
+
+  /// No description provided for @workspaceCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace created successfully'**
+  String get workspaceCreated;
+
+  /// No description provided for @joinedWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined {workspaceName} successfully!'**
+  String joinedWorkspace(Object workspaceName);
+
+  /// No description provided for @deleteWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Workspace'**
+  String get deleteWorkspace;
+
+  /// No description provided for @workspaceDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace deleted successfully'**
+  String get workspaceDeleted;
+
+  /// No description provided for @failedToDeleteWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete workspace'**
+  String get failedToDeleteWorkspace;
+
+  /// No description provided for @permissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission Denied'**
+  String get permissionDenied;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
 }
 
 class _AppLocalizationsDelegate

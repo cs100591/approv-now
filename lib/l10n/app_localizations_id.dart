@@ -254,7 +254,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String failedToUpdateProfile(Object error) {
-    return 'Gagal memperbarui profil: $error';
+    return 'Gagal memperbarui profil';
   }
 
   @override
@@ -325,8 +325,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Anda telah mencapai jumlah maksimum ruang kerja yang diizinkan oleh paket Anda.';
 
   @override
-  String get defaultWorkspaceCreated =>
-      'Selamat datang! Ruang kerja default berhasil dibuat.';
+  String get defaultWorkspaceCreated => 'Ruang kerja default dibuat';
 
   @override
   String get failedToCreateWorkspace =>
@@ -363,7 +362,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get inviteNewMember => 'Undang Anggota Baru';
 
   @override
-  String get noWorkspaceSelected => 'Tidak Ada Ruang Kerja Dipilih';
+  String get noWorkspaceSelected => 'Tidak ada ruang kerja dipilih';
 
   @override
   String get selectWorkspaceFirst =>
@@ -851,11 +850,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get invitationAccepted => 'Undangan diterima!';
+  String get invitationAccepted => 'Undangan diterima';
 
   @override
   String failedToAcceptInvitation(Object error) {
-    return 'Gagal menerima undangan: $error';
+    return 'Gagal menerima undangan';
   }
 
   @override
@@ -869,7 +868,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String failedToDeclineInvitation(Object error) {
-    return 'Gagal menolak undangan: $error';
+    return 'Gagal menolak undangan';
   }
 
   @override
@@ -1088,4 +1087,100 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get total => 'Total';
+
+  @override
+  String get biometricLoginEnabled => 'Login biometrik diaktifkan';
+
+  @override
+  String get biometricLoginDisabled => 'Login biometrik dinonaktifkan';
+
+  @override
+  String get editProfile => 'Edit Profil';
+
+  @override
+  String get profileUpdated => 'Profil diperbarui';
+
+  @override
+  String get logoutConfirmation => 'Apakah Anda yakin ingin keluar?';
+
+  @override
+  String get notificationSettings => 'Pengaturan Notifikasi';
+
+  @override
+  String get settingsSaved => 'Pengaturan disimpan';
+
+  @override
+  String get pushNotifications => 'Notifikasi Push';
+
+  @override
+  String get pushNotificationsSubtitle => 'Terima notifikasi push';
+
+  @override
+  String get emailNotifications => 'Notifikasi Email';
+
+  @override
+  String get emailNotificationsSubtitle => 'Terima notifikasi email';
+
+  @override
+  String get emailNotificationsProOnly => 'Notifikasi email hanya untuk Pro';
+
+  @override
+  String get pro => 'Pro';
+
+  @override
+  String get notificationTypes => 'Jenis Notifikasi';
+
+  @override
+  String get requestUpdates => 'Pembaruan Permintaan';
+
+  @override
+  String get requestUpdatesSubtitle => 'Terima pembaruan status permintaan';
+
+  @override
+  String get invitationUpdates => 'Pembaruan Undangan';
+
+  @override
+  String get invitationUpdatesSubtitle => 'Terima undangan ruang kerja';
+
+  @override
+  String get mentionUpdates => 'Pembaruan Mention';
+
+  @override
+  String get mentionUpdatesSubtitle => 'Terima notifikasi saat disebutkan';
+
+  @override
+  String get proFeature => 'Fitur Pro';
+
+  @override
+  String get proFeatureMessage => 'Fitur ini memerlukan langganan Pro';
+
+  @override
+  String get upgradeToPro => 'Tingkatkan ke Pro';
+
+  @override
+  String get notificationSettingsInfo =>
+      'Sesuaikan cara Anda menerima notifikasi';
+
+  @override
+  String get workspaceCreated => 'Ruang kerja dibuat';
+
+  @override
+  String joinedWorkspace(Object workspaceName) {
+    return 'Bergabung dengan ruang kerja';
+  }
+
+  @override
+  String get deleteWorkspace => 'Hapus Ruang Kerja';
+
+  @override
+  String get workspaceDeleted => 'Ruang kerja dihapus';
+
+  @override
+  String get failedToDeleteWorkspace => 'Gagal menghapus ruang kerja';
+
+  @override
+  String get permissionDenied => 'Izin ditolak';
+
+  @override
+  String get ok => 'OK';
 }

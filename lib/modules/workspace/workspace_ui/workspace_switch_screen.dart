@@ -101,7 +101,8 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                     padding: const EdgeInsets.only(top: AppSpacing.lg),
                     child: canCreate
                         ? SecondaryButton(
-                            text: 'Create New Workspace',
+                            text: AppLocalizations.of(context)!
+                                .createNewWorkspace,
                             onPressed: () => _showCreateWorkspaceDialog(),
                           )
                         : PlanLimitReachedWidget(
@@ -300,7 +301,9 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Switched to ${workspace.name}')),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .switchedToWorkspace(workspace.name))),
         );
         Navigator.pop(context);
       }
@@ -320,7 +323,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Create New Workspace'),
+        title: Text(AppLocalizations.of(context)!.createNewWorkspace),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -369,8 +372,9 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
 
                 if (mounted) {
                   scaffoldMessenger.showSnackBar(
-                    const SnackBar(
-                        content: Text('Workspace created successfully')),
+                    SnackBar(
+                        content: Text(
+                            AppLocalizations.of(context)!.workspaceCreated)),
                   );
                 }
               } catch (e) {

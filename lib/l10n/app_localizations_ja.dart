@@ -253,7 +253,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String failedToUpdateProfile(Object error) {
-    return 'プロフィールの更新に失敗しました：$error';
+    return 'プロフィールの更新に失敗しました';
   }
 
   @override
@@ -321,7 +321,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get workspaceLimitReachedMessage => 'ご利用のプランで許可されている最大ワークスペース数に達しました。';
 
   @override
-  String get defaultWorkspaceCreated => 'ようこそ！デフォルトのワークスペースが正常に作成されました。';
+  String get defaultWorkspaceCreated => 'デフォルトのワークスペースが作成されました';
 
   @override
   String get failedToCreateWorkspace => 'ワークスペースの作成に失敗しました。もう一度お試しください。';
@@ -830,11 +830,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get invitationAccepted => '招待を承諾しました！';
+  String get invitationAccepted => '招待を承諾しました';
 
   @override
   String failedToAcceptInvitation(Object error) {
-    return '招待の承諾に失敗しました：$error';
+    return '招待の承諾に失敗しました';
   }
 
   @override
@@ -848,7 +848,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String failedToDeclineInvitation(Object error) {
-    return '招待の辞退に失敗しました：$error';
+    return '招待の辞退に失敗しました';
   }
 
   @override
@@ -1064,4 +1064,99 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get total => '合計';
+
+  @override
+  String get biometricLoginEnabled => '生体認証ログインが有効になりました';
+
+  @override
+  String get biometricLoginDisabled => '生体認証ログインが無効になりました';
+
+  @override
+  String get editProfile => 'プロフィールを編集';
+
+  @override
+  String get profileUpdated => 'プロフィールが更新されました';
+
+  @override
+  String get logoutConfirmation => 'ログアウトしてもよろしいですか？';
+
+  @override
+  String get notificationSettings => '通知設定';
+
+  @override
+  String get settingsSaved => '設定が保存されました';
+
+  @override
+  String get pushNotifications => 'プッシュ通知';
+
+  @override
+  String get pushNotificationsSubtitle => 'プッシュ通知を受け取る';
+
+  @override
+  String get emailNotifications => 'メール通知';
+
+  @override
+  String get emailNotificationsSubtitle => 'メール通知を受け取る';
+
+  @override
+  String get emailNotificationsProOnly => 'メール通知はProプランでのみ利用可能です';
+
+  @override
+  String get pro => 'Pro';
+
+  @override
+  String get notificationTypes => '通知タイプ';
+
+  @override
+  String get requestUpdates => 'リクエスト更新';
+
+  @override
+  String get requestUpdatesSubtitle => 'リクエストの状態更新を受け取る';
+
+  @override
+  String get invitationUpdates => '招待更新';
+
+  @override
+  String get invitationUpdatesSubtitle => 'ワークスペース招待を受け取る';
+
+  @override
+  String get mentionUpdates => 'メンション更新';
+
+  @override
+  String get mentionUpdatesSubtitle => 'メンションされたときに通知を受け取る';
+
+  @override
+  String get proFeature => 'Pro機能';
+
+  @override
+  String get proFeatureMessage => 'この機能にはProサブスクリプションが必要です';
+
+  @override
+  String get upgradeToPro => 'Proにアップグレード';
+
+  @override
+  String get notificationSettingsInfo => '通知の受け取り方をカスタマイズ';
+
+  @override
+  String get workspaceCreated => 'ワークスペースが作成されました';
+
+  @override
+  String joinedWorkspace(Object workspaceName) {
+    return 'ワークスペースに参加しました';
+  }
+
+  @override
+  String get deleteWorkspace => 'ワークスペースを削除';
+
+  @override
+  String get workspaceDeleted => 'ワークスペースが削除されました';
+
+  @override
+  String get failedToDeleteWorkspace => 'ワークスペースの削除に失敗しました';
+
+  @override
+  String get permissionDenied => '権限が拒否されました';
+
+  @override
+  String get ok => 'OK';
 }

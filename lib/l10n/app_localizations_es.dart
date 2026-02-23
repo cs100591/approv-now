@@ -258,7 +258,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String failedToUpdateProfile(Object error) {
-    return 'Error al actualizar el perfil: $error';
+    return 'Error al actualizar el perfil';
   }
 
   @override
@@ -330,7 +330,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get defaultWorkspaceCreated =>
-      '¡Bienvenido! Espacio de trabajo predeterminado creado con éxito.';
+      'Espacio de trabajo predeterminado creado';
 
   @override
   String get failedToCreateWorkspace =>
@@ -368,7 +368,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inviteNewMember => 'Invitar Nuevo Miembro';
 
   @override
-  String get noWorkspaceSelected => 'Ningún Espacio de Trabajo Seleccionado';
+  String get noWorkspaceSelected => 'Ningún espacio de trabajo seleccionado';
 
   @override
   String get selectWorkspaceFirst =>
@@ -861,11 +861,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get invitationAccepted => '¡Invitación aceptada!';
+  String get invitationAccepted => 'Invitación aceptada';
 
   @override
   String failedToAcceptInvitation(Object error) {
-    return 'Error al aceptar la invitación: $error';
+    return 'Error al aceptar la invitación';
   }
 
   @override
@@ -879,7 +879,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String failedToDeclineInvitation(Object error) {
-    return 'Error al rechazar la invitación: $error';
+    return 'Error al rechazar la invitación';
   }
 
   @override
@@ -1098,4 +1098,107 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get total => 'Total';
+
+  @override
+  String get biometricLoginEnabled => 'Inicio de sesión biométrico activado';
+
+  @override
+  String get biometricLoginDisabled =>
+      'Inicio de sesión biométrico desactivado';
+
+  @override
+  String get editProfile => 'Editar Perfil';
+
+  @override
+  String get profileUpdated => 'Perfil actualizado';
+
+  @override
+  String get logoutConfirmation =>
+      '¿Estás seguro de que quieres cerrar sesión?';
+
+  @override
+  String get notificationSettings => 'Configuración de Notificaciones';
+
+  @override
+  String get settingsSaved => 'Configuración guardada';
+
+  @override
+  String get pushNotifications => 'Notificaciones Push';
+
+  @override
+  String get pushNotificationsSubtitle => 'Recibir notificaciones push';
+
+  @override
+  String get emailNotifications => 'Notificaciones por Email';
+
+  @override
+  String get emailNotificationsSubtitle => 'Recibir notificaciones por email';
+
+  @override
+  String get emailNotificationsProOnly =>
+      'Las notificaciones por email son solo para Pro';
+
+  @override
+  String get pro => 'Pro';
+
+  @override
+  String get notificationTypes => 'Tipos de Notificación';
+
+  @override
+  String get requestUpdates => 'Actualizaciones de Solicitudes';
+
+  @override
+  String get requestUpdatesSubtitle =>
+      'Recibir actualizaciones de estado de solicitudes';
+
+  @override
+  String get invitationUpdates => 'Actualizaciones de Invitaciones';
+
+  @override
+  String get invitationUpdatesSubtitle =>
+      'Recibir invitaciones a espacios de trabajo';
+
+  @override
+  String get mentionUpdates => 'Actualizaciones de Menciones';
+
+  @override
+  String get mentionUpdatesSubtitle =>
+      'Recibir notificaciones cuando te mencionen';
+
+  @override
+  String get proFeature => 'Función Pro';
+
+  @override
+  String get proFeatureMessage => 'Esta función requiere una suscripción Pro';
+
+  @override
+  String get upgradeToPro => 'Actualizar a Pro';
+
+  @override
+  String get notificationSettingsInfo =>
+      'Personaliza cómo recibes las notificaciones';
+
+  @override
+  String get workspaceCreated => 'Espacio de trabajo creado';
+
+  @override
+  String joinedWorkspace(Object workspaceName) {
+    return 'Te has unido al espacio de trabajo';
+  }
+
+  @override
+  String get deleteWorkspace => 'Eliminar Espacio de Trabajo';
+
+  @override
+  String get workspaceDeleted => 'Espacio de trabajo eliminado';
+
+  @override
+  String get failedToDeleteWorkspace =>
+      'Error al eliminar el espacio de trabajo';
+
+  @override
+  String get permissionDenied => 'Permiso denegado';
+
+  @override
+  String get ok => 'OK';
 }

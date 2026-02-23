@@ -255,7 +255,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String failedToUpdateProfile(Object error) {
-    return 'Failed to update profile: $error';
+    return 'Failed to update profile';
   }
 
   @override
@@ -364,7 +364,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inviteNewMember => 'Invite New Member';
 
   @override
-  String get noWorkspaceSelected => 'No Workspace Selected';
+  String get noWorkspaceSelected => 'No workspace selected';
 
   @override
   String get selectWorkspaceFirst => 'Please select a workspace first';
@@ -853,7 +853,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String failedToAcceptInvitation(Object error) {
-    return 'Failed to accept invitation: $error';
+    return 'Failed to accept invitation';
   }
 
   @override
@@ -867,7 +867,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String failedToDeclineInvitation(Object error) {
-    return 'Failed to decline invitation: $error';
+    return 'Failed to decline invitation';
   }
 
   @override
@@ -1084,4 +1084,104 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get total => 'Total';
+
+  @override
+  String get biometricLoginEnabled => 'Biometric login enabled';
+
+  @override
+  String get biometricLoginDisabled => 'Biometric login disabled';
+
+  @override
+  String get editProfile => 'Edit Profile';
+
+  @override
+  String get profileUpdated => 'Profile updated successfully';
+
+  @override
+  String get logoutConfirmation => 'Are you sure you want to log out?';
+
+  @override
+  String get notificationSettings => 'Notification Settings';
+
+  @override
+  String get settingsSaved => 'Settings saved';
+
+  @override
+  String get pushNotifications => 'Push Notifications';
+
+  @override
+  String get pushNotificationsSubtitle =>
+      'Receive push notifications on your device';
+
+  @override
+  String get emailNotifications => 'Email Notifications';
+
+  @override
+  String get emailNotificationsSubtitle => 'Receive email notifications';
+
+  @override
+  String get emailNotificationsProOnly =>
+      'Upgrade to Pro to enable email notifications';
+
+  @override
+  String get pro => 'Pro';
+
+  @override
+  String get notificationTypes => 'Notification Types';
+
+  @override
+  String get requestUpdates => 'Request Updates';
+
+  @override
+  String get requestUpdatesSubtitle =>
+      'New requests, approvals, and rejections';
+
+  @override
+  String get invitationUpdates => 'Workspace Invitations';
+
+  @override
+  String get invitationUpdatesSubtitle => 'When you are invited to a workspace';
+
+  @override
+  String get mentionUpdates => 'Mentions';
+
+  @override
+  String get mentionUpdatesSubtitle => 'When someone mentions you in comments';
+
+  @override
+  String get proFeature => 'Pro Feature';
+
+  @override
+  String get proFeatureMessage =>
+      'Email notifications are available for Pro users only. Upgrade to Pro to enable this feature.';
+
+  @override
+  String get upgradeToPro => 'Upgrade to Pro';
+
+  @override
+  String get notificationSettingsInfo =>
+      'You can view all your notifications in the Notifications tab.';
+
+  @override
+  String get workspaceCreated => 'Workspace created successfully';
+
+  @override
+  String joinedWorkspace(Object workspaceName) {
+    return 'Joined $workspaceName successfully!';
+  }
+
+  @override
+  String get deleteWorkspace => 'Delete Workspace';
+
+  @override
+  String get workspaceDeleted => 'Workspace deleted successfully';
+
+  @override
+  String get failedToDeleteWorkspace => 'Failed to delete workspace';
+
+  @override
+  String get permissionDenied => 'Permission Denied';
+
+  @override
+  String get ok => 'OK';
 }

@@ -34,8 +34,8 @@ dependencies:
   pdf: ^3.10.7
   printing: ^5.11.1
   
-  # Subscriptions - temporarily disabled due to iOS build conflicts
-  # purchases_flutter: ^6.1.0
+  # Subscriptions - RevenueCat
+  purchases_flutter: ^8.1.0
   
   # Crypto (Hashing)
   crypto: ^3.0.3

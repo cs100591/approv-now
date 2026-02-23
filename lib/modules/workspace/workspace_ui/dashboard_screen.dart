@@ -132,9 +132,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content:
-                      Text('Welcome! Default workspace created successfully.'),
+                SnackBar(
+                  content: Text(
+                      AppLocalizations.of(context)!.defaultWorkspaceCreated),
                   backgroundColor: AppColors.success,
                 ),
               );
@@ -214,7 +214,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Setting up your workspace...'),
+                  Text(AppLocalizations.of(context)!.settingUpWorkspace),
                 ],
               ),
             )
@@ -226,7 +226,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       CircularProgressIndicator(),
                       SizedBox(height: 16),
-                      Text('Loading your workspace...'),
+                      Text(AppLocalizations.of(context)!.loadingWorkspace),
                     ],
                   ),
                 )
@@ -486,7 +486,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppLocalizations.of(context)!.logout),
-        content: const Text('Are you sure you want to logout?'),
+        content: Text(AppLocalizations.of(context)!.logoutConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

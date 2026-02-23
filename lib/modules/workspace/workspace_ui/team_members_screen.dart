@@ -151,13 +151,13 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Permission Denied'),
-          content: const Text(
+          title: Text(AppLocalizations.of(context)!.permissionDenied),
+          content: Text(
               'Only workspace admins or owners can generate invite codes.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
+              child: Text(AppLocalizations.of(context)!.ok),
             ),
           ],
         ),
@@ -297,7 +297,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                         children: [
                           Icon(Icons.edit, color: AppColors.primary),
                           SizedBox(width: 8),
-                          Text('Change Role'),
+                          Text(AppLocalizations.of(context)!.changeRole),
                         ],
                       ),
                     ),
@@ -307,7 +307,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                       children: [
                         Icon(Icons.remove_circle, color: AppColors.error),
                         SizedBox(width: 8),
-                        Text(AppLocalizations.of(context)!.remove,
+                        Text(AppLocalizations.of(context)!.removeMember,
                             style: TextStyle(color: AppColors.error)),
                       ],
                     ),

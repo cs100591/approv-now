@@ -25,8 +25,9 @@ class _WorkspaceSettingsScreenState extends State<WorkspaceSettingsScreen> {
     final currentUser = context.watch<AuthProvider>().user;
 
     if (currentWorkspace == null || currentUser == null) {
-      return const Scaffold(
-        body: Center(child: Text('No workspace selected')),
+      return Scaffold(
+        body: Center(
+            child: Text(AppLocalizations.of(context)!.noWorkspaceSelected)),
       );
     }
 
@@ -55,9 +56,11 @@ class _WorkspaceSettingsScreenState extends State<WorkspaceSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _buildInfoRow(AppLocalizations.of(context)!.name, currentWorkspace.name),
+                _buildInfoRow(
+                    AppLocalizations.of(context)!.name, currentWorkspace.name),
                 if (currentWorkspace.description != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.description, currentWorkspace.description!),
+                  _buildInfoRow(AppLocalizations.of(context)!.description,
+                      currentWorkspace.description!),
                 _buildInfoRow(
                   'Created',
                   currentWorkspace.createdAt.toLocal().toString().split(' ')[0],
@@ -116,7 +119,7 @@ class _WorkspaceSettingsScreenState extends State<WorkspaceSettingsScreen> {
                         icon:
                             Icon(Icons.delete_forever, color: AppColors.error),
                         label: Text(
-                          'Delete Workspace',
+                          AppLocalizations.of(context)!.deleteWorkspace,
                           style: TextStyle(color: AppColors.error),
                         ),
                         style: OutlinedButton.styleFrom(
@@ -300,8 +303,8 @@ class _WorkspaceSettingsScreenState extends State<WorkspaceSettingsScreen> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Workspace deleted successfully'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.workspaceDeleted),
           backgroundColor: AppColors.success,
         ),
       );
@@ -320,7 +323,8 @@ class _WorkspaceSettingsScreenState extends State<WorkspaceSettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to delete workspace: $e'),
+          content: Text(
+              '${AppLocalizations.of(context)!.failedToDeleteWorkspace}: $e'),
           backgroundColor: AppColors.error,
         ),
       );
