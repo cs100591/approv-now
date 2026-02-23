@@ -19,7 +19,6 @@ import '../../modules/request/request_ui/approval_view_screen.dart';
 import '../../modules/request/request_ui/request_detail_screen.dart';
 import '../../modules/notification/notification_ui/notifications_screen.dart';
 import '../../modules/analytics/analytics_ui/analytics_screen.dart';
-import '../../modules/dev/mock_data_screen.dart';
 import 'route_names.dart';
 
 /// AppRouter - Handles all app routing
@@ -176,13 +175,6 @@ class AppRouter {
               child: Text('${settings.name} - Coming Soon'),
             ),
           ),
-          settings: settings,
-        );
-
-      // Mock data generation (for development only - remove in production)
-      case '/mock-data':
-        return MaterialPageRoute(
-          builder: (_) => const MockDataScreen(),
           settings: settings,
         );
 
