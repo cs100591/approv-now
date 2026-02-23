@@ -13,6 +13,7 @@ import '../../plan_enforcement/plan_guard_service.dart';
 import '../../template/template_provider.dart';
 import '../../notification/notification_ui/notification_badge.dart';
 import '../workspace_provider.dart';
+import '../workspace_member.dart';
 import 'widgets/workspace_header.dart';
 import 'widgets/pending_approval_banner.dart';
 import 'widgets/stats_grid.dart';
@@ -120,11 +121,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
 
           if (workspace != null && mounted) {
-            await workspaceProvider.switchWorkspace(workspace.id);
-
+            // createWorkspace() already set this workspace as current in state.
+            // Just wire up the other providers immediately.
             templateProvider.setCurrentWorkspace(workspace.id);
             requestProvider.setCurrentWorkspace(workspace.id,
-                approverId: user.id);
+                approverId: user.id,
+                // Owner of a new workspace is always owner-role
+                isAdminOrOwner: true);
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -155,11 +158,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       } else {
         if (workspaceProvider.currentWorkspace != null) {
-          templateProvider
-              .setCurrentWorkspace(workspaceProvider.currentWorkspace!.id);
+          final workspace = workspaceProvider.currentWorkspace!;
+          final role = workspace.getUserRole(user.id);
+          final isAdminOrOwner =
+              role == WorkspaceRole.admin || role == WorkspaceRole.owner;
+
+          templateProvider.setCurrentWorkspace(workspace.id);
           requestProvider.setCurrentWorkspace(
-            workspaceProvider.currentWorkspace!.id,
+            workspace.id,
             approverId: user.id,
+            isAdminOrOwner: isAdminOrOwner,
           );
         }
       }
@@ -241,7 +249,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Icon(Icons.logout, color: AppColors.error),
                     SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.logout, style: TextStyle(color: AppColors.error)),
+                    Text(AppLocalizations.of(context)!.logout,
+                        style: TextStyle(color: AppColors.error)),
                   ],
                 ),
               ),
@@ -389,31 +398,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final workspaceProvider = context.read<WorkspaceProvider>();
         await workspaceProvider.loadWorkspaces();
       },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: RepaintBoundary(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              // Workspace Header
-              const RepaintBoundary(child: WorkspaceHeader()),
-              const SizedBox(height: 16),
-              // Pending Approvals Banner
-              const RepaintBoundary(child: PendingApprovalBanner()),
-              const SizedBox(height: 16),
-              // Stats Grid
-              const RepaintBoundary(child: StatsGrid()),
-              const SizedBox(height: 24),
-              // Activity List
-              const RepaintBoundary(child: ActivityList()),
-              const SizedBox(height: 24),
-              // Quick Actions
-              const RepaintBoundary(child: QuickActionsBar()),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Container(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        // Workspace Header
+                        const WorkspaceHeader(),
+                        const SizedBox(height: 16),
+                        // Pending Approvals Banner
+                        const PendingApprovalBanner(),
+                        const SizedBox(height: 16),
+                        // Stats Grid
+                        const StatsGrid(),
+                        const SizedBox(height: 24),
+                        // Activity List
+                        const ActivityList(),
+                        const SizedBox(height: 24),
+                        // Quick Actions
+                        const QuickActionsBar(),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -455,8 +479,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               context.read<AuthProvider>().logout();
               Navigator.pushReplacementNamed(context, RouteNames.login);
             },
-            child:
-                Text(AppLocalizations.of(context)!.logout, style: TextStyle(color: AppColors.error)),
+            child: Text(AppLocalizations.of(context)!.logout,
+                style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
