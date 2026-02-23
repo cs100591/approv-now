@@ -4,10 +4,10 @@ import '../auth/auth_provider.dart';
 
 /// RevenueCat configuration and initialization
 class RevenueCatConfig {
-  // Replace with your actual RevenueCat API keys
-  static const String _iosApiKey = 'YOUR_IOS_API_KEY_HERE';
-  static const String _androidApiKey = 'YOUR_ANDROID_API_KEY_HERE';
-  static const String _webApiKey = 'YOUR_WEB_API_KEY_HERE';
+  // RevenueCat API keys
+  static const String _iosApiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
+  static const String _androidApiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
+  static const String _webApiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
 
   /// Get the appropriate API key for the platform
   static String get apiKey {
@@ -42,7 +42,7 @@ class RevenueCatConfig {
   /// Product IDs for your subscription plans
   static const Map<String, String> productIds = {
     'starter_monthly': 'approv_now_starter_monthly',
-    'starter_yearly': 'approv_now_starter_yearly',
+    'starter_yearly': 'approvnow_starter_yearly',
     'pro_monthly': 'approv_now_pro_monthly',
     'pro_yearly': 'approv_now_pro_yearly',
   };

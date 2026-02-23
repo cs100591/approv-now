@@ -19,6 +19,7 @@ import '../../modules/request/request_ui/request_detail_screen.dart';
 import '../../modules/notification/notification_ui/notifications_screen.dart';
 import '../../modules/notification/notification_ui/notification_settings_screen.dart';
 import '../../modules/analytics/analytics_ui/analytics_screen.dart';
+import '../../modules/subscription/subscription_screen.dart';
 import 'route_names.dart';
 
 /// AppRouter - Handles all app routing
@@ -120,6 +121,12 @@ class AppRouter {
       case RouteNames.analytics:
         return MaterialPageRoute(
           builder: (_) => const AnalyticsScreen(),
+          settings: settings,
+        );
+
+      case RouteNames.subscription:
+        return MaterialPageRoute(
+          builder: (_) => const SubscriptionScreen(),
           settings: settings,
         );
 

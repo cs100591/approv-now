@@ -21,4 +21,5 @@ class RouteNames {
   static const String workspaceSettings = '/workspace-settings';
   static const String workspaceManage = '/workspace-manage';
   static const String workspaceDetail = '/workspace-detail';
+  static const String subscription = '/subscription';
 }

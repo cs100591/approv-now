@@ -7,10 +7,14 @@ import 'revenuecat_config.dart';
 
 /// RevenueCat service - Handles all in-app purchase operations
 class RevenueCatService {
-  final SubscriptionService _subscriptionService;
-  bool _isInitialized = false;
+  static final RevenueCatService _instance = RevenueCatService._internal();
+  factory RevenueCatService() => _instance;
+  static RevenueCatService get instance => _instance;
 
-  RevenueCatService(this._subscriptionService);
+  RevenueCatService._internal();
+
+  SubscriptionService? _subscriptionService;
+  bool _isInitialized = false;
 
   /// Initialize RevenueCat SDK
   Future<void> initialize(String userId) async {
@@ -20,15 +24,15 @@ class RevenueCatService {
       // Get platform-specific API key
       String apiKey;
       if (kIsWeb) {
-        apiKey = 'YOUR_WEB_API_KEY_HERE';
+        apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
       } else {
         // Use dart:io Platform for mobile
         if (Platform.isIOS) {
-          apiKey = 'YOUR_IOS_API_KEY_HERE';
+          apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
         } else if (Platform.isAndroid) {
-          apiKey = 'YOUR_ANDROID_API_KEY_HERE';
+          apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
         } else {
-          apiKey = 'YOUR_IOS_API_KEY_HERE'; // Fallback
+          apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR'; // Fallback
         }
       }
 
@@ -57,7 +61,7 @@ class RevenueCatService {
 
       if (entitlementInfo != null && entitlementInfo.isActive) {
         // User has active Pro subscription
-        _subscriptionService.upgradePlan(
+        _subscriptionService?.upgradePlan(
           userId: customerInfo.originalAppUserId,
           newPlan: PlanType.pro,
           expiresAt: entitlementInfo.expirationDate != null
@@ -69,7 +73,7 @@ class RevenueCatService {
         // Check for Starter entitlement
         final starterEntitlement = customerInfo.entitlements.all['starter'];
         if (starterEntitlement != null && starterEntitlement.isActive) {
-          _subscriptionService.upgradePlan(
+          _subscriptionService?.upgradePlan(
             userId: customerInfo.originalAppUserId,
             newPlan: PlanType.starter,
             expiresAt: starterEntitlement.expirationDate != null
