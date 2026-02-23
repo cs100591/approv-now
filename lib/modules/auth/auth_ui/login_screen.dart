@@ -89,7 +89,11 @@ class _LoginScreenState extends State<LoginScreen> {
             debugPrint('Biometric setup skipped: $e');
           }
         }
-        // AuthWrapper will handle navigation based on auth state
+        // AuthWrapper will handle navigation based on auth state, but we must
+        // pop back to the root first so LoginScreen doesn't stay on top.
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
       }
     }
   }
@@ -105,7 +109,10 @@ class _LoginScreenState extends State<LoginScreen> {
         email: result.email!,
         password: result.password!,
       );
-      // AuthWrapper will handle navigation based on auth state
+      // Clean up navigation stack
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } else if (result.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -178,7 +185,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: AppSpacing.xs),
               Center(
-                child: Text(AppLocalizations.of(context)!.signInToYourAccount,
+                child: Text(
+                  AppLocalizations.of(context)!.signInToYourAccount,
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -201,7 +209,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           return AppLocalizations.of(context)!.emailIsRequired;
                         }
                         if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value!)) {
-                          return AppLocalizations.of(context)!.pleaseEnterValidEmail;
+                          return AppLocalizations.of(context)!
+                              .pleaseEnterValidEmail;
                         }
                         return null;
                       },
@@ -214,10 +223,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       textInputAction: TextInputAction.done,
                       validator: (value) {
                         if (value?.isEmpty ?? true) {
-                          return AppLocalizations.of(context)!.passwordIsRequired;
+                          return AppLocalizations.of(context)!
+                              .passwordIsRequired;
                         }
                         if (value!.length < 6) {
-                          return AppLocalizations.of(context)!.passwordMinLength;
+                          return AppLocalizations.of(context)!
+                              .passwordMinLength;
                         }
                         return null;
                       },
@@ -267,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     Consumer<AuthProvider>(
                       builder: (context, provider, child) {
-                        return PrimaryButton(
+                        return PrimaryButtonFullWidth(
                           text: AppLocalizations.of(context)!.signIn,
                           isLoading: provider.isLoading,
                           onPressed: _login,
@@ -290,7 +301,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     Padding(
                       padding:
                           const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Text(AppLocalizations.of(context)!.or,
+                      child: Text(
+                        AppLocalizations.of(context)!.or,
                         style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.textHint,
                         ),
@@ -325,7 +337,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     child: Text(
-                      _biometricAvailable ? '' : AppLocalizations.of(context)!.or,
+                      _biometricAvailable
+                          ? ''
+                          : AppLocalizations.of(context)!.or,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textHint,
                       ),
@@ -344,7 +358,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(AppLocalizations.of(context)!.dontHaveAccount,
+                    Text(
+                      AppLocalizations.of(context)!.dontHaveAccount,
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -405,7 +420,8 @@ class _BiometricLoginButton extends StatelessWidget {
                 color: AppColors.primary,
               ),
               const SizedBox(height: 8),
-              Text(AppLocalizations.of(context)!.useBiometric,
+              Text(
+                AppLocalizations.of(context)!.useBiometric,
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),

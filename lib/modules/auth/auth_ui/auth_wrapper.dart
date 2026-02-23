@@ -87,7 +87,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
           // Case A: transitioned INTO authenticated
           if (_lastStatus != AuthStatus.authenticated) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) _onAuthenticated(userId);
+              if (mounted) {
+                // Force a cleanup first to ensure no stale state from a previous
+                // session persists (e.g., if a user logged out then a new user logged in).
+                _onLogout();
+                _onAuthenticated(userId);
+              }
             });
           }
           // Case B: same authenticated session but different user

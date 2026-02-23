@@ -6,7 +6,6 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../../core/utils/app_logger.dart';
-import '../../auth/auth_provider.dart';
 import '../../workspace/workspace_provider.dart';
 import '../template_provider.dart';
 import '../template_models.dart';
@@ -170,7 +169,8 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
             ),
             child: ListTile(
               leading: const Icon(Icons.delete_forever, color: AppColors.error),
-              title: Text(AppLocalizations.of(context)!.deleteTemplate,
+              title: Text(
+                AppLocalizations.of(context)!.deleteTemplate,
                 style: TextStyle(color: AppColors.error),
               ),
               subtitle: const Text(
@@ -429,10 +429,20 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
             color: AppColors.textSecondary,
           ),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete, size: 18, color: AppColors.error),
-          onPressed: () => _removeStep(index),
-          tooltip: AppLocalizations.of(context)!.delete,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, size: 18, color: AppColors.primary),
+              onPressed: () => _editStep(step, index),
+              tooltip: AppLocalizations.of(context)!.edit,
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, size: 18, color: AppColors.error),
+              onPressed: () => _removeStep(index),
+              tooltip: AppLocalizations.of(context)!.delete,
+            ),
+          ],
         ),
       ),
     );
@@ -528,6 +538,30 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
     });
   }
 
+  void _editStep(ApprovalStep step, int index) {
+    final workspaceProvider = context.read<WorkspaceProvider>();
+    final currentWorkspace = workspaceProvider.currentWorkspace;
+    final workspaceMembers = currentWorkspace?.members ?? [];
+    final workspaceOwner = currentWorkspace?.owner;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddApprovalStepSheet(
+        level: step.level,
+        workspaceMembers: workspaceMembers,
+        workspaceOwner: workspaceOwner,
+        existingStep: step,
+        onAdd: (updatedStep) {
+          setState(() {
+            _approvalSteps[index] = updatedStep;
+          });
+        },
+      ),
+    );
+  }
+
   void _showDeleteDialog() {
     showDialog(
       context: context,
@@ -554,7 +588,8 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
                 );
               }
             },
-            child: Text(AppLocalizations.of(context)!.delete,
+            child: Text(
+              AppLocalizations.of(context)!.delete,
               style: TextStyle(color: AppColors.error),
             ),
           ),

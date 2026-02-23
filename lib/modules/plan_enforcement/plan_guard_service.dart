@@ -272,13 +272,13 @@ class PlanGuardService {
           '3 workspaces',
           '5 templates',
           'PDF with workspace name header',
-          'Email notifications',
           'Excel export',
           'Basic analytics',
           'Verification hash',
         ],
         limitations: [
           'No custom branding / logo',
+          'No email notifications',
         ],
       ),
       PlanComparison(

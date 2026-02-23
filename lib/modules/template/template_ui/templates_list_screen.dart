@@ -6,8 +6,14 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/widgets/app_widgets.dart';
+import '../../../core/widgets/constrained_page.dart';
 import '../../auth/auth_provider.dart';
 import '../../workspace/workspace_provider.dart';
+import '../../workspace/workspace_models.dart';
+import '../../export/export_provider.dart';
+import '../../subscription/subscription_provider.dart';
+import '../../request/request_provider.dart';
+import '../../request/request_models.dart';
 import '../template_provider.dart';
 import '../template_models.dart';
 
@@ -64,51 +70,54 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
               ]
             : null,
       ),
-      body: Consumer<TemplateProvider>(
-        builder: (context, templateProvider, child) {
-          if (templateProvider.isLoading) {
-            return Center(child: CircularProgressIndicator());
-          }
+      body: ConstrainedPage(
+        child: Consumer<TemplateProvider>(
+          builder: (context, templateProvider, child) {
+            if (templateProvider.isLoading) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-          if (templateProvider.error != null) {
-            return ErrorState(
-              message: templateProvider.error!,
-              onRetry: _loadTemplates,
+            if (templateProvider.error != null) {
+              return ErrorState(
+                message: templateProvider.error!,
+                onRetry: _loadTemplates,
+              );
+            }
+
+            final templates = templateProvider.templates;
+
+            if (templates.isEmpty) {
+              return EmptyState(
+                icon: Icons.description_outlined,
+                message: 'No Templates',
+                subMessage: canCreateTemplate
+                    ? 'Create your first template to get started'
+                    : 'Contact workspace admin to create templates',
+                action: canCreateTemplate
+                    ? PrimaryButton(
+                        text: AppLocalizations.of(context)!.createTemplate,
+                        onPressed: () {
+                          Navigator.pushNamed(
+                              context, RouteNames.createTemplate);
+                        },
+                      )
+                    : null,
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: _loadTemplates,
+              child: ListView.builder(
+                padding: AppSpacing.screenPadding,
+                itemCount: templates.length,
+                itemBuilder: (context, index) {
+                  final template = templates[index];
+                  return _buildTemplateCard(template);
+                },
+              ),
             );
-          }
-
-          final templates = templateProvider.templates;
-
-          if (templates.isEmpty) {
-            return EmptyState(
-              icon: Icons.description_outlined,
-              message: 'No Templates',
-              subMessage: canCreateTemplate
-                  ? 'Create your first template to get started'
-                  : 'Contact workspace admin to create templates',
-              action: canCreateTemplate
-                  ? PrimaryButton(
-                      text: AppLocalizations.of(context)!.createTemplate,
-                      onPressed: () {
-                        Navigator.pushNamed(context, RouteNames.createTemplate);
-                      },
-                    )
-                  : null,
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: _loadTemplates,
-            child: ListView.builder(
-              padding: AppSpacing.screenPadding,
-              itemCount: templates.length,
-              itemBuilder: (context, index) {
-                final template = templates[index];
-                return _buildTemplateCard(template);
-              },
-            ),
-          );
-        },
+          },
+        ),
       ),
       floatingActionButton: canCreateTemplate
           ? FloatingActionButton.extended(
@@ -180,38 +189,71 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
         ),
         trailing: PopupMenuButton<String>(
           onSelected: (value) => _onMenuSelected(value, template),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'use',
-              child: Row(
-                children: [
-                  Icon(Icons.play_arrow),
-                  SizedBox(width: 8),
-                  Text(AppLocalizations.of(context)!.useTemplate),
-                ],
+          itemBuilder: (context) {
+            final workspaceProvider = context.read<WorkspaceProvider>();
+            final subscriptionProvider = context.read<SubscriptionProvider>();
+            final authProvider = context.read<AuthProvider>();
+            final workspace = workspaceProvider.currentWorkspace;
+            final user = authProvider.user;
+
+            // Check if user is owner/admin
+            final isOwnerOrAdmin = workspace != null &&
+                user != null &&
+                (workspace.createdBy == user.id ||
+                    workspace.ownerId == user.id);
+
+            // Check if Pro plan
+            final isPro =
+                subscriptionProvider.currentPlan.name.toLowerCase() == 'pro';
+
+            return [
+              PopupMenuItem(
+                value: 'use',
+                child: Row(
+                  children: [
+                    Icon(Icons.play_arrow),
+                    SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.useTemplate),
+                  ],
+                ),
               ),
-            ),
-            PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit),
-                  SizedBox(width: 8),
-                  Text(AppLocalizations.of(context)!.edit),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, color: AppColors.error),
-                  SizedBox(width: 8),
-                  Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: AppColors.error)),
-                ],
-              ),
-            ),
-          ],
+              if (isOwnerOrAdmin)
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit),
+                      SizedBox(width: 8),
+                      Text(AppLocalizations.of(context)!.edit),
+                    ],
+                  ),
+                ),
+              if (isOwnerOrAdmin && isPro)
+                PopupMenuItem(
+                  value: 'export',
+                  child: Row(
+                    children: [
+                      Icon(Icons.table_chart, color: AppColors.primary),
+                      SizedBox(width: 8),
+                      Text('Export Report',
+                          style: TextStyle(color: AppColors.primary)),
+                    ],
+                  ),
+                ),
+              if (isOwnerOrAdmin)
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: AppColors.error),
+                      SizedBox(width: 8),
+                      Text(AppLocalizations.of(context)!.delete,
+                          style: TextStyle(color: AppColors.error)),
+                    ],
+                  ),
+                ),
+            ];
+          },
         ),
         onTap: () => _useTemplate(template),
       ),
@@ -275,10 +317,138 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
       case 'edit':
         _editTemplate(template);
         break;
+      case 'export':
+        _exportTemplateReport(template);
+        break;
       case 'delete':
         _deleteTemplate(template);
         break;
     }
+  }
+
+  void _exportTemplateReport(Template template) async {
+    final result = await showDialog<DateTimeRange?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Export ${template.name} Report'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Select date range for the report:'),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(
+                        context,
+                        DateTimeRange(
+                          start:
+                              DateTime.now().subtract(const Duration(days: 30)),
+                          end: DateTime.now(),
+                        )),
+                    child: Text('Last 30 Days'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(
+                        context,
+                        DateTimeRange(
+                          start: DateTime(
+                              DateTime.now().year, DateTime.now().month, 1),
+                          end: DateTime.now(),
+                        )),
+                    child: Text('This Month'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(
+                        context,
+                        DateTimeRange(
+                          start: DateTime(2020),
+                          end: DateTime.now(),
+                        )),
+                    child: Text('All Time'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      final exportProvider = context.read<ExportProvider>();
+      final requestProvider = context.read<RequestProvider>();
+      final workspaceProvider = context.read<WorkspaceProvider>();
+      final workspace = workspaceProvider.currentWorkspace;
+
+      if (workspace == null) return;
+
+      try {
+        // Filter requests for this template
+        var templateRequests = requestProvider.requests
+            .where((r) => r.templateId == template.id)
+            .toList();
+
+        // Apply date range filter
+        templateRequests = templateRequests.where((r) {
+          return r.submittedAt.isAfter(result.start) &&
+              r.submittedAt.isBefore(result.end.add(const Duration(days: 1)));
+        }).toList();
+
+        await exportProvider.generateTemplateReport(
+          requests: templateRequests,
+          template: template,
+          workspace: workspace,
+          dateRange: result,
+        );
+
+        if (exportProvider.excelBytes != null) {
+          final startDate = result.start;
+          final endDate = result.end;
+          final filename =
+              '${template.name.replaceAll(' ', '_')}_${_formatDateForFilename(startDate)}_${_formatDateForFilename(endDate)}_Report.xlsx';
+
+          await exportProvider.shareExcel(filename);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Report exported successfully')),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Export failed: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  String _formatDateForFilename(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   void _editTemplate(Template template) {
@@ -307,7 +477,8 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
                   .read<TemplateProvider>()
                   .deleteTemplate(template.id);
             },
-            child: Text(AppLocalizations.of(context)!.delete,
+            child: Text(
+              AppLocalizations.of(context)!.delete,
               style: TextStyle(color: AppColors.error),
             ),
           ),

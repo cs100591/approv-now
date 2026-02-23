@@ -227,13 +227,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         ],
 
         // Submit Button
-        SizedBox(
-          width: double.infinity,
-          child: PrimaryButton(
-            text: AppLocalizations.of(context)!.submitRequest,
-            onPressed: _isLoading ? null : _submitRequest,
-            isLoading: _isLoading,
-          ),
+        PrimaryButtonFullWidth(
+          text: AppLocalizations.of(context)!.submitRequest,
+          onPressed: _isLoading ? null : _submitRequest,
+          isLoading: _isLoading,
         ),
         const SizedBox(height: AppSpacing.xl),
       ],
@@ -536,12 +533,12 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         throw StateError('Failed to create draft request. Please try again.');
       }
 
-      final newRequest = createdRequest;
-
+      final request = createdRequest; // Submit the request
       await requestProvider.submitRequest(
-        requestId: newRequest.id,
+        requestId: request.id,
         fieldValues: fieldValues,
-        draftRequest: newRequest,
+        template: _selectedTemplate!,
+        draftRequest: request,
       );
 
       if (mounted) {

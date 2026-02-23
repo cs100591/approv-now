@@ -165,7 +165,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get signInToYourAccount => '登录您的账户';
 
   @override
-  String get signUpToGetStarted => '注册开始使用 Approve Now';
+  String get signUpToGetStarted => '注册开始使用 Approv Now';
 
   @override
   String get enterYourEmail => '输入您的电子邮箱';
@@ -264,12 +264,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String version(Object version) {
-    return 'Approve Now v$version';
+    return 'Approv Now v$version';
   }
 
   @override
   String copyright(Object year) {
-    return '© $year Approve Now. 保留所有权利。';
+    return '© $year Approv Now. 保留所有权利。';
   }
 
   @override
@@ -1224,7 +1224,7 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get signInToYourAccount => '登录您的账户';
 
   @override
-  String get signUpToGetStarted => '注册以开始使用 Approve Now';
+  String get signUpToGetStarted => '注册以开始使用 Approv Now';
 
   @override
   String get enterYourEmail => '输入您的电子邮箱';
@@ -1323,12 +1323,12 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
 
   @override
   String version(Object version) {
-    return 'Approve Now v$version';
+    return 'Approv Now v$version';
   }
 
   @override
   String copyright(Object year) {
-    return '© $year Approve Now。保留所有权利。';
+    return '© $year Approv Now。保留所有权利。';
   }
 
   @override
@@ -2283,7 +2283,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get signInToYourAccount => '登入您的帳戶';
 
   @override
-  String get signUpToGetStarted => '註冊以開始使用 Approve Now';
+  String get signUpToGetStarted => '註冊以開始使用 Approv Now';
 
   @override
   String get enterYourEmail => '輸入您的電子郵件';
@@ -2382,12 +2382,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String version(Object version) {
-    return 'Approve Now v$version';
+    return 'Approv Now v$version';
   }
 
   @override
   String copyright(Object year) {
-    return '© $year Approve Now。保留所有權利。';
+    return '© $year Approv Now。保留所有權利。';
   }
 
   @override

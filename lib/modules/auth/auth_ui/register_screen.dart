@@ -4,7 +4,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_widgets.dart';
-import '../../../core/routing/route_names.dart';
 import '../../../core/utils/app_logger.dart';
 import '../auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -66,8 +65,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           );
 
-          // Navigate back to login page after successful registration
-          Navigator.pushReplacementNamed(context, RouteNames.login);
+          // Clear stack back to AuthWrapper
+          Navigator.of(context).popUntil((route) => route.isFirst);
         }
       } catch (e) {
         // Error is already handled by AuthProvider, but ensure UI updates
@@ -212,7 +211,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Register Button
                     Consumer<AuthProvider>(
                       builder: (context, provider, child) {
-                        return PrimaryButton(
+                        return PrimaryButtonFullWidth(
                           text: AppLocalizations.of(context)!.createAccount,
                           isLoading: provider.isLoading,
                           onPressed: _register,

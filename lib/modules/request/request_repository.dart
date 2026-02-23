@@ -2,7 +2,6 @@ import 'dart:async';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/stream_helper.dart';
-import '../template/template_models.dart';
 import 'request_models.dart';
 
 /// RequestRepository - Supabase implementation
@@ -21,11 +20,10 @@ class RequestRepository {
         final templateResponse = await _supabase.client
             .from('templates')
             .select('approval_steps')
-            .eq('id', request.templateId!)
+            .eq('id', request.templateId)
             .single();
 
-        if (templateResponse != null &&
-            templateResponse['approval_steps'] != null) {
+        if (templateResponse['approval_steps'] != null) {
           final steps = templateResponse['approval_steps'] as List<dynamic>;
           approvalSteps = steps
               .map((step) => {
@@ -110,18 +108,25 @@ class RequestRepository {
   }
 
   /// Update request
-  Future<void> updateRequest(ApprovalRequest request) async {
+  Future<void> updateRequest(ApprovalRequest request,
+      [List<String>? currentApproverIds]) async {
     try {
+      final payload = <String, dynamic>{
+        'status': request.status.name,
+        'current_level': request.currentLevel,
+        'field_values': request.fieldValues.map((f) => f.toJson()).toList(),
+        'approval_actions':
+            request.approvalActions.map((a) => a.toJson()).toList(),
+        'revision_number': request.revisionNumber,
+      };
+
+      if (currentApproverIds != null) {
+        payload['current_approver_ids'] = currentApproverIds;
+      }
+
       await _supabase.updateRequest(
         request.id,
-        {
-          'status': request.status.name,
-          'current_level': request.currentLevel,
-          'field_values': request.fieldValues.map((f) => f.toJson()).toList(),
-          'approval_actions':
-              request.approvalActions.map((a) => a.toJson()).toList(),
-          'revision_number': request.revisionNumber,
-        },
+        payload,
       );
     } catch (e) {
       AppLogger.error('Error updating request', e);
@@ -139,10 +144,30 @@ class RequestRepository {
     }
   }
 
+  /// Get ALL requests for workspace — admin/owner log view only
+  Future<List<ApprovalRequest>> getAllRequestsForAdmin(
+      String workspaceId) async {
+    try {
+      final requests = await _supabase.getAllRequestsForAdmin(workspaceId);
+      return requests.map(_mapToRequest).toList();
+    } catch (e) {
+      AppLogger.error('Error getting all requests (admin)', e);
+      rethrow;
+    }
+  }
+
   /// Stream requests for workspace with safe lifecycle management
   Stream<List<ApprovalRequest>> streamRequestsByWorkspace(String workspaceId) {
     return StreamHelper.createPollingStream(
       fetchData: () => getRequestsByWorkspace(workspaceId),
+      interval: const Duration(seconds: 30),
+    );
+  }
+
+  /// Stream ALL requests for admin/owner
+  Stream<List<ApprovalRequest>> streamAllRequestsForAdmin(String workspaceId) {
+    return StreamHelper.createPollingStream(
+      fetchData: () => getAllRequestsForAdmin(workspaceId),
       interval: const Duration(seconds: 30),
     );
   }
@@ -182,6 +207,10 @@ class RequestRepository {
           .map((a) => ApprovalAction.fromJson(a as Map<String, dynamic>))
           .toList(),
       revisions: [],
+      currentApproverIds: (json['current_approver_ids'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 

@@ -54,7 +54,7 @@ class PermissionGuard {
   /// Check if user can create templates
   static bool canCreateTemplate(WorkspaceRole? role) {
     if (role == null) return false;
-    return role != WorkspaceRole.viewer;
+    return role != WorkspaceRole.editor;
   }
 
   /// Check if user can edit templates
@@ -88,13 +88,13 @@ class PermissionGuard {
   /// Check if user can create requests
   static bool canCreateRequest(WorkspaceRole? role) {
     if (role == null) return false;
-    return role != WorkspaceRole.viewer;
+    return role != WorkspaceRole.editor;
   }
 
   /// Check if user can approve/reject requests
   static bool canApproveRequest(WorkspaceRole? role) {
     if (role == null) return false;
-    return role != WorkspaceRole.viewer;
+    return role != WorkspaceRole.editor;
   }
 
   /// Check if user can view all requests in workspace

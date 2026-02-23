@@ -211,7 +211,17 @@ class WorkspaceProvider extends ChangeNotifier {
       // Save to Firestore
       await _workspaceRepository.createWorkspace(firestoreWorkspace);
 
-      // Real-time subscription will update the state automatically
+      // Optimistically update local state immediately so the UI doesn't hang
+      // waiting for the real-time subscription to fire (which can take a moment).
+      final updatedWorkspaces = [..._state.workspaces, firestoreWorkspace];
+      _state = _state.copyWith(
+        workspaces: updatedWorkspaces,
+        currentWorkspace: firestoreWorkspace,
+        isLoading: false,
+        error: null,
+      );
+      notifyListeners();
+
       AppLogger.info('Created workspace: ${workspace.id}');
 
       return firestoreWorkspace;
@@ -298,6 +308,51 @@ class WorkspaceProvider extends ChangeNotifier {
       AppLogger.info('Updated workspace: $workspaceId');
     } catch (e) {
       AppLogger.error('Error updating workspace', e);
+      _state = _state.copyWith(error: e.toString());
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Update workspace settings (like PDF Export settings)
+  Future<void> updateWorkspaceSettings({
+    required String workspaceId,
+    required Map<String, dynamic> settings,
+  }) async {
+    _setLoading(true);
+
+    try {
+      final existingWorkspace = _state.workspaces.firstWhere(
+        (w) => w.id == workspaceId,
+        orElse: () => throw Exception('Workspace not found: $workspaceId'),
+      );
+
+      final updatedSettings =
+          Map<String, dynamic>.from(existingWorkspace.settings);
+      updatedSettings.addAll(settings);
+
+      final updatedWorkspace = existingWorkspace.copyWith(
+        settings: updatedSettings,
+        updatedAt: DateTime.now(),
+      );
+
+      await _workspaceRepository.updateWorkspace(updatedWorkspace);
+
+      final workspaces = _state.workspaces
+          .map((w) => w.id == workspaceId ? updatedWorkspace : w)
+          .toList();
+
+      _state = _state.copyWith(
+        workspaces: workspaces,
+        currentWorkspace: workspaceId == _state.currentWorkspace?.id
+            ? updatedWorkspace
+            : _state.currentWorkspace,
+      );
+
+      AppLogger.info('Updated workspace settings: $workspaceId');
+    } catch (e) {
+      AppLogger.error('Error updating workspace settings', e);
       _state = _state.copyWith(error: e.toString());
       notifyListeners();
     } finally {

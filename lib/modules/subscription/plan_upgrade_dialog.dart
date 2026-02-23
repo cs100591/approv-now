@@ -142,42 +142,45 @@ class PlanUpgradeDialog extends StatelessWidget {
             // Actions
             Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed:
-                          onCancel ?? () => Navigator.of(context).pop(false),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
+              child: SizedBox(
+                width: double.infinity,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed:
+                            onCancel ?? () => Navigator.of(context).pop(false),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                          ),
                         ),
-                      ),
-                      child: const Text('Maybe Later'),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      onPressed:
-                          onUpgrade ?? () => Navigator.of(context).pop(true),
-                      icon: const Icon(Icons.upgrade),
-                      label: Text(
-                        nextPlan != null
-                            ? 'Upgrade to ${nextPlan.planName}'
-                            : 'View Plans',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
+                        child: const Text('Maybe Later'),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed:
+                            onUpgrade ?? () => Navigator.of(context).pop(true),
+                        icon: const Icon(Icons.upgrade),
+                        label: Text(
+                          nextPlan != null
+                              ? 'Upgrade to ${nextPlan.planName}'
+                              : 'View Plans',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

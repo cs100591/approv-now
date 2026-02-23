@@ -39,7 +39,6 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
 
   // AI Generator
   late final SmartTemplateGenerator _aiGenerator;
-  GenerationResponse? _lastGenerationResponse;
   List<AiMatchResult> _suggestions = [];
 
   @override
@@ -137,7 +136,6 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       if (mounted) {
         setState(() {
           _isGenerating = false;
-          _lastGenerationResponse = response;
         });
 
         if (response.success) {
@@ -1168,15 +1166,6 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
       widget.existingStep?.approvers.toList() ?? [];
   late bool _requireAll = widget.existingStep?.requireAll ?? false;
 
-  @override
-  void initState() {
-    super.initState();
-    // If editing, populate the approvers
-    if (widget.existingStep != null) {
-      _approverIds.addAll(widget.existingStep!.approvers);
-    }
-  }
-
   // Combine owner and active members for the dropdown
   List<WorkspaceMember> get availableApprovers {
     final List<WorkspaceMember> approvers = [];
@@ -1349,7 +1338,7 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
                             orElse: () => WorkspaceMember(
                               userId: approverId,
                               email: 'Unknown',
-                              role: WorkspaceRole.viewer,
+                              role: WorkspaceRole.editor,
                               status: MemberStatus.active,
                               invitedAt: DateTime.now(),
                               invitedBy: 'system',

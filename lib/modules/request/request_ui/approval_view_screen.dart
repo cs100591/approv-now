@@ -7,6 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../auth/auth_provider.dart';
 import '../../template/template_provider.dart';
+import '../../workspace/workspace_member.dart';
 import '../../workspace/workspace_provider.dart';
 import '../request_provider.dart';
 import '../request_models.dart';
@@ -38,14 +39,21 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
     final requestProvider = context.read<RequestProvider>();
     final authProvider = context.read<AuthProvider>();
 
-    if (workspaceProvider.currentWorkspace != null) {
-      // Set current workspace which automatically subscribes to requests
+    if (workspaceProvider.currentWorkspace != null &&
+        authProvider.user != null) {
+      // Determine if current user is admin/owner
+      final workspace = workspaceProvider.currentWorkspace!;
+      final userId = authProvider.user!.id;
+      final role = workspace.getUserRole(userId);
+      final isAdminOrOwner =
+          role == WorkspaceRole.admin || role == WorkspaceRole.owner;
+
       requestProvider.setCurrentWorkspace(
-        workspaceProvider.currentWorkspace!.id,
-        approverId: authProvider.user?.id,
+        workspace.id,
+        approverId: userId,
+        isAdminOrOwner: isAdminOrOwner,
       );
 
-      // Manually refresh requests
       await requestProvider.loadRequests();
     }
   }
@@ -54,8 +62,11 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
   Widget build(BuildContext context) {
     final bodyContent = TabBarView(
       children: [
-        _buildRequestList(RequestStatus.values),
-        _buildRequestList([RequestStatus.pending]),
+        // "All" tab: my own requests + pending approvals for me
+        _buildMyRequestsList(),
+        // "Pending" tab: only approval requests directed at ME
+        _buildPendingApprovalsList(),
+        // Completed tabs filtered from my own requests
         _buildRequestList([RequestStatus.approved]),
         _buildRequestList([RequestStatus.rejected]),
       ],
@@ -81,24 +92,132 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
         ),
         body: ResponsiveLayout(
           mobile: bodyContent,
-          desktop: SplitView(
-            menuWidth: 400,
-            menu: bodyContent,
-            content: _selectedRequestId == null
-                ? Center(
-                    child: Text(
-                      'Select a request to view details',
-                      style: AppTextStyles.bodyLarge
-                          .copyWith(color: AppColors.textSecondary),
-                    ),
-                  )
-                : RequestDetailScreen(
-                    key: ValueKey(_selectedRequestId),
-                    requestId: _selectedRequestId!,
-                  ),
+          desktop: Row(
+            children: [
+              SizedBox(
+                width: 400,
+                child: bodyContent,
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: _selectedRequestId == null
+                    ? Center(
+                        child: Text(
+                          'Select a request to view details',
+                          style: AppTextStyles.bodyLarge
+                              .copyWith(color: AppColors.textSecondary),
+                        ),
+                      )
+                    : RequestDetailScreen(
+                        key: ValueKey(_selectedRequestId),
+                        requestId: _selectedRequestId!,
+                      ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  /// "All" tab: shows current user's own requests
+  /// (admin/owner also sees all workspace requests)
+  Widget _buildMyRequestsList() {
+    return Consumer2<RequestProvider, AuthProvider>(
+      builder: (context, requestProvider, authProvider, child) {
+        Widget content;
+
+        if (requestProvider.isLoading && requestProvider.requests.isEmpty) {
+          content = const ShimmerCardList(
+              key: ValueKey('shimmer'), itemCount: 5, cardHeight: 180);
+        } else if (requestProvider.error != null) {
+          content = ErrorState(
+            key: const ValueKey('error'),
+            message: requestProvider.error!,
+            onRetry: _loadRequests,
+          );
+        } else {
+          // Admin/owner sees all workspace requests; others see only their own
+          final List<ApprovalRequest> requests = requestProvider.isAdminOrOwner
+              ? requestProvider.allRequests
+              : requestProvider.requests;
+
+          if (requests.isEmpty && !requestProvider.isLoading) {
+            content = _buildEmptyState([]);
+          } else if (requests.isEmpty && requestProvider.isLoading) {
+            content = const ShimmerCardList(
+                key: ValueKey('shimmer'), itemCount: 5, cardHeight: 180);
+          } else {
+            content = RefreshIndicator(
+              key: const ValueKey('list'),
+              onRefresh: _loadRequests,
+              child: ListView.builder(
+                padding: AppSpacing.screenPadding,
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final request = requests[index];
+                  // No approve/reject actions in log view
+                  return _buildRequestCard(request, showActions: false);
+                },
+              ),
+            );
+          }
+        }
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: content,
+        );
+      },
+    );
+  }
+
+  /// "Pending" tab: only requests where the current user is a designated approver
+  Widget _buildPendingApprovalsList() {
+    return Consumer<RequestProvider>(
+      builder: (context, requestProvider, child) {
+        Widget content;
+
+        if (requestProvider.isLoading &&
+            requestProvider.pendingRequests.isEmpty) {
+          content = const ShimmerCardList(
+              key: ValueKey('shimmer'), itemCount: 5, cardHeight: 180);
+        } else if (requestProvider.error != null) {
+          content = ErrorState(
+            key: const ValueKey('error'),
+            message: requestProvider.error!,
+            onRetry: _loadRequests,
+          );
+        } else {
+          final requests = requestProvider.pendingRequests;
+
+          if (requests.isEmpty && !requestProvider.isLoading) {
+            content = _buildEmptyState([RequestStatus.pending]);
+          } else if (requests.isEmpty && requestProvider.isLoading) {
+            content = const ShimmerCardList(
+                key: ValueKey('shimmer'), itemCount: 5, cardHeight: 180);
+          } else {
+            content = RefreshIndicator(
+              key: const ValueKey('list'),
+              onRefresh: _loadRequests,
+              child: ListView.builder(
+                padding: AppSpacing.screenPadding,
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final request = requests[index];
+                  // Show approve/reject actions here — user IS an approver for these
+                  return _buildRequestCard(request, showActions: true);
+                },
+              ),
+            );
+          }
+        }
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: content,
+        );
+      },
     );
   }
 
@@ -117,12 +236,10 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
             onRetry: _loadRequests,
           );
         } else {
-          List<ApprovalRequest> requests = requestProvider.requests;
-
-          if (statuses.length < RequestStatus.values.length) {
-            requests =
-                requests.where((r) => statuses.contains(r.status)).toList();
-          }
+          // Only the current user's own requests, filtered by status
+          List<ApprovalRequest> requests = requestProvider.requests
+              .where((r) => statuses.contains(r.status))
+              .toList();
 
           if (requests.isEmpty && !requestProvider.isLoading) {
             content = _buildEmptyState(statuses);
@@ -138,7 +255,7 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
                 itemCount: requests.length,
                 itemBuilder: (context, index) {
                   final request = requests[index];
-                  return _buildRequestCard(request);
+                  return _buildRequestCard(request, showActions: false);
                 },
               ),
             );
@@ -178,7 +295,8 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
     );
   }
 
-  Widget _buildRequestCard(ApprovalRequest request) {
+  Widget _buildRequestCard(ApprovalRequest request,
+      {bool showActions = false}) {
     return AppCard(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       child: InkWell(
@@ -228,35 +346,110 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
                       color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      'Level ${request.currentLevel + 1} of ${request.currentLevel + 1}',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                    Builder(builder: (context) {
+                      final template = context
+                          .read<TemplateProvider>()
+                          .getTemplateById(request.templateId);
+                      final workspace =
+                          context.read<WorkspaceProvider>().currentWorkspace;
+
+                      int maxLevel = 1;
+                      String waitingText = 'Pending Approval';
+
+                      if (template != null) {
+                        maxLevel = template.maxApprovalLevel;
+                        final currentStep = template.approvalSteps.firstWhere(
+                            (s) => s.level == request.currentLevel,
+                            orElse: () => template.approvalSteps.first);
+
+                        if (workspace != null) {
+                          final approverNames =
+                              currentStep.approvers.map((uid) {
+                            final member = workspace.getMember(uid);
+                            return member?.displayName ??
+                                member?.email ??
+                                'Approver';
+                          }).toList();
+
+                          if (approverNames.isNotEmpty) {
+                            if (approverNames.length == 1) {
+                              waitingText = 'Waiting for ${approverNames[0]}';
+                            } else {
+                              waitingText =
+                                  'Waiting for ${approverNames[0]} and ${approverNames.length - 1} others';
+                            }
+                          }
+                        }
+                      }
+
+                      return Expanded(
+                        child: Text(
+                          'Level ${request.currentLevel} of $maxLevel • $waitingText',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ],
-              if (request.canShowActions) ...[
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SecondaryButton(
-                        text: AppLocalizations.of(context)!.reject,
-                        onPressed: () => _rejectRequest(request),
+              Builder(builder: (context) {
+                final authProvider = context.read<AuthProvider>();
+                final templateProvider = context.read<TemplateProvider>();
+
+                bool isApprover = false;
+                if (showActions && request.canShowActions) {
+                  final template =
+                      templateProvider.getTemplateById(request.templateId);
+                  final userId = authProvider.user?.id;
+
+                  if (template != null && userId != null) {
+                    final currentStep = template.approvalSteps.firstWhere(
+                        (s) => s.level == request.currentLevel,
+                        orElse: () => template.approvalSteps.first);
+
+                    final hasApproved = request.currentApprovalActions.any(
+                        (a) =>
+                            a.level == request.currentLevel &&
+                            a.approverId == userId &&
+                            a.approved);
+
+                    if (currentStep.approvers.contains(userId) &&
+                        !hasApproved) {
+                      isApprover = true;
+                    }
+                  }
+                }
+
+                if (isApprover) {
+                  return Column(
+                    children: [
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SecondaryButton(
+                              text: AppLocalizations.of(context)!.reject,
+                              onPressed: () => _rejectRequest(request),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: PrimaryButton(
+                              text: AppLocalizations.of(context)!.approve,
+                              onPressed: () => _approveRequest(request),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: PrimaryButton(
-                        text: AppLocalizations.of(context)!.approve,
-                        onPressed: () => _approveRequest(request),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
             ],
           ),
         ),
@@ -374,9 +567,10 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Request approved')),
+          const SnackBar(content: Text('Request approved \u2713')),
         );
-        Navigator.pop(context);
+        // Refresh the list so the card disappears / updates
+        _loadRequests();
       }
     } catch (e) {
       if (mounted) {
@@ -425,7 +619,8 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Request rejected')),
         );
-        Navigator.pop(context);
+        // Refresh the list so the card disappears / updates
+        _loadRequests();
       }
     } catch (e) {
       if (mounted) {
@@ -475,5 +670,8 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
 }
 
 extension on ApprovalRequest {
+  /// Only true when the request is pending — actual approver check is enforced
+  /// by the ApprovalEngine on the server side and by which list (pendingRequests)
+  /// the card appears in. Cards in the pending-approvals list always pass showActions:true.
   bool get canShowActions => status == RequestStatus.pending;
 }

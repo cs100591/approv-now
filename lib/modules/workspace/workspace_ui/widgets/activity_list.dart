@@ -103,7 +103,6 @@ class ActivityList extends StatelessWidget {
   }
 
   Widget _buildActivityCard(BuildContext context, ApprovalRequest request) {
-    final isPendingApproval = request.status == RequestStatus.pending;
     final statusColor = _getStatusColor(request.status);
     final statusIcon = _getStatusIcon(request.status);
 

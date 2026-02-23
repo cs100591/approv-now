@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../../core/utils/app_logger.dart';
 import 'member_group.dart';
 import 'group_repository.dart';
-import 'workspace_repository.dart';
 
 class GroupState {
   final List<MemberGroup> groups;
@@ -45,7 +44,6 @@ class GroupState {
 
 class GroupProvider extends ChangeNotifier {
   final GroupRepository _groupRepository;
-  final WorkspaceRepository _workspaceRepository;
 
   GroupState _state = const GroupState();
   StreamSubscription<List<MemberGroup>>? _groupsSubscription;
@@ -60,9 +58,7 @@ class GroupProvider extends ChangeNotifier {
 
   GroupProvider({
     GroupRepository? groupRepository,
-    WorkspaceRepository? workspaceRepository,
-  })  : _groupRepository = groupRepository ?? GroupRepository(),
-        _workspaceRepository = workspaceRepository ?? WorkspaceRepository();
+  }) : _groupRepository = groupRepository ?? GroupRepository();
 
   GroupState get state => _state;
   List<MemberGroup> get groups => _state.groups;

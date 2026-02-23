@@ -30,6 +30,7 @@ class PdfService {
     String? hash,
     String pdfHeaderMode = 'brand', // 'brand' | 'workspace' | 'custom'
     bool includeWatermark = false,
+    pw.ImageProvider? logoImage,
   }) async {
     final pdf = pw.Document();
 
@@ -37,7 +38,7 @@ class PdfService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
-        header: (ctx) => _buildHeader(pdfHeaderMode, workspace),
+        header: (ctx) => _buildHeader(pdfHeaderMode, workspace, logoImage),
         footer: (ctx) => _buildFooter(
             pdfHeaderMode, workspace, ctx.pageNumber, ctx.pagesCount, hash),
         build: (ctx) => [
@@ -65,10 +66,11 @@ class PdfService {
 
   // ── Header variants ────────────────────────────────────────────────────────
 
-  pw.Widget _buildHeader(String mode, Workspace workspace) {
+  pw.Widget _buildHeader(String mode, Workspace workspace,
+      [pw.ImageProvider? logoImage]) {
     switch (mode) {
       case 'custom':
-        return _buildCustomHeader(workspace);
+        return _buildCustomHeader(workspace, logoImage);
       case 'workspace':
         return _buildWorkspaceHeader(workspace);
       case 'brand':
@@ -157,7 +159,8 @@ class PdfService {
   }
 
   /// Pro plan – custom header: logo + workspace name + description
-  pw.Widget _buildCustomHeader(Workspace workspace) {
+  pw.Widget _buildCustomHeader(Workspace workspace,
+      [pw.ImageProvider? logoImage]) {
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 12),
       decoration: const pw.BoxDecoration(
@@ -167,24 +170,37 @@ class PdfService {
         crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
           // Logo placeholder (circular with initials if no image)
-          pw.Container(
-            width: 48,
-            height: 48,
-            decoration: pw.BoxDecoration(
-              color: _kPrimary,
-              shape: pw.BoxShape.circle,
-            ),
-            child: pw.Center(
-              child: pw.Text(
-                _initials(workspace.name),
-                style: pw.TextStyle(
-                  color: PdfColors.white,
-                  fontSize: 16,
-                  fontWeight: pw.FontWeight.bold,
+          if (logoImage != null)
+            pw.Container(
+              width: 48,
+              height: 48,
+              decoration: pw.BoxDecoration(
+                shape: pw.BoxShape.circle,
+                image: pw.DecorationImage(
+                  image: logoImage,
+                  fit: pw.BoxFit.cover,
+                ),
+              ),
+            )
+          else
+            pw.Container(
+              width: 48,
+              height: 48,
+              decoration: pw.BoxDecoration(
+                color: _kPrimary,
+                shape: pw.BoxShape.circle,
+              ),
+              child: pw.Center(
+                child: pw.Text(
+                  _initials(workspace.name),
+                  style: pw.TextStyle(
+                    color: PdfColors.white,
+                    fontSize: 16,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-          ),
           pw.SizedBox(width: 14),
           pw.Expanded(
             child: pw.Column(
@@ -310,10 +326,10 @@ class PdfService {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          _metaCol('REQUEST ID', _shortId(request.id)),
-          _metaCol('REVISION', '${request.revisionNumber}'),
-          _metaCol('SUBMITTED BY', request.submittedByName),
-          _metaCol('DATE', _fmt(request.submittedAt)),
+          pw.Expanded(child: _metaCol('REQUEST ID', request.displayId)),
+          pw.Expanded(child: _metaCol('REVISION', '${request.revisionNumber}')),
+          pw.Expanded(child: _metaCol('SUBMITTED BY', request.submittedByName)),
+          pw.Expanded(child: _metaCol('DATE', _fmt(request.submittedAt))),
         ],
       ),
     );
@@ -507,7 +523,7 @@ class PdfService {
                 ),
                 pw.SizedBox(height: 4),
                 pw.Text(
-                  'Level ${action.level} – ${action.approved ? 'Approved' : 'Rejected'}',
+                  'Level ${action.level} - ${action.approved ? 'Approved' : 'Rejected'}',
                   style: pw.TextStyle(
                     fontSize: 9,
                     color: dot,
@@ -544,8 +560,11 @@ class PdfService {
   }
 
   String _fmtValue(dynamic value, [dynamic type]) {
-    if (value == null || value.toString().isEmpty || value.toString() == 'null')
+    if (value == null ||
+        value.toString().isEmpty ||
+        value.toString() == 'null') {
       return '-';
+    }
     if (value is bool ||
         value.toString() == 'true' ||
         value.toString() == 'false') {
@@ -558,11 +577,6 @@ class PdfService {
       } catch (_) {}
     }
     return value.toString();
-  }
-
-  String _shortId(String id) {
-    if (id.length <= 8) return id;
-    return '${id.substring(0, 8)}…';
   }
 
   String _initials(String name) {

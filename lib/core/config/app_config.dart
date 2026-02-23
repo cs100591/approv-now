@@ -3,12 +3,11 @@ class AppConfig {
   AppConfig._();
 
   // Email notifications
-  static bool enableEmailNotifications =
-      false; // Set to true when ready to use email
+  static bool enableEmailNotifications = true; // Enabled for Pro users
 
-  // Firebase Functions
+  // Cloud Functions
   static bool useFirebaseFunctions =
-      false; // Set to true when functions are deployed
+      true; // Note: using Supabase edge functions
 
   // Deep links
   static bool enableDeepLinks = false; // Set to true when domain is configured

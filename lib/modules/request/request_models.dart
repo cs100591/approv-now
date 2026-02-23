@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../template/template_models.dart';
+import '../../core/utils/data_parser.dart';
 
 /// Status of an approval request
 enum RequestStatus {
@@ -234,6 +235,7 @@ class ApprovalRequest extends Equatable {
   final List<FieldValue> fieldValues;
   final List<ApprovalAction> approvalActions;
   final List<RequestRevision> revisions;
+  final List<String> currentApproverIds;
 
   const ApprovalRequest({
     required this.id,
@@ -249,6 +251,7 @@ class ApprovalRequest extends Equatable {
     this.fieldValues = const [],
     this.approvalActions = const [],
     this.revisions = const [],
+    this.currentApproverIds = const [],
   });
 
   ApprovalRequest copyWith({
@@ -265,6 +268,7 @@ class ApprovalRequest extends Equatable {
     List<FieldValue>? fieldValues,
     List<ApprovalAction>? approvalActions,
     List<RequestRevision>? revisions,
+    List<String>? currentApproverIds,
   }) {
     return ApprovalRequest(
       id: id ?? this.id,
@@ -280,6 +284,7 @@ class ApprovalRequest extends Equatable {
       fieldValues: fieldValues ?? this.fieldValues,
       approvalActions: approvalActions ?? this.approvalActions,
       revisions: revisions ?? this.revisions,
+      currentApproverIds: currentApproverIds ?? this.currentApproverIds,
     );
   }
 
@@ -297,6 +302,7 @@ class ApprovalRequest extends Equatable {
         'fieldValues': fieldValues.map((v) => v.toJson()).toList(),
         'approvalActions': approvalActions.map((a) => a.toJson()).toList(),
         'revisions': revisions.map((r) => r.toJson()).toList(),
+        'current_approver_ids': currentApproverIds,
       };
 
   factory ApprovalRequest.fromJson(Map<String, dynamic> json) =>
@@ -326,6 +332,8 @@ class ApprovalRequest extends Equatable {
                 ?.map((r) => RequestRevision.fromJson(r))
                 .toList() ??
             [],
+        currentApproverIds:
+            DataParser.parseStringList(json['current_approver_ids']),
       );
 
   bool get isPending => status == RequestStatus.pending;
@@ -333,6 +341,14 @@ class ApprovalRequest extends Equatable {
   bool get isRejected => status == RequestStatus.rejected;
   bool get canEdit =>
       status == RequestStatus.draft || status == RequestStatus.revised;
+
+  String get displayId {
+    final dateStr =
+        '${submittedAt.year}${submittedAt.month.toString().padLeft(2, '0')}${submittedAt.day.toString().padLeft(2, '0')}';
+    final shortUuid =
+        id.length >= 6 ? id.substring(0, 6).toUpperCase() : id.toUpperCase();
+    return 'REQ-$dateStr-$shortUuid';
+  }
 
   List<ApprovalAction> get currentApprovalActions =>
       approvalActions.where((a) => !a.isObsolete).toList();
@@ -357,47 +373,58 @@ class ApprovalRequest extends Equatable {
 
 /// Request state for provider
 class RequestState extends Equatable {
-  final List<ApprovalRequest> requests;
+  final List<ApprovalRequest> requests; // Current user's own requests
+  final List<ApprovalRequest>
+      allRequests; // All workspace requests (admin only)
   final ApprovalRequest? selectedRequest;
   final List<ApprovalRequest> pendingRequests;
   final int pendingCount;
   final bool isLoading;
   final String? error;
+  final bool isAdminOrOwner;
 
   const RequestState({
     this.requests = const [],
+    this.allRequests = const [],
     this.selectedRequest,
     this.pendingRequests = const [],
     this.pendingCount = 0,
     this.isLoading = false,
     this.error,
+    this.isAdminOrOwner = false,
   });
 
   RequestState copyWith({
     List<ApprovalRequest>? requests,
+    List<ApprovalRequest>? allRequests,
     ApprovalRequest? selectedRequest,
     List<ApprovalRequest>? pendingRequests,
     int? pendingCount,
     bool? isLoading,
     String? error,
+    bool? isAdminOrOwner,
   }) {
     return RequestState(
       requests: requests ?? this.requests,
+      allRequests: allRequests ?? this.allRequests,
       selectedRequest: selectedRequest ?? this.selectedRequest,
       pendingRequests: pendingRequests ?? this.pendingRequests,
       pendingCount: pendingCount ?? this.pendingCount,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
+      isAdminOrOwner: isAdminOrOwner ?? this.isAdminOrOwner,
     );
   }
 
   @override
   List<Object?> get props => [
         requests,
+        allRequests,
         selectedRequest,
         pendingRequests,
         pendingCount,
         isLoading,
         error,
+        isAdminOrOwner,
       ];
 }

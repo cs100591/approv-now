@@ -1,4 +1,3 @@
-import 'dart:math';
 import '../request/request_models.dart';
 import '../template/template_models.dart';
 
@@ -112,11 +111,6 @@ class RevisionService {
   /// Check if request needs restart notification
   bool shouldTriggerRestartNotification(ApprovalRequest request) {
     return request.revisionNumber > 1 && request.currentLevel == 1;
-  }
-
-  String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString() +
-        Random().nextInt(1000).toString();
   }
 }
 

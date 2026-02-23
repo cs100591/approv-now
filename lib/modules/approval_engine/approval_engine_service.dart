@@ -17,7 +17,12 @@ class ApprovalEngineService {
         (s) => s.level == request.currentLevel,
         orElse: () => throw Exception('No approval step found'));
 
-    if (!currentStep.approvers.contains(approverId)) {
+    // Check if user is in the captured current approvers list for this request
+    final authorizedApprovers = request.currentApproverIds.isNotEmpty
+        ? request.currentApproverIds
+        : currentStep.approvers;
+
+    if (!authorizedApprovers.contains(approverId)) {
       throw Exception('Approver not authorized for this level');
     }
 
@@ -98,7 +103,12 @@ class ApprovalEngineService {
         (s) => s.level == request.currentLevel,
         orElse: () => throw Exception('No approval step found'));
 
-    if (!currentStep.approvers.contains(approverId)) {
+    // Check if user is in the captured current approvers list for this request
+    final authorizedApprovers = request.currentApproverIds.isNotEmpty
+        ? request.currentApproverIds
+        : currentStep.approvers;
+
+    if (!authorizedApprovers.contains(approverId)) {
       throw Exception('Approver not authorized for this level');
     }
 
@@ -166,10 +176,33 @@ class ApprovalEngineService {
   /// Get approvers for current level
   List<String> getCurrentLevelApprovers(
       ApprovalRequest request, Template template) {
-    final currentStep = template.approvalSteps.firstWhere(
-        (s) => s.level == request.currentLevel,
-        orElse: () => throw Exception('No approval step'));
-    return currentStep.approvers;
+    print(
+        'DEBUG getCurrentLevelApprovers: request.currentLevel=${request.currentLevel}');
+    print(
+        'DEBUG getCurrentLevelApprovers: template.approvalSteps.length=${template.approvalSteps.length}');
+    print(
+        'DEBUG getCurrentLevelApprovers: available levels=${template.approvalSteps.map((s) => s.level).toList()}');
+
+    try {
+      final currentStep = template.approvalSteps.firstWhere(
+          (s) => s.level == request.currentLevel,
+          orElse: () => throw Exception(
+              'No approval step found for level ${request.currentLevel}'));
+
+      print(
+          'DEBUG getCurrentLevelApprovers: found step level=${currentStep.level}, approvers=${currentStep.approvers}');
+
+      if (currentStep.approvers.isEmpty) {
+        print('WARNING: Step ${currentStep.level} has empty approvers list!');
+      }
+
+      return currentStep.approvers;
+    } catch (e) {
+      print('ERROR getCurrentLevelApprovers: $e');
+      print(
+          'ERROR: template.id=${template.id}, template.name=${template.name}');
+      return []; // Return empty list to prevent crash
+    }
   }
 
   String _generateId() {

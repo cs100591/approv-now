@@ -411,11 +411,10 @@ class NotificationService {
 
 /// PushService - Handles FCM push notifications
 class PushService {
-  final List<_PendingPush> _pendingPushes = [];
-  String? _currentUserId;
+  final List<PendingPush> _pendingPushes = [];
 
   void initialize(String userId) {
-    _currentUserId = userId;
+    // Track userId for future push routing if needed
   }
 
   Future<void> sendPushNotification({
@@ -426,7 +425,7 @@ class PushService {
   }) async {
     AppLogger.info('Push notification for $userId: $title - $body');
 
-    _pendingPushes.add(_PendingPush(
+    _pendingPushes.add(PendingPush(
       userId: userId,
       title: title,
       body: body,
@@ -450,19 +449,19 @@ class PushService {
     return prefs.getString('fcm_token_$userId');
   }
 
-  List<_PendingPush> getPendingPushesForUser(String userId) {
+  List<PendingPush> getPendingPushesForUser(String userId) {
     return _pendingPushes.where((p) => p.userId == userId).toList();
   }
 }
 
-class _PendingPush {
+class PendingPush {
   final String userId;
   final String title;
   final String body;
   final Map<String, dynamic> data;
   final DateTime sentAt;
 
-  _PendingPush({
+  PendingPush({
     required this.userId,
     required this.title,
     required this.body,

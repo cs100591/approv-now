@@ -438,9 +438,13 @@ class AnalyticsScreen extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: CustomPaint(
-        size: const Size(double.infinity, 150),
-        painter: LineChartPainter(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return CustomPaint(
+            size: Size(constraints.maxWidth, 150),
+            painter: LineChartPainter(),
+          );
+        },
       ),
     );
   }

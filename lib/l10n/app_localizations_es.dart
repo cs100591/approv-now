@@ -165,7 +165,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signInToYourAccount => 'Inicia sesión en tu cuenta';
 
   @override
-  String get signUpToGetStarted => 'Regístrate para comenzar con Approve Now';
+  String get signUpToGetStarted => 'Regístrate para comenzar con Approv Now';
 
   @override
   String get enterYourEmail => 'Introduce tu correo electrónico';
@@ -269,12 +269,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String version(Object version) {
-    return 'Approve Now v$version';
+    return 'Approv Now v$version';
   }
 
   @override
   String copyright(Object year) {
-    return '© $year Approve Now. Todos los derechos reservados.';
+    return '© $year Approv Now. Todos los derechos reservados.';
   }
 
   @override

@@ -76,10 +76,7 @@ class AiGenerateButton extends StatelessWidget {
         iconData = Icons.lightbulb;
         break;
       case MatchStatus.generating:
-        iconData = Icons.auto_awesome;
-        break;
       case MatchStatus.none:
-      default:
         iconData = Icons.auto_awesome;
         break;
     }
@@ -100,9 +97,7 @@ class AiGenerateButton extends StatelessWidget {
       case MatchStatus.suggested:
         return 'Suggested';
       case MatchStatus.generating:
-        return 'AI Generate';
       case MatchStatus.none:
-      default:
         return 'AI Generate';
     }
   }
@@ -117,7 +112,6 @@ class AiGenerateButton extends StatelessWidget {
         return AppColors.warning.withValues(alpha: 0.1);
       case MatchStatus.generating:
       case MatchStatus.none:
-      default:
         return AppColors.primary.withValues(alpha: 0.1);
     }
   }
@@ -132,7 +126,6 @@ class AiGenerateButton extends StatelessWidget {
         return AppColors.warning;
       case MatchStatus.generating:
       case MatchStatus.none:
-      default:
         return AppColors.primary;
     }
   }
@@ -147,7 +140,6 @@ class AiGenerateButton extends StatelessWidget {
         return AppColors.warning;
       case MatchStatus.generating:
       case MatchStatus.none:
-      default:
         return AppColors.primary;
     }
   }

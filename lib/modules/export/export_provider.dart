@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'dart:ui';
+import 'package:flutter/material.dart';
 import '../request/request_models.dart';
 import '../workspace/workspace_models.dart';
+import '../template/template_models.dart';
 import '../verification/hash_service.dart';
 import 'pdf_service.dart';
 import 'excel_service.dart';
+import 'package:printing/printing.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 class ExportProvider extends ChangeNotifier {
   final PdfService _pdfService;
@@ -41,6 +45,7 @@ class ExportProvider extends ChangeNotifier {
     required Workspace workspace,
     String pdfHeaderMode = 'brand', // 'brand' | 'workspace' | 'custom'
     bool includeHash = true,
+    bool includeWatermark = true,
   }) async {
     _setGenerating(true);
     _clearError();
@@ -57,11 +62,24 @@ class ExportProvider extends ChangeNotifier {
             )
           : null;
 
+      pw.ImageProvider? logoImage;
+      if (pdfHeaderMode == 'custom' &&
+          workspace.logoUrl != null &&
+          workspace.logoUrl!.isNotEmpty) {
+        try {
+          logoImage = await networkImage(workspace.logoUrl!);
+        } catch (e) {
+          // Ignore image load error if any and fallback to initials
+        }
+      }
+
       final pdfBytes = await _pdfService.generatePdf(
         request: request,
         workspace: workspace,
         hash: hash,
         pdfHeaderMode: pdfHeaderMode,
+        includeWatermark: includeWatermark,
+        logoImage: logoImage,
       );
 
       _state = _state.copyWith(pdfBytes: pdfBytes, hash: hash);
@@ -155,6 +173,88 @@ class ExportProvider extends ChangeNotifier {
       _setError(e.toString());
     }
     _setGenerating(false);
+  }
+
+  // ── Workspace Excel Report ────────────────────────────────────────────────
+
+  /// Generate Excel report for workspace analytics.
+  /// [requests] - filtered list of requests based on date range and permissions
+  /// [workspace] - current workspace
+  /// [dateRange] - optional date range filter
+  /// [isAdmin] - whether user is owner/admin (determines data scope)
+  Future<void> generateWorkspaceExcel({
+    required List<ApprovalRequest> requests,
+    required Workspace workspace,
+    DateTimeRange? dateRange,
+    required bool isAdmin,
+    required String currentUserId,
+  }) async {
+    _setGenerating(true);
+    _clearError();
+
+    try {
+      // Filter requests based on permissions
+      List<ApprovalRequest> filteredRequests = requests;
+      if (!isAdmin) {
+        // Regular members can only see requests they submitted or approved
+        filteredRequests = requests.where((r) {
+          final isSubmitter = r.submittedBy == currentUserId;
+          final isApprover = r.approvalActions.any(
+            (a) => a.approverId == currentUserId,
+          );
+          return isSubmitter || isApprover;
+        }).toList();
+      }
+
+      // Apply date range filter if provided
+      if (dateRange != null) {
+        filteredRequests = filteredRequests.where((r) {
+          return r.submittedAt.isAfter(dateRange.start) &&
+              r.submittedAt
+                  .isBefore(dateRange.end.add(const Duration(days: 1)));
+        }).toList();
+      }
+
+      final excelBytes = _excelService.generateWorkspaceExcel(
+        requests: filteredRequests,
+        workspace: workspace,
+        dateRange: dateRange,
+      );
+
+      _state = _state.copyWith(excelBytes: excelBytes);
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setGenerating(false);
+    }
+  }
+
+  // ── Template Report ────────────────────────────────────────────────────────
+
+  /// Generate Excel report for a specific template.
+  Future<void> generateTemplateReport({
+    required List<ApprovalRequest> requests,
+    required Template template,
+    required Workspace workspace,
+    DateTimeRange? dateRange,
+  }) async {
+    _setGenerating(true);
+    _clearError();
+
+    try {
+      final excelBytes = _excelService.generateTemplateExcel(
+        requests: requests,
+        template: template,
+        workspace: workspace,
+        dateRange: dateRange,
+      );
+
+      _state = _state.copyWith(excelBytes: excelBytes);
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setGenerating(false);
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

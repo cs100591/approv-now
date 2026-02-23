@@ -1,7 +1,7 @@
 name: approve_now
 description: "Mobile-first deterministic approval engine with multi-workspace architecture - Approv Now"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -104,14 +104,14 @@ dev_dependencies:
   json_serializable: ^6.7.1
   mockito: ^5.4.4
   bloc_test: ^9.1.5
-  flutter_launcher_icons: ^0.14.2
+  flutter_launcher_icons: ^0.14.4
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon/app_icon.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  image_path: "assets/app_icon.png"
+  adaptive_icon_background: "#111827"
+  # adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
 
 flutter:
   uses-material-design: true

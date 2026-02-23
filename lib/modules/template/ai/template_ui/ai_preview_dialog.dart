@@ -358,6 +358,7 @@ class AiPreviewDialog extends StatelessWidget {
 
   Widget _buildFooter() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,

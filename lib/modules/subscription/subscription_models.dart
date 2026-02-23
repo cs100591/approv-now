@@ -98,7 +98,7 @@ class PlanEntitlements {
           showBrandHeader: false, // workspace name header instead
           customHeader: false,
           hasHash: true,
-          emailNotification: true,
+          emailNotification: false,
           excelExport: true,
           analytics: true,
         );

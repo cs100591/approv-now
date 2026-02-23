@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../l10n/app_localizations.dart';
 import '../../modules/auth/auth_ui/auth_screens.dart';
 import '../../modules/auth/auth_ui/profile_screen.dart';
 import '../../core/widgets/app_shell.dart';

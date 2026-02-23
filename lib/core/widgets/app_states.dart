@@ -52,7 +52,10 @@ class EmptyState extends StatelessWidget {
             ],
             if (action != null) ...[
               const SizedBox(height: AppSpacing.lg),
-              action!,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 300),
+                child: action!,
+              ),
             ],
           ],
         ),
@@ -128,13 +131,16 @@ class ErrorState extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(height: AppSpacing.lg),
-              ElevatedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: Text(AppLocalizations.of(context)!.retry),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+              SizedBox(
+                width: 200,
+                child: ElevatedButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(AppLocalizations.of(context)!.retry),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ),
             ],

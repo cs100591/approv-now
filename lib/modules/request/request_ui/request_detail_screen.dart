@@ -10,6 +10,7 @@ import '../../workspace/workspace_provider.dart';
 import '../../template/template_provider.dart';
 import '../../template/template_models.dart';
 import '../../auth/auth_provider.dart';
+import '../../subscription/subscription_provider.dart';
 import '../request_provider.dart';
 import '../request_models.dart';
 
@@ -32,38 +33,49 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadRequest());
   }
 
-  Future<void> _loadRequest() async {
+  Future<void> _loadRequest({bool forceDb = false}) async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     final requestProvider = context.read<RequestProvider>();
+    final templateProvider = context.read<TemplateProvider>();
     try {
-      // First try to find in local state
-      final local =
-          requestProvider.requests.cast<ApprovalRequest?>().firstWhere(
-                (r) => r!.id == widget.requestId,
-                orElse: () => null,
-              );
-      if (local != null) {
-        if (mounted)
-          setState(() {
-            _request = local;
-            _isLoading = false;
-          });
-        return;
+      // Always fetch from provider which gets from DB to avoid stale state
+      final fresh = await requestProvider.fetchRequestById(widget.requestId);
+      if (fresh != null) {
+        print('DEBUG _loadRequest: currentLevel=${fresh.currentLevel}');
+        print(
+            'DEBUG _loadRequest: currentApproverIds=${fresh.currentApproverIds}');
+        print('DEBUG _loadRequest: status=${fresh.status}');
+        print('DEBUG _loadRequest: templateId=${fresh.templateId}');
+
+        // Also fetch the template to ensure we have the latest data
+        final template = templateProvider.getTemplateById(fresh.templateId);
+        if (template == null) {
+          print('DEBUG _loadRequest: Template not in cache, fetching...');
+          await templateProvider.loadTemplates();
+        } else {
+          print('DEBUG _loadRequest: Template in cache: ${template.name}');
+          print(
+              'DEBUG _loadRequest: Template approval steps: ${template.approvalSteps.map((s) => 'L${s.level}: ${s.approvers}').toList()}');
+        }
       }
-      // Fall back to DB
-      await requestProvider.selectRequest(widget.requestId);
       if (mounted) {
         setState(() {
-          _request = requestProvider.selectedRequest;
+          _request = fresh;
           _isLoading = false;
-          _error = _request == null ? 'Request not found' : null;
+          _error = fresh == null ? 'Request not found' : null;
         });
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.toString();
           _isLoading = false;
         });
+      }
     }
   }
 
@@ -83,7 +95,8 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       return;
     }
 
-    final comment = await _showCommentDialog(AppLocalizations.of(context)!.approveRequest);
+    final comment =
+        await _showCommentDialog(AppLocalizations.of(context)!.approveRequest);
     if (comment == null) return;
 
     try {
@@ -96,9 +109,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
         comment: comment.isEmpty ? null : comment,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Request approved ✓')));
-      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Request approved \u2713')));
+      // Reload from DB so the action bar re-evaluates correctly
+      await _loadRequest();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -122,8 +136,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       return;
     }
 
-    final comment =
-        await _showCommentDialog(AppLocalizations.of(context)!.rejectRequest, requireComment: true);
+    final comment = await _showCommentDialog(
+        AppLocalizations.of(context)!.rejectRequest,
+        requireComment: true);
     if (comment == null || comment.isEmpty) return;
 
     try {
@@ -138,7 +153,8 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Request rejected')));
-      Navigator.pop(context);
+      // Reload from DB so the action bar re-evaluates correctly
+      await _loadRequest();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -150,12 +166,40 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     if (_request == null) return;
     final exportProvider = context.read<ExportProvider>();
     final workspaceProvider = context.read<WorkspaceProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final subscriptionProvider = context.read<SubscriptionProvider>();
     final workspace = workspaceProvider.currentWorkspace;
     if (workspace == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No workspace selected')),
       );
       return;
+    }
+
+    final isOwner = workspace.createdBy == authProvider.user?.id ||
+        workspace.ownerId == authProvider.user?.id;
+    final displayPlan =
+        isOwner ? subscriptionProvider.currentPlan.name : workspace.plan;
+
+    final bool isPro = displayPlan.toLowerCase() == 'pro' ||
+        displayPlan.toLowerCase() == 'business';
+    final bool canRemoveWatermark = displayPlan.toLowerCase() != 'free';
+    final bool canAddLogo = isPro;
+
+    final bool customHeader = workspace.settings['pdfCustomHeader'] == true;
+    final bool removeWatermarkSetting =
+        workspace.settings['pdfRemoveWatermark'] == true;
+    final bool addLogo = workspace.settings['pdfAddLogo'] == true;
+
+    final includeWatermark = !(canRemoveWatermark && removeWatermarkSetting);
+
+    String headerMode = 'brand';
+    if (customHeader) {
+      if (canAddLogo && addLogo) {
+        headerMode = 'custom';
+      } else {
+        headerMode = 'workspace';
+      }
     }
 
     final box = iconContext.findRenderObject() as RenderBox?;
@@ -166,11 +210,13 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       await exportProvider.generatePdf(
         request: _request!,
         workspace: workspace,
+        pdfHeaderMode: headerMode,
+        includeWatermark: includeWatermark,
       );
       if (!mounted) return;
       if (exportProvider.pdfBytes != null) {
         await exportProvider.sharePdf(
-          '${_request!.templateName.replaceAll(' ', '_')}_${_request!.id.substring(0, 8)}.pdf',
+          '${_request!.templateName.replaceAll(' ', '_')}_${_request!.displayId}.pdf',
           sharePositionOrigin: sharePositionOrigin,
         );
       }
@@ -226,7 +272,8 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(_request?.templateName ?? AppLocalizations.of(context)!.requestDetails),
+        title: Text(_request?.templateName ??
+            AppLocalizations.of(context)!.requestDetails),
         actions: [
           if (_request != null)
             Builder(
@@ -293,7 +340,8 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           const SizedBox(height: AppSpacing.lg),
 
           // Request fields
-          Text(AppLocalizations.of(context)!.requestDetails, style: AppTextStyles.h4),
+          Text(AppLocalizations.of(context)!.requestDetails,
+              style: AppTextStyles.h4),
           const SizedBox(height: AppSpacing.md),
           if (request.fieldValues.isEmpty)
             AppCard(
@@ -349,37 +397,154 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   }
 
   Widget _buildActionBar() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: SecondaryButton(
-              text: AppLocalizations.of(context)!.reject,
-              onPressed: _rejectRequest,
+    final authProvider = context.watch<AuthProvider>();
+    final templateProvider = context.watch<TemplateProvider>();
+    final workspaceProvider = context.watch<WorkspaceProvider>();
+    final request = _request;
+    if (request == null || request.status != RequestStatus.pending) {
+      return const SizedBox.shrink();
+    }
+
+    final userId = authProvider.user?.id;
+    final template = templateProvider.getTemplateById(request.templateId);
+    final workspace = workspaceProvider.currentWorkspace;
+
+    // Compute whether the current user is a designated approver at this level
+    // and has NOT already approved.
+    bool canApprove = false;
+    if (userId != null && template != null) {
+      // Never show approve/reject to the original submitter
+      final isSubmitter = request.submittedBy == userId;
+      if (!isSubmitter) {
+        final isAssigned = request.currentApproverIds.contains(userId);
+        canApprove = isAssigned;
+
+        // DEBUG: Print diagnostic info
+        print('DEBUG _buildActionBar: userId=$userId');
+        print(
+            'DEBUG _buildActionBar: currentApproverIds=${request.currentApproverIds}');
+        print('DEBUG _buildActionBar: currentLevel=${request.currentLevel}');
+        print('DEBUG _buildActionBar: templateId=${request.templateId}');
+        print(
+            'DEBUG _buildActionBar: template.approvalSteps=${template.approvalSteps.map((s) => 'L${s.level}: ${s.approvers}').toList()}');
+        print('DEBUG _buildActionBar: isAssigned=$isAssigned');
+        print('DEBUG _buildActionBar: canApprove=$canApprove');
+        print('DEBUG _buildActionBar: isSubmitter=$isSubmitter');
+      }
+    } else {
+      print('DEBUG _buildActionBar: userId=$userId, template=$template');
+      if (template == null) {
+        print(
+            'DEBUG _buildActionBar: Template is NULL for templateId=${request.templateId}');
+      }
+    }
+
+    // Build the waiting text regardless (shown in both button and wait states)
+    String waitingText = 'Pending Approval';
+    if (template != null && workspace != null) {
+      // Who still needs to approve at this level
+      final pendingApprovers = request.currentApproverIds;
+
+      final approverNames = pendingApprovers.map((uid) {
+        final member = workspace.getMember(uid);
+        return member?.displayName ?? member?.email ?? 'Approver';
+      }).toList();
+
+      if (approverNames.isNotEmpty) {
+        if (approverNames.length == 1) {
+          waitingText = 'Waiting for ${approverNames[0]} to approve';
+        } else {
+          waitingText =
+              'Waiting for ${approverNames[0]} and ${approverNames.length - 1} others to approve';
+        }
+      } else {
+        waitingText = 'Processing approval...';
+      }
+    }
+
+    // Check if the current user already approved at THIS level
+    final userAlreadyApproved = userId != null &&
+        request.currentApprovalActions.any((a) =>
+            a.level == request.currentLevel &&
+            a.approverId == userId &&
+            a.approved);
+
+    if (canApprove) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
             ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: PrimaryButton(
-              text: AppLocalizations.of(context)!.approve,
-              onPressed: _approveRequest,
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: SecondaryButton(
+                text: AppLocalizations.of(context)!.reject,
+                onPressed: _rejectRequest,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: PrimaryButton(
+                text: AppLocalizations.of(context)!.approve,
+                onPressed: _approveRequest,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Show a status banner: either "you approved, waiting for others" or just waiting
+      final bannerText = userAlreadyApproved
+          ? 'You approved \u2713  •  $waitingText'
+          : waitingText;
+      final bannerIcon =
+          userAlreadyApproved ? Icons.check_circle_outline : Icons.access_time;
+      final bannerColor =
+          userAlreadyApproved ? AppColors.success : AppColors.warning;
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(bannerIcon, color: bannerColor),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                bannerText,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Widget _buildStatusBadge(RequestStatus status) {
@@ -501,13 +666,18 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   }
 
   String _formatValueData(dynamic value, FieldType type) {
-    if (value == null || value.toString().isEmpty || value.toString() == 'null')
+    if (value == null ||
+        value.toString().isEmpty ||
+        value.toString() == 'null') {
       return '-';
+    }
 
     if (type == FieldType.checkbox || value is bool) {
       if (value.toString() == 'true') return AppLocalizations.of(context)!.yes;
       if (value.toString() == 'false') return AppLocalizations.of(context)!.no;
-      return value == true ? AppLocalizations.of(context)!.yes : AppLocalizations.of(context)!.no;
+      return value == true
+          ? AppLocalizations.of(context)!.yes
+          : AppLocalizations.of(context)!.no;
     }
 
     if (type == FieldType.date) {

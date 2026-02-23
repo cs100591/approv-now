@@ -6,8 +6,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/widgets/app_widgets.dart';
-import '../../../core/utils/app_logger.dart';
 import '../../auth/auth_provider.dart';
+import '../../subscription/subscription_provider.dart';
 import '../workspace_provider.dart';
 import '../workspace_models.dart';
 import '../workspace_member.dart';
@@ -30,6 +30,7 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final workspaceProvider = context.watch<WorkspaceProvider>();
+    final subscriptionProvider = context.watch<SubscriptionProvider>();
     final currentUser = context.watch<AuthProvider>().user;
 
     final workspace = workspaceProvider.workspaces.firstWhere(
@@ -39,6 +40,9 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
 
     final isOwner = workspace.createdBy == currentUser?.id ||
         workspace.ownerId == currentUser?.id;
+
+    final displayPlan =
+        isOwner ? subscriptionProvider.currentPlan.name : workspace.plan;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -105,7 +109,7 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
                         ),
                       const SizedBox(height: 4),
                       Text(
-                        '${workspace.members.length} members • ${workspace.plan.toUpperCase() ?? 'FREE'}',
+                        '${workspace.members.length} members • ${displayPlan.toUpperCase()}',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -220,8 +224,48 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
                       child: Column(
                         children: [
                           Icon(
-                            Icons.settings_outlined,
+                            Icons.picture_as_pdf_outlined,
                             color: _selectedTab == 2
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'PDF Export',
+                            style: TextStyle(
+                              color: _selectedTab == 2
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary,
+                              fontWeight: _selectedTab == 2
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedTab = 3),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _selectedTab == 3
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.settings_outlined,
+                            color: _selectedTab == 3
                                 ? AppColors.primary
                                 : AppColors.textSecondary,
                           ),
@@ -229,10 +273,10 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
                           Text(
                             AppLocalizations.of(context)!.settings,
                             style: TextStyle(
-                              color: _selectedTab == 2
+                              color: _selectedTab == 3
                                   ? AppColors.primary
                                   : AppColors.textSecondary,
-                              fontWeight: _selectedTab == 2
+                              fontWeight: _selectedTab == 3
                                   ? FontWeight.w600
                                   : FontWeight.normal,
                             ),
@@ -251,8 +295,9 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
             child: IndexedStack(
               index: _selectedTab,
               children: [
-                _buildInfoTab(workspace, isOwner),
+                _buildInfoTab(workspace, isOwner, displayPlan),
                 _buildMembersTab(workspace, isOwner),
+                _buildPdfExportTab(workspace, isOwner, displayPlan),
                 _buildSettingsTab(workspace, isOwner),
               ],
             ),
@@ -262,7 +307,96 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
     );
   }
 
-  Widget _buildInfoTab(Workspace workspace, bool isOwner) {
+  Widget _buildPdfExportTab(
+      Workspace workspace, bool isOwner, String displayPlan) {
+    final bool removeWatermark =
+        workspace.settings['pdfRemoveWatermark'] == true;
+    final bool customHeader = workspace.settings['pdfCustomHeader'] == true;
+    final bool addLogo = workspace.settings['pdfAddLogo'] == true;
+
+    final bool isPro = displayPlan.toLowerCase() == 'pro' ||
+        displayPlan.toLowerCase() == 'business';
+    final bool canRemoveWatermark = displayPlan.toLowerCase() != 'free';
+    final bool canAddLogo = isPro;
+
+    return ListView(
+      padding: AppSpacing.screenPadding,
+      children: [
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'PDF Export Settings',
+                style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Customize how PDF exports look for this workspace.',
+                style: AppTextStyles.bodyMedium
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 24),
+
+              // Custom Header Checkbox
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Custom Header'),
+                subtitle:
+                    const Text('Use workspace name as the document header'),
+                value: customHeader,
+                onChanged: isOwner
+                    ? (val) {
+                        _updatePdfSetting('pdfCustomHeader', val ?? false);
+                      }
+                    : null,
+              ),
+
+              // Remove Watermark Checkbox
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Remove Watermark'),
+                subtitle: Text(canRemoveWatermark
+                    ? 'Remove the Approv Now watermark'
+                    : 'Upgrade to remove watermark'),
+                value: removeWatermark,
+                onChanged: (isOwner && canRemoveWatermark)
+                    ? (val) {
+                        _updatePdfSetting('pdfRemoveWatermark', val ?? false);
+                      }
+                    : null,
+              ),
+
+              // Adding Logo Checkbox
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Adding Logo'),
+                subtitle: Text(canAddLogo
+                    ? 'Include your workspace logo in the header'
+                    : 'Adding logo is a Pro feature'),
+                value: addLogo,
+                onChanged: (isOwner && canAddLogo)
+                    ? (val) {
+                        _updatePdfSetting('pdfAddLogo', val ?? false);
+                      }
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _updatePdfSetting(String key, bool value) async {
+    final workspaceProvider = context.read<WorkspaceProvider>();
+    await workspaceProvider.updateWorkspaceSettings(
+      workspaceId: widget.workspaceId,
+      settings: {key: value},
+    );
+  }
+
+  Widget _buildInfoTab(Workspace workspace, bool isOwner, String displayPlan) {
     return ListView(
       padding: AppSpacing.screenPadding,
       children: [
@@ -277,10 +411,11 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
               const SizedBox(height: 16),
               _buildInfoRow(AppLocalizations.of(context)!.name, workspace.name),
               if (workspace.description != null)
-                _buildInfoRow(AppLocalizations.of(context)!.description, workspace.description!),
+                _buildInfoRow(AppLocalizations.of(context)!.description,
+                    workspace.description!),
               _buildInfoRow('Created',
                   workspace.createdAt.toLocal().toString().split(' ')[0]),
-              _buildInfoRow('Plan', workspace.plan.toUpperCase() ?? 'FREE'),
+              _buildInfoRow('Plan', displayPlan.toUpperCase()),
               _buildInfoRow('Members', '${workspace.members.length}'),
             ],
           ),
@@ -296,27 +431,23 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
   }
 
   Widget _buildMembersTab(Workspace workspace, bool isOwner) {
-    return Column(
-      children: [
-        if (isOwner)
-          Padding(
-            padding: AppSpacing.screenPadding,
+    return ListView.builder(
+      padding: AppSpacing.screenPadding,
+      itemCount: workspace.members.length + (isOwner ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (isOwner && index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
             child: PrimaryButton(
               text: 'Invite Members',
               onPressed: () => _inviteMembers(workspace),
             ),
-          ),
-        Expanded(
-          child: ListView.builder(
-            padding: AppSpacing.screenPadding,
-            itemCount: workspace.members.length,
-            itemBuilder: (context, index) {
-              final member = workspace.members[index];
-              return _buildMemberCard(member, isOwner);
-            },
-          ),
-        ),
-      ],
+          );
+        }
+        final memberIndex = isOwner ? index - 1 : index;
+        final member = workspace.members[memberIndex];
+        return _buildMemberCard(member, isOwner);
+      },
     );
   }
 
@@ -454,12 +585,14 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
           children: [
             TextField(
               controller: nameController,
-              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.name),
+              decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.name),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: descriptionController,
-              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.description),
+              decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.description),
               maxLines: 2,
             ),
           ],

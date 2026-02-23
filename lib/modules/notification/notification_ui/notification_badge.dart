@@ -24,51 +24,27 @@ class NotificationBadge extends StatelessWidget {
         final hasPendingInvitations =
             notificationProvider.hasPendingInvitations;
 
-        return Stack(
-          children: [
-            IconButton(
-              icon: Icon(
-                Icons.notifications_outlined,
-                size: size,
-                color: hasPendingInvitations
-                    ? AppColors.warning
-                    : AppColors.textPrimary,
-              ),
-              onPressed: onTap ??
-                  () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationsScreen(),
-                      ),
-                    );
-                  },
+        return IconButton(
+          icon: Badge(
+            isLabelVisible: unreadCount > 0,
+            label: Text(unreadCount > 99 ? '99+' : unreadCount.toString()),
+            backgroundColor: badgeColor ?? AppColors.error,
+            child: Icon(
+              Icons.notifications_outlined,
+              size: size,
+              color: hasPendingInvitations
+                  ? AppColors.warning
+                  : AppColors.textPrimary,
             ),
-            if (unreadCount > 0)
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: badgeColor ?? AppColors.error,
-                    shape: BoxShape.circle,
+          ),
+          onPressed: onTap ??
+              () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
                   ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    unreadCount > 99 ? '99+' : unreadCount.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
+                );
+              },
         );
       },
     );
@@ -124,6 +100,7 @@ class NotificationBanner extends StatelessWidget {
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.warning,
+                  minimumSize: const Size(60, 36),
                 ),
                 child: const Text('View'),
               ),

@@ -10,6 +10,7 @@ import '../../../template/template_provider.dart';
 import '../../../request/request_provider.dart';
 import '../../../auth/auth_provider.dart';
 import '../../workspace_provider.dart';
+import '../../workspace_member.dart';
 
 class WorkspaceHeader extends StatelessWidget {
   const WorkspaceHeader({super.key});
@@ -70,12 +71,18 @@ class WorkspaceHeader extends StatelessWidget {
 
                         await workspaceProvider.switchWorkspace(workspaceId);
                         if (context.mounted) {
+                          final workspace = workspaceProvider.workspaces
+                              .firstWhere((w) => w.id == workspaceId);
+                          final role = workspace.getUserRole(authUser.id);
+                          final isAdminOrOwner = role == WorkspaceRole.admin ||
+                              role == WorkspaceRole.owner;
                           context
                               .read<TemplateProvider>()
                               .setCurrentWorkspace(workspaceId);
                           context.read<RequestProvider>().setCurrentWorkspace(
                                 workspaceId,
                                 approverId: authUser.id,
+                                isAdminOrOwner: isAdminOrOwner,
                               );
                         }
                       },
@@ -95,9 +102,13 @@ class WorkspaceHeader extends StatelessWidget {
                                       : AppColors.textSecondary,
                                 ),
                                 const SizedBox(width: 8),
-                                Expanded(
+                                Container(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 200),
                                   child: Text(
                                     ws.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontWeight: isSelected
                                           ? FontWeight.bold

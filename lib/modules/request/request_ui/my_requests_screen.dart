@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../core/widgets/constrained_page.dart';
 import '../../auth/auth_provider.dart';
 import '../request_provider.dart';
 import '../request_models.dart';
@@ -26,49 +27,52 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         title: const Text('My Requests'),
         elevation: 0,
       ),
-      body: Consumer2<RequestProvider, AuthProvider>(
-        builder: (context, requestProvider, authProvider, child) {
-          final currentUser = authProvider.user;
+      body: ConstrainedPage(
+        child: Consumer2<RequestProvider, AuthProvider>(
+          builder: (context, requestProvider, authProvider, child) {
+            final currentUser = authProvider.user;
 
-          Widget content;
-          if (currentUser == null) {
-            content = Center(
-                key: ValueKey('login'), child: Text('Please login'));
-          } else if (requestProvider.isLoading &&
-              requestProvider.requests.isEmpty) {
-            content = const ShimmerCardList(
-                key: ValueKey('shimmer'), itemCount: 5, cardHeight: 120);
-          } else {
-            final myRequests = requestProvider.requests
-                .where((r) => r.submittedBy == currentUser.id)
-                .toList();
-
-            if (myRequests.isEmpty && !requestProvider.isLoading) {
-              content = _buildEmptyState(context);
-            } else if (myRequests.isEmpty && requestProvider.isLoading) {
+            Widget content;
+            if (currentUser == null) {
+              content =
+                  Center(key: ValueKey('login'), child: Text('Please login'));
+            } else if (requestProvider.isLoading &&
+                requestProvider.requests.isEmpty) {
               content = const ShimmerCardList(
                   key: ValueKey('shimmer'), itemCount: 5, cardHeight: 120);
             } else {
-              content = RefreshIndicator(
-                key: const ValueKey('list'),
-                onRefresh: () => requestProvider.loadRequests(),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: myRequests.length,
-                  itemBuilder: (context, index) {
-                    final request = myRequests[index];
-                    return _buildRequestCard(context, request, currentUser.id);
-                  },
-                ),
-              );
-            }
-          }
+              final myRequests = requestProvider.requests
+                  .where((r) => r.submittedBy == currentUser.id)
+                  .toList();
 
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: content,
-          );
-        },
+              if (myRequests.isEmpty && !requestProvider.isLoading) {
+                content = _buildEmptyState(context);
+              } else if (myRequests.isEmpty && requestProvider.isLoading) {
+                content = const ShimmerCardList(
+                    key: ValueKey('shimmer'), itemCount: 5, cardHeight: 120);
+              } else {
+                content = RefreshIndicator(
+                  key: const ValueKey('list'),
+                  onRefresh: () => requestProvider.loadRequests(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: myRequests.length,
+                    itemBuilder: (context, index) {
+                      final request = myRequests[index];
+                      return _buildRequestCard(
+                          context, request, currentUser.id);
+                    },
+                  ),
+                );
+              }
+            }
+
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: content,
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.pushNamed(context, RouteNames.createRequest),

@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
+import 'core/widgets/app_shell.dart';
 import 'core/utils/app_logger.dart';
 import 'core/widgets/error_boundary.dart';
 import 'core/providers/locale_provider.dart';
@@ -19,7 +20,6 @@ import 'modules/auth/auth_ui/auth_wrapper.dart';
 import 'modules/workspace/workspace_provider.dart';
 import 'modules/workspace/workspace_service.dart';
 import 'modules/workspace/workspace_repository.dart';
-import 'modules/workspace/workspace_ui/dashboard_screen.dart';
 import 'modules/workspace/group_provider.dart';
 
 // Template Module
@@ -155,18 +155,29 @@ class MyApp extends StatelessWidget {
         ),
 
         // Export Provider
-        ProxyProvider<HashService, ExportProvider>(
-          update: (_, hashService, __) => ExportProvider(
+        ChangeNotifierProxyProvider<HashService, ExportProvider>(
+          create: (context) => ExportProvider(
             pdfService: PdfService(),
-            hashService: hashService,
+            hashService: context.read<HashService>(),
           ),
+          update: (_, hashService, previous) =>
+              previous ??
+              ExportProvider(
+                pdfService: PdfService(),
+                hashService: hashService,
+              ),
         ),
 
         // Verification Provider
-        ProxyProvider<HashService, VerificationProvider>(
-          update: (_, hashService, __) => VerificationProvider(
-            hashService: hashService,
+        ChangeNotifierProxyProvider<HashService, VerificationProvider>(
+          create: (context) => VerificationProvider(
+            hashService: context.read<HashService>(),
           ),
+          update: (_, hashService, previous) =>
+              previous ??
+              VerificationProvider(
+                hashService: hashService,
+              ),
         ),
 
         // Subscription Provider
@@ -197,7 +208,7 @@ class MyApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           home: AuthWrapper(
-            child: const DashboardScreen(),
+            child: const AppShell(),
           ),
           onGenerateRoute: AppRouter.onGenerateRoute,
         );

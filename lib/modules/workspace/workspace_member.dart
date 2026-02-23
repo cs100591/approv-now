@@ -2,8 +2,7 @@
 enum WorkspaceRole {
   owner, // Full permissions + can delete workspace
   admin, // Can manage members + create templates + approve
-  editor, // Can create requests + approve
-  viewer, // Read-only access
+  editor, // Can create requests (approval rights assigned by admin/owner)
 }
 
 /// Member invitation status
@@ -23,8 +22,6 @@ extension WorkspaceRoleExtension on WorkspaceRole {
         return 'Admin';
       case WorkspaceRole.editor:
         return 'Editor';
-      case WorkspaceRole.viewer:
-        return 'Viewer';
     }
   }
 
@@ -35,21 +32,17 @@ extension WorkspaceRoleExtension on WorkspaceRole {
       case WorkspaceRole.admin:
         return 'Can manage members and templates';
       case WorkspaceRole.editor:
-        return 'Can create and approve requests';
-      case WorkspaceRole.viewer:
-        return 'View only access';
+        return 'Can create requests (approval rights assigned by admin/owner)';
     }
   }
 
   int get permissionLevel {
     switch (this) {
       case WorkspaceRole.owner:
-        return 4;
-      case WorkspaceRole.admin:
         return 3;
-      case WorkspaceRole.editor:
+      case WorkspaceRole.admin:
         return 2;
-      case WorkspaceRole.viewer:
+      case WorkspaceRole.editor:
         return 1;
     }
   }
@@ -118,10 +111,11 @@ class WorkspaceMember {
       role == WorkspaceRole.owner || role == WorkspaceRole.admin;
 
   /// Check if member can create requests
-  bool get canCreateRequest => role != WorkspaceRole.viewer;
+  bool get canCreateRequest => true; // All roles can create requests
 
-  /// Check if member can approve requests
-  bool get canApprove => role != WorkspaceRole.viewer;
+  /// Check if member can approve requests (admin/owner assign approval rights)
+  bool get canApprove =>
+      role == WorkspaceRole.owner || role == WorkspaceRole.admin;
 
   /// Check if member can invite others
   bool get canInvite =>
@@ -191,15 +185,15 @@ class WorkspaceMember {
   }
 
   static WorkspaceRole _parseRole(dynamic value) {
-    if (value == null) return WorkspaceRole.viewer;
+    if (value == null) return WorkspaceRole.editor;
     if (value is String) {
       try {
         return WorkspaceRole.values.byName(value);
       } catch (_) {
-        return WorkspaceRole.viewer;
+        return WorkspaceRole.editor;
       }
     }
-    return WorkspaceRole.viewer;
+    return WorkspaceRole.editor;
   }
 
   static MemberStatus _parseStatus(dynamic value) {

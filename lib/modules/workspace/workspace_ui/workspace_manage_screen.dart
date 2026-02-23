@@ -383,7 +383,7 @@ class _WorkspaceManageScreenState extends State<WorkspaceManageScreen> {
           name: nameController.text.trim(),
           description: descriptionController.text.trim(),
           createdBy: authProvider.user!.id,
-          creatorEmail: authProvider.user!.email ?? '',
+          creatorEmail: authProvider.user!.email,
         );
 
         if (mounted) {

@@ -145,6 +145,17 @@ class SupabaseService {
           },
         ),
       );
+
+      if (displayName != null && currentUserId != null) {
+        try {
+          await client.from('workspace_members').update(
+              {'display_name': displayName}).eq('user_id', currentUserId!);
+        } catch (e) {
+          AppLogger.error(
+              'Failed to sync display name to workspace members', e);
+        }
+      }
+
       AppLogger.info('User profile updated');
       return response;
     } catch (e) {
@@ -398,9 +409,58 @@ class SupabaseService {
   // REQUEST METHODS
   // ============================================
 
-  /// Get requests for workspace
+  /// Get only MY requests for workspace (submitted by current user)
   Future<List<Map<String, dynamic>>> getRequests(String workspaceId) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      AppLogger.warning('getRequests called without authenticated user');
+      return [];
+    }
+
     try {
+      final response = await client
+          .from(SupabaseConfig.requestsTable)
+          .select()
+          .eq('workspace_id', workspaceId)
+          .eq('submitted_by', userId)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      AppLogger.error('Failed to get requests', e);
+      rethrow;
+    }
+  }
+
+  /// Get ALL requests for workspace — for admin/owner log view only
+  Future<List<Map<String, dynamic>>> getAllRequestsForAdmin(
+      String workspaceId) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      AppLogger.warning(
+          'getAllRequestsForAdmin called without authenticated user');
+      return [];
+    }
+
+    try {
+      // Verify user is admin/owner before returning all requests
+      final memberResponse = await client
+          .from('workspace_members')
+          .select('role')
+          .eq('workspace_id', workspaceId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      final role = memberResponse?['role'] as String?;
+      final isAdminOrOwner = role == 'admin' || role == 'owner';
+
+      if (!isAdminOrOwner) {
+        AppLogger.warning(
+            'getAllRequestsForAdmin called by non-admin user: $userId');
+        // Fall back to user's own requests only
+        return getRequests(workspaceId);
+      }
+
       final response = await client
           .from(SupabaseConfig.requestsTable)
           .select()
@@ -409,7 +469,7 @@ class SupabaseService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      AppLogger.error('Failed to get requests', e);
+      AppLogger.error('Failed to get all requests for admin', e);
       rethrow;
     }
   }

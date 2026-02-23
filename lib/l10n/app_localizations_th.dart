@@ -165,7 +165,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get signInToYourAccount => 'เข้าสู่บัญชีของคุณ';
 
   @override
-  String get signUpToGetStarted => 'ลงทะเบียนเพื่อเริ่มต้นใช้งาน Approve Now';
+  String get signUpToGetStarted => 'ลงทะเบียนเพื่อเริ่มต้นใช้งาน Approv Now';
 
   @override
   String get enterYourEmail => 'กรอกอีเมลของคุณ';
@@ -265,12 +265,12 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String version(Object version) {
-    return 'Approve Now v$version';
+    return 'Approv Now v$version';
   }
 
   @override
   String copyright(Object year) {
-    return '© $year Approve Now. สงวนลิขสิทธิ์.';
+    return '© $year Approv Now. สงวนลิขสิทธิ์.';
   }
 
   @override

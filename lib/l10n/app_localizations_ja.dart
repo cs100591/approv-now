@@ -165,7 +165,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get signInToYourAccount => 'アカウントにログイン';
 
   @override
-  String get signUpToGetStarted => 'Approve Now を始めるには登録してください';
+  String get signUpToGetStarted => 'Approv Now を始めるには登録してください';
 
   @override
   String get enterYourEmail => 'メールアドレスを入力';
@@ -264,12 +264,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String version(Object version) {
-    return 'Approve Now v$version';
+    return 'Approv Now v$version';
   }
 
   @override
   String copyright(Object year) {
-    return '© $year Approve Now. All rights reserved.';
+    return '© $year Approv Now. All rights reserved.';
   }
 
   @override

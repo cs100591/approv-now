@@ -429,7 +429,7 @@ abstract class AppLocalizations {
   /// No description provided for @signUpToGetStarted.
   ///
   /// In en, this message translates to:
-  /// **'Sign up to get started with Approve Now'**
+  /// **'Sign up to get started with Approv Now'**
   String get signUpToGetStarted;
 
   /// No description provided for @enterYourEmail.
@@ -621,13 +621,13 @@ abstract class AppLocalizations {
   /// No description provided for @version.
   ///
   /// In en, this message translates to:
-  /// **'Approve Now v{version}'**
+  /// **'Approv Now v{version}'**
   String version(Object version);
 
   /// No description provided for @copyright.
   ///
   /// In en, this message translates to:
-  /// **'© {year} Approve Now. All rights reserved.'**
+  /// **'© {year} Approv Now. All rights reserved.'**
   String copyright(Object year);
 
   /// No description provided for @workspace.

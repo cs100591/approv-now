@@ -1,4 +1,6 @@
-import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show AuthChangeEvent, SignOutScope;
 import '../../core/utils/app_logger.dart';
 import '../../core/services/supabase_service.dart';
 import 'auth_models.dart';
@@ -110,7 +112,13 @@ class AuthService {
   /// Sign out
   Future<void> signOut() async {
     try {
-      await _supabase.signOut();
+      // On web, use global scope to ensure localStorage session is cleared
+      // so a second user can log in without a page reload/reinstall.
+      if (kIsWeb) {
+        await _supabase.auth.signOut(scope: SignOutScope.global);
+      } else {
+        await _supabase.signOut();
+      }
       await _authRepository.clearUser();
       AppLogger.info('User signed out');
     } catch (e) {

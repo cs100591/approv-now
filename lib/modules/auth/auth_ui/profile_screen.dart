@@ -8,6 +8,7 @@ import '../../../core/widgets/app_widgets.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../auth/auth_provider.dart';
+import '../../workspace/workspace_provider.dart';
 import '../biometric_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -103,16 +104,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.profile),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings coming soon')),
-              );
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: AppSpacing.screenPadding,
@@ -273,7 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
-            SecondaryButton(
+            SecondaryButtonFullWidth(
               text: AppLocalizations.of(context)!.logout,
               onPressed: () => _showLogoutDialog(context),
             ),
@@ -361,6 +352,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               try {
                 await authProvider.updateProfile(displayName: newName);
                 if (context.mounted) {
+                  await context.read<WorkspaceProvider>().loadWorkspaces();
+                }
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                         content: Text('Profile updated successfully')),
@@ -404,7 +398,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               }
             },
-            child: Text(AppLocalizations.of(context)!.logout,
+            child: Text(
+              AppLocalizations.of(context)!.logout,
               style: TextStyle(color: AppColors.error),
             ),
           ),
@@ -416,6 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showLanguagePickerSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      constraints: const BoxConstraints(maxHeight: 400),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -433,7 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const Divider(height: 1),
-              Expanded(
+              Flexible(
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: L10n.all.length,

@@ -165,7 +165,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get signInToYourAccount => 'Đăng nhập vào tài khoản của bạn';
 
   @override
-  String get signUpToGetStarted => 'Đăng ký để bắt đầu sử dụng Approve Now';
+  String get signUpToGetStarted => 'Đăng ký để bắt đầu sử dụng Approv Now';
 
   @override
   String get enterYourEmail => 'Nhập email của bạn';
@@ -265,12 +265,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String version(Object version) {
-    return 'Approve Now v$version';
+    return 'Approv Now v$version';
   }
 
   @override
   String copyright(Object year) {
-    return '© $year Approve Now. Đã đăng ký bản quyền.';
+    return '© $year Approv Now. Đã đăng ký bản quyền.';
   }
 
   @override

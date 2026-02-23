@@ -165,7 +165,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get signInToYourAccount => '계정에 로그인하세요';
 
   @override
-  String get signUpToGetStarted => 'Approve Now를 시작하려면 가입하세요';
+  String get signUpToGetStarted => 'Approv Now를 시작하려면 가입하세요';
 
   @override
   String get enterYourEmail => '이메일을 입력하세요';
@@ -265,12 +265,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String version(Object version) {
-    return 'Approve Now v$version';
+    return 'Approv Now v$version';
   }
 
   @override
   String copyright(Object year) {
-    return '© $year Approve Now. All rights reserved.';
+    return '© $year Approv Now. All rights reserved.';
   }
 
   @override

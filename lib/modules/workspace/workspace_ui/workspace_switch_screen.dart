@@ -14,6 +14,7 @@ import '../../subscription/plan_upgrade_dialog.dart';
 import '../../plan_enforcement/plan_guard_service.dart';
 import '../workspace_provider.dart';
 import '../workspace_models.dart';
+import '../workspace_member.dart';
 
 class WorkspaceSwitchScreen extends StatefulWidget {
   const WorkspaceSwitchScreen({super.key});
@@ -104,7 +105,8 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                             onPressed: () => _showCreateWorkspaceDialog(),
                           )
                         : PlanLimitReachedWidget(
-                            resourceName: AppLocalizations.of(context)!.workspace,
+                            resourceName:
+                                AppLocalizations.of(context)!.workspace,
                             onUpgrade: () => _showUpgradeDialog(context),
                           ),
                   );
@@ -285,8 +287,15 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
       // Update other providers with new workspace context
       final user = authProvider.user;
       if (user != null) {
+        final role = workspace.getUserRole(user.id);
+        final isAdminOrOwner =
+            role == WorkspaceRole.admin || role == WorkspaceRole.owner;
         templateProvider.setCurrentWorkspace(workspace.id);
-        requestProvider.setCurrentWorkspace(workspace.id, approverId: user.id);
+        requestProvider.setCurrentWorkspace(
+          workspace.id,
+          approverId: user.id,
+          isAdminOrOwner: isAdminOrOwner,
+        );
       }
 
       if (mounted) {

@@ -313,7 +313,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
                                                 as Map<String, dynamic>?)
                                             ?.cast<String, dynamic>()['name']
                                         as String? ??
-                                    'Unknown Workspace',
+                                    'Workspace',
                                 style: AppTextStyles.h4,
                               ),
                             ],

@@ -20,6 +20,7 @@ class PendingApprovalBanner extends StatelessWidget {
         }
 
         return Container(
+          width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -85,6 +86,7 @@ class PendingApprovalBanner extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.warning,
                   foregroundColor: Colors.white,
+                  minimumSize: Size.zero,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,

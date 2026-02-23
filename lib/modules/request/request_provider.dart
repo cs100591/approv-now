@@ -13,8 +13,10 @@ class RequestProvider extends ChangeNotifier {
   RequestState _state = const RequestState();
   StreamSubscription<List<ApprovalRequest>>? _requestsSubscription;
   StreamSubscription<List<ApprovalRequest>>? _pendingRequestsSubscription;
+  StreamSubscription<List<ApprovalRequest>>? _adminRequestsSubscription;
   String? _currentWorkspaceId;
   String? _currentApproverId;
+  bool _isAdminOrOwner = false;
 
   RequestProvider({
     required RequestRepository requestRepository,
@@ -25,32 +27,50 @@ class RequestProvider extends ChangeNotifier {
   }
 
   RequestState get state => _state;
+
+  /// My own submitted requests
   List<ApprovalRequest> get requests => _state.requests;
+
+  /// All workspace requests — only populated for admin/owner
+  List<ApprovalRequest> get allRequests => _state.allRequests;
   ApprovalRequest? get selectedRequest => _state.selectedRequest;
   List<ApprovalRequest> get pendingRequests => _state.pendingRequests;
   int get pendingCount => _state.pendingCount;
   bool get isLoading => _state.isLoading;
   String? get error => _state.error;
+  bool get isAdminOrOwner => _isAdminOrOwner;
 
   Future<void> _initialize() async {
     // Don't load requests on init - wait for workspace to be selected
   }
 
   /// Set current workspace and subscribe to its requests
-  void setCurrentWorkspace(String? workspaceId, {String? approverId}) {
+  void setCurrentWorkspace(String? workspaceId,
+      {String? approverId, bool isAdminOrOwner = false}) {
     if (_currentWorkspaceId == workspaceId &&
-        _currentApproverId == approverId) {
+        _currentApproverId == approverId &&
+        _isAdminOrOwner == isAdminOrOwner) {
       return;
     }
 
     _currentWorkspaceId = workspaceId;
     _currentApproverId = approverId;
+    _isAdminOrOwner = isAdminOrOwner;
     _cancelSubscriptions();
+
+    // Clear admin-only data if user is no longer an admin in the new workspace
+    if (!isAdminOrOwner) {
+      _state = _state.copyWith(allRequests: []);
+      notifyListeners();
+    }
 
     if (workspaceId != null && workspaceId.isNotEmpty) {
       _subscribeToRequests(workspaceId);
       if (approverId != null && approverId.isNotEmpty) {
         _subscribeToPendingRequests(workspaceId, approverId);
+      }
+      if (isAdminOrOwner) {
+        _subscribeToAllRequests(workspaceId);
       }
     } else {
       _state = const RequestState();
@@ -90,11 +110,26 @@ class RequestProvider extends ChangeNotifier {
     );
   }
 
+  void _subscribeToAllRequests(String workspaceId) {
+    _adminRequestsSubscription =
+        _requestRepository.streamAllRequestsForAdmin(workspaceId).listen(
+      (requests) {
+        _state = _state.copyWith(allRequests: requests);
+        notifyListeners();
+      },
+      onError: (error) {
+        AppLogger.error('Error streaming all requests (admin)', error);
+      },
+    );
+  }
+
   void _cancelSubscriptions() {
     _requestsSubscription?.cancel();
     _requestsSubscription = null;
     _pendingRequestsSubscription?.cancel();
     _pendingRequestsSubscription = null;
+    _adminRequestsSubscription?.cancel();
+    _adminRequestsSubscription = null;
   }
 
   /// Load requests for current workspace
@@ -107,6 +142,19 @@ class RequestProvider extends ChangeNotifier {
       final requests =
           await _requestRepository.getRequestsByWorkspace(_currentWorkspaceId!);
 
+      // Also load admin requests if user is admin/owner
+      if (_isAdminOrOwner) {
+        final adminRequests = await _requestRepository
+            .getAllRequestsForAdmin(_currentWorkspaceId!);
+        _state = _state.copyWith(allRequests: adminRequests);
+        AppLogger.info(
+            'DEBUG: Loaded ${adminRequests.length} admin requests for workspace $_currentWorkspaceId');
+        for (var r in adminRequests) {
+          AppLogger.info(
+              'DEBUG: Admin Request ID: ${r.id}, Status: ${r.status}, Level: ${r.currentLevel}');
+        }
+      }
+
       List<ApprovalRequest>? pendingRequests;
       if (_currentApproverId != null) {
         pendingRequests =
@@ -114,6 +162,12 @@ class RequestProvider extends ChangeNotifier {
           _currentWorkspaceId!,
           _currentApproverId!,
         );
+        AppLogger.info(
+            'DEBUG: Loaded ${pendingRequests.length} pending requests for $_currentApproverId');
+        for (var r in pendingRequests) {
+          AppLogger.info(
+              'DEBUG: Pending Request ID: ${r.id}, Status: ${r.status}, Level: ${r.currentLevel}');
+        }
       }
 
       _state = _state.copyWith(
@@ -121,11 +175,38 @@ class RequestProvider extends ChangeNotifier {
         pendingRequests: pendingRequests ?? _state.pendingRequests,
         pendingCount: pendingRequests?.length ?? _state.pendingCount,
       );
+      AppLogger.info(
+          'DEBUG: All requests for workspace: ${requests.length} items');
+      for (var r in requests) {
+        AppLogger.info(
+            'DEBUG: Request ID: ${r.id}, Status: ${r.status}, Level: ${r.currentLevel}');
+      }
     } catch (e) {
       AppLogger.error('Error loading requests', e);
       _state = _state.copyWith(error: e.toString());
     } finally {
       _setLoading(false);
+    }
+  }
+
+  /// Immediately re-fetch pending requests from DB (call after approve/reject
+  /// so the dashboard banner and pending list clear without waiting for the
+  /// 30 second polling stream.)
+  Future<void> refreshPendingRequests() async {
+    if (_currentWorkspaceId == null || _currentApproverId == null) return;
+    try {
+      final pendingRequests =
+          await _requestRepository.getPendingRequestsForApprover(
+        _currentWorkspaceId!,
+        _currentApproverId!,
+      );
+      _state = _state.copyWith(
+        pendingRequests: pendingRequests,
+        pendingCount: pendingRequests.length,
+      );
+      notifyListeners();
+    } catch (e) {
+      AppLogger.error('Error refreshing pending requests', e);
     }
   }
 
@@ -172,6 +253,7 @@ class RequestProvider extends ChangeNotifier {
   Future<void> submitRequest({
     required String requestId,
     required List<FieldValue> fieldValues,
+    required Template template,
     ApprovalRequest?
         draftRequest, // Pass the draft directly to avoid state race
   }) async {
@@ -214,7 +296,10 @@ class RequestProvider extends ChangeNotifier {
         revisions: [...request.revisions, revision],
       );
 
-      await _requestRepository.updateRequest(updated);
+      final newApprovers =
+          _approvalEngine.getCurrentLevelApprovers(updated, template);
+
+      await _requestRepository.updateRequest(updated, newApprovers);
 
       AppLogger.info('Submitted request: $requestId');
     } catch (e) {
@@ -294,7 +379,37 @@ class RequestProvider extends ChangeNotifier {
         revisions: updatedRevisions,
       );
 
-      await _requestRepository.updateRequest(updated);
+      List<String>? newApprovers;
+      if (updated.status == RequestStatus.pending) {
+        // When the level advanced, use the full next level's approver list
+        // When the level did NOT advance (waiting for more approvers at same level),
+        // only keep the people who have NOT yet approved at this level.
+        if (result.advanced) {
+          // Level advanced: get the full new level's approver list
+          newApprovers =
+              _approvalEngine.getCurrentLevelApprovers(updated, template);
+        } else {
+          // Same level: filter out the approver who just acted so they
+          // are removed from current_approver_ids
+          final allCurrentLevelApprovers =
+              _approvalEngine.getCurrentLevelApprovers(updated, template);
+          final alreadyActedIds = updated.currentApprovalActions
+              .where((a) => a.level == updated.currentLevel)
+              .map((a) => a.approverId)
+              .toSet();
+          newApprovers = allCurrentLevelApprovers
+              .where((uid) => !alreadyActedIds.contains(uid))
+              .toList();
+        }
+      } else {
+        newApprovers = [];
+      }
+
+      await _requestRepository.updateRequest(updated, newApprovers);
+
+      // Immediately refresh pending list so the dashboard and pending tab
+      // reflect the change without waiting for the 30s polling stream.
+      await refreshPendingRequests();
 
       AppLogger.info('Approved request: $requestId');
     } catch (e) {
@@ -348,7 +463,11 @@ class RequestProvider extends ChangeNotifier {
         revisions: updatedRevisions,
       );
 
-      await _requestRepository.updateRequest(updated);
+      await _requestRepository.updateRequest(updated, []);
+
+      // Immediately refresh pending list so the dashboard and pending tab
+      // reflect the change without waiting for the 30s polling stream.
+      await refreshPendingRequests();
 
       AppLogger.info('Rejected request: $requestId');
     } catch (e) {

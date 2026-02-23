@@ -21,7 +21,8 @@ import 'widgets/activity_list.dart';
 import 'widgets/quick_actions_bar.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final bool showAppBar;
+  const DashboardScreen({super.key, this.showAppBar = true});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -111,7 +112,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() => _isCreatingDefaultWorkspace = true);
 
         try {
-          final userName = user.displayName ?? user.email ?? 'User';
+          final userName = user.displayName ?? user.email;
 
           final workspace = await workspaceProvider.createWorkspace(
             name: "$userName's Workspace",
@@ -195,6 +196,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final workspaceProvider = context.watch<WorkspaceProvider>();
     final isLoading =
         workspaceProvider.isLoading || _isCreatingDefaultWorkspace;
+    final currentUser = context.read<AuthProvider>().user;
+    final currentWorkspace = workspaceProvider.currentWorkspace;
+    final role = (currentUser != null && currentWorkspace != null)
+        ? currentWorkspace.getUserRole(currentUser.id)
+        : null;
+    final isAdminOrOwner =
+        role == WorkspaceRole.admin || role == WorkspaceRole.owner;
+
+    final body = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: _isCreatingDefaultWorkspace
+          ? Center(
+              key: ValueKey('creating'),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Setting up your workspace...'),
+                ],
+              ),
+            )
+          : isLoading && workspaceProvider.workspaces.isEmpty
+              ? Center(
+                  key: ValueKey('loading'),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Loading your workspace...'),
+                    ],
+                  ),
+                )
+              : _loadingError != null
+                  ? _buildErrorState()
+                  : workspaceProvider.workspaces.isEmpty
+                      ? _buildEmptyState()
+                      : _buildDashboardContent(),
+    );
+
+    if (!widget.showAppBar) {
+      return Material(
+        color: AppColors.background,
+        child: body,
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -212,26 +260,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
           PopupMenuButton<String>(
             onSelected: (value) => _onMenuSelected(context, value),
             itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'manage',
-                child: Row(
-                  children: [
-                    Icon(Icons.business),
-                    SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.manageWorkspaces),
-                  ],
+              if (isAdminOrOwner)
+                PopupMenuItem(
+                  value: 'manage',
+                  child: Row(
+                    children: [
+                      Icon(Icons.business),
+                      SizedBox(width: 8),
+                      Text(AppLocalizations.of(context)!.manageWorkspaces),
+                    ],
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'analytics',
-                child: Row(
-                  children: [
-                    Icon(Icons.analytics),
-                    SizedBox(width: 8),
-                    Text('Analytics'),
-                  ],
+              if (isAdminOrOwner)
+                PopupMenuItem(
+                  value: 'analytics',
+                  child: Row(
+                    children: [
+                      Icon(Icons.analytics),
+                      SizedBox(width: 8),
+                      Text('Analytics'),
+                    ],
+                  ),
                 ),
-              ),
               PopupMenuItem(
                 value: 'join',
                 child: Row(
@@ -258,38 +308,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: _isCreatingDefaultWorkspace
-            ? Center(
-                key: ValueKey('creating'),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Setting up your workspace...'),
-                  ],
-                ),
-              )
-            : isLoading && workspaceProvider.workspaces.isEmpty
-                ? Center(
-                    key: ValueKey('loading'),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Loading your workspace...'),
-                      ],
-                    ),
-                  )
-                : _loadingError != null
-                    ? _buildErrorState()
-                    : workspaceProvider.workspaces.isEmpty
-                        ? _buildEmptyState()
-                        : _buildDashboardContent(),
-      ),
+      body: body,
     );
   }
 

@@ -1,6 +1,6 @@
 {
-    "name": "approve_now",
-    "short_name": "approve_now",
+    "name": "Approv Now",
+    "short_name": "Approv Now",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

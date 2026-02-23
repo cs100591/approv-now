@@ -125,7 +125,7 @@ class WorkspaceRepository {
         member = WorkspaceMember(
           userId: memberOrUserId,
           email: '',
-          role: WorkspaceRole.viewer,
+          role: WorkspaceRole.editor,
           status: MemberStatus.active,
           invitedAt: DateTime.now(),
           invitedBy: '',
@@ -247,15 +247,15 @@ class WorkspaceRepository {
   }
 
   WorkspaceRole _parseRole(dynamic value) {
-    if (value == null) return WorkspaceRole.viewer;
+    if (value == null) return WorkspaceRole.editor;
     if (value is String) {
       try {
         return WorkspaceRole.values.byName(value);
       } catch (_) {
-        return WorkspaceRole.viewer;
+        return WorkspaceRole.editor;
       }
     }
-    return WorkspaceRole.viewer;
+    return WorkspaceRole.editor;
   }
 
   MemberStatus _parseStatus(dynamic value) {

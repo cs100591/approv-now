@@ -13,6 +13,7 @@ import '../../subscription/plan_upgrade_dialog.dart';
 import '../../plan_enforcement/plan_guard_service.dart';
 import '../workspace_provider.dart';
 import '../workspace_member.dart';
+import '../../auth/auth_provider.dart';
 
 class TeamMembersScreen extends StatefulWidget {
   const TeamMembersScreen({super.key});
@@ -121,7 +122,9 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                 // Member cards are between header and invite button
                 final memberIndex = index - 1 - (hasEmailBanner ? 1 : 0);
                 if (memberIndex >= 0 && memberIndex < members.length) {
-                  return _buildMemberCard(members[memberIndex]);
+                  final String? currentUserId =
+                      context.read<AuthProvider>().user?.id;
+                  return _buildMemberCard(members[memberIndex], currentUserId);
                 }
 
                 return const SizedBox.shrink();
@@ -139,6 +142,28 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
 
     final currentWorkspace = workspaceProvider.currentWorkspace;
     if (currentWorkspace == null) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final currentUserId = authProvider.user?.id;
+    final role = currentWorkspace.getUserRole(currentUserId ?? '');
+
+    if (role != WorkspaceRole.owner && role != WorkspaceRole.admin) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Permission Denied'),
+          content: const Text(
+              'Only workspace admins or owners can generate invite codes.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
 
     final currentPlan = subscriptionProvider.currentPlan;
     final memberCount = currentWorkspace.members.length;
@@ -196,7 +221,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
     );
   }
 
-  Widget _buildMemberCard(WorkspaceMember member) {
+  Widget _buildMemberCard(WorkspaceMember member, String? currentUserId) {
     final isPending = member.isPending;
     final displayName = member.displayName ?? member.email;
 
@@ -259,7 +284,8 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
               ),
           ],
         ),
-        trailing: member.role == WorkspaceRole.owner
+        trailing: (member.role == WorkspaceRole.owner ||
+                member.userId == currentUserId)
             ? null
             : PopupMenuButton<String>(
                 onSelected: (value) => _onMemberAction(value, member),
@@ -304,7 +330,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
       case WorkspaceRole.editor:
         color = Colors.green;
         break;
-      case WorkspaceRole.viewer:
+      case WorkspaceRole.editor:
         color = AppColors.textSecondary;
         break;
     }
@@ -372,7 +398,8 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                 );
               }
             },
-            child: Text(AppLocalizations.of(context)!.remove,
+            child: Text(
+              AppLocalizations.of(context)!.remove,
               style: TextStyle(color: AppColors.error),
             ),
           ),
