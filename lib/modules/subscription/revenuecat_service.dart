@@ -17,6 +17,13 @@ class RevenueCatService {
   bool _isInitialized = false;
 
   /// Initialize RevenueCat SDK
+  ///
+  /// NOTE: You need to configure your actual RevenueCat API keys in the Dashboard:
+  /// - iOS: Use your iOS API key (starts with appl_)
+  /// - Android: Use your Android API key (starts with goog_)
+  /// - Web: RevenueCat does not support web purchases
+  ///
+  /// Get your keys from: https://app.revenuecat.com/settings/api-keys
   Future<void> initialize(String userId) async {
     if (_isInitialized) return;
 
@@ -24,13 +31,19 @@ class RevenueCatService {
       // Get platform-specific API key
       String apiKey;
       if (kIsWeb) {
-        apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
+        // RevenueCat does not support web purchases
+        debugPrint('⚠️ RevenueCat does not support web purchases');
+        return;
       } else {
         // Use dart:io Platform for mobile
         if (Platform.isIOS) {
+          // TODO: Replace with your actual iOS API key from RevenueCat Dashboard
           apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
+          debugPrint('🍎 Initializing RevenueCat for iOS');
         } else if (Platform.isAndroid) {
+          // TODO: Replace with your actual Android API key from RevenueCat Dashboard
           apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
+          debugPrint('🤖 Initializing RevenueCat for Android');
         } else {
           apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR'; // Fallback
         }

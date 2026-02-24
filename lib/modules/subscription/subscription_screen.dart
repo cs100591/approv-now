@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -57,6 +58,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   }
 
   Widget _buildContent() {
+    // Check if running on web (RevenueCat doesn't support web)
+    if (kIsWeb) {
+      return _buildWebNotSupported();
+    }
+
     if (_offerings == null || _offerings!.current == null) {
       return Center(
         child: Column(
@@ -69,6 +75,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               style: AppTextStyles.h4,
             ),
             const SizedBox(height: 8),
+            Text(
+              'Please check your RevenueCat configuration',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadOfferings,
               child: const Text('Retry'),
@@ -351,6 +365,43 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     } finally {
       setState(() => _isPurchasing = false);
     }
+  }
+
+  Widget _buildWebNotSupported() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.computer,
+            size: 64,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Web Version',
+            style: AppTextStyles.h3,
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'In-app purchases are not available on web.\nPlease use our mobile app to subscribe.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Go Back'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _restorePurchases() async {

@@ -586,3 +586,73 @@ The crash was caused by Flutter Web's CanvasKit renderer entering an infinite lo
 - Test member invitation workflow
 - Test notification center
 - Consider implementing Supabase Realtime for live updates
+
+---
+
+### Session: Redesign Landing Page with Animated Hero
+**Date:** 2026-02-24
+**Session Goal:** Redesign landing page with new animated hero style and iOS logo
+**Completed:**
+- ✅ Updated logo to match iOS app icon (copied from iOS assets)
+- ✅ Removed all screenshots and phone mockups
+- ✅ Added CSS animated rotating text in hero section (simple, fast, smart, seamless, effortless)
+- ✅ Modernized design with cleaner, minimal layout
+- ✅ Fixed Apple icon SVG to use proper App Store icon
+- ✅ Simplified to single-column centered layout
+- ✅ Updated all CTAs to link to login.html
+
+**Files Modified:**
+- `landing-page/index.html` - Complete redesign
+- `landing-page/logo.png` - Added iOS app icon
+
+**Design Changes:**
+- Hero: Large headline with animated word rotation
+- No phone mockups or screenshots
+- Clean feature cards with emoji icons
+- Dark CTA section with white buttons
+- Minimal footer with essential links only
+
+**Commit:** 6379211
+
+---
+
+### Session: Fix Logo and Animation on Landing Page
+**Date:** 2026-02-24
+**Session Goal:** Fix logo not showing and animation not working on landing page
+**Completed:**
+- ✅ Replaced logo.png with CSS-only logo using clip-path and gradients
+- ✅ Fixed animated text not showing (adjusted keyframes timing and opacity)
+- ✅ Removed external image dependency for better Vercel compatibility
+- ✅ Logo now renders correctly as pure CSS element
+
+**Files Modified:**
+- `landing-page/index.html` - Replaced img tags with CSS divs, fixed animation keyframes
+- Deleted `landing-page/logo.png`
+
+**Technical Fixes:**
+- Logo: Changed from `<img src="logo.png">` to CSS `div.logo-icon` with clip-path
+- Animation: Fixed keyframes so first word starts visible (0-5% opacity transition)
+- Animation timing: Smoother 2-second intervals with better easing
+
+**Commit:** eab6d12
+
+---
+
+### Session: Change Buttons to Coming Soon Modal
+**Date:** 2026-02-24
+**Session Goal:** Change all CTA buttons to show Coming Soon modal instead of linking to login
+**Completed:**
+- ✅ Changed all buttons from links to `login.html` to buttons with `onclick="showComingSoon()"`
+- ✅ Affected buttons: Login, Get Started, Book a demo, Start free trial, App Store, Google Play
+- ✅ Added Coming Soon modal popup with dark overlay
+- ✅ Fixed animated text rotation - corrected keyframes timing so animation works properly
+- ✅ Modal closes on clicking outside or pressing Escape key
+
+**Files Modified:**
+- `landing-page/index.html` - Changed all CTA links to buttons, added modal HTML/CSS/JS
+
+**Technical Changes:**
+- Animation keyframes: Fixed from broken opacity transitions to proper show/hide cycle
+- All CTAs now display "Coming Soon" popup instead of navigating away
+
+**Commit:** 1bce22f

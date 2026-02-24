@@ -4,6 +4,7 @@ import 'auth_models.dart';
 import 'auth_service.dart';
 import 'biometric_service.dart';
 import '../../core/utils/app_logger.dart';
+import '../subscription/revenuecat_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
@@ -36,19 +37,37 @@ class AuthProvider extends ChangeNotifier {
         _operationLoading = false;
         _operationError = null;
         _state = AuthState(status: AuthStatus.authenticated, user: user);
+
+        // Initialize RevenueCat with user ID
+        _initializeRevenueCat(user.id);
       } else {
         // Signed out, session expired, or intermediate null during account-switch.
         // Always transition to unauthenticated — never stay in loading/initial.
         _operationLoading = false;
+        _operationError = null;
         _state = AuthState(
           status: AuthStatus.unauthenticated,
           errorMessage: _operationError, // surface any error from the operation
         );
         _operationError = null;
+
+        // Log out from RevenueCat when user signs out
+        RevenueCatService.instance.logout();
       }
 
       notifyListeners();
     });
+  }
+
+  /// Initialize RevenueCat with the authenticated user's ID
+  Future<void> _initializeRevenueCat(String userId) async {
+    try {
+      await RevenueCatService.instance.initialize(userId);
+      AppLogger.info('RevenueCat initialized for user: $userId');
+    } catch (e) {
+      AppLogger.error('Failed to initialize RevenueCat', e);
+      // Don't fail auth if RevenueCat fails - user can still use basic features
+    }
   }
 
   // ─── Initialization ───────────────────────────────────────────────────────
