@@ -181,32 +181,34 @@
         }
         
         .animated-word {
-            display: inline-block;
-            position: relative;
+            display: inline-flex;
+            flex-direction: column;
             height: 80px;
             overflow: hidden;
             vertical-align: bottom;
+            position: relative;
         }
-        
+
+        .animated-word-inner {
+            display: flex;
+            flex-direction: column;
+            animation: scrollWords 10s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
         .animated-word span {
             display: block;
-            position: absolute;
-            width: 100%;
-            animation: rotateWords 10s ease-in-out infinite;
-            opacity: 0;
+            height: 80px;
+            line-height: 80px;
+            font-weight: 600;
         }
-        
-        .animated-word span:nth-child(1) { animation-delay: 0s; }
-        .animated-word span:nth-child(2) { animation-delay: 2s; }
-        .animated-word span:nth-child(3) { animation-delay: 4s; }
-        .animated-word span:nth-child(4) { animation-delay: 6s; }
-        .animated-word span:nth-child(5) { animation-delay: 8s; }
 
-        @keyframes rotateWords {
-            0%, 20% { opacity: 1; transform: translateY(0); }
-            25% { opacity: 0; transform: translateY(-30px); }
-            30%, 95% { opacity: 0; transform: translateY(30px); }
-            100% { opacity: 1; transform: translateY(0); }
+        @keyframes scrollWords {
+            0%, 18% { transform: translateY(0); }
+            20%, 38% { transform: translateY(-80px); }
+            40%, 58% { transform: translateY(-160px); }
+            60%, 78% { transform: translateY(-240px); }
+            80%, 98% { transform: translateY(-320px); }
+            100% { transform: translateY(0); }
         }
         
         .hero-subtitle {
@@ -667,6 +669,24 @@
             .animated-word {
                 height: 62px;
             }
+
+            .animated-word-inner {
+                animation: scrollWords 10s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            }
+
+            .animated-word span {
+                height: 62px;
+                line-height: 62px;
+            }
+
+            @keyframes scrollWords {
+                0%, 18% { transform: translateY(0); }
+                20%, 38% { transform: translateY(-62px); }
+                40%, 58% { transform: translateY(-124px); }
+                60%, 78% { transform: translateY(-186px); }
+                80%, 98% { transform: translateY(-248px); }
+                100% { transform: translateY(0); }
+            }
             
             .features,
             .how-it-works,
@@ -698,6 +718,24 @@
             
             .animated-word {
                 height: 44px;
+            }
+
+            .animated-word-inner {
+                animation: scrollWords 10s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            }
+
+            .animated-word span {
+                height: 44px;
+                line-height: 44px;
+            }
+
+            @keyframes scrollWords {
+                0%, 18% { transform: translateY(0); }
+                20%, 38% { transform: translateY(-44px); }
+                40%, 58% { transform: translateY(-88px); }
+                60%, 78% { transform: translateY(-132px); }
+                80%, 98% { transform: translateY(-176px); }
+                100% { transform: translateY(0); }
             }
             
             h2 {
@@ -765,13 +803,15 @@
             
             <h1>
                 Approval workflows<br>
-                made 
+                made
                 <span class="animated-word">
-                    <span>simple</span>
-                    <span>fast</span>
-                    <span>smart</span>
-                    <span>seamless</span>
-                    <span>effortless</span>
+                    <span class="animated-word-inner">
+                        <span>simple</span>
+                        <span>fast</span>
+                        <span>smart</span>
+                        <span>seamless</span>
+                        <span>effortless</span>
+                    </span>
                 </span>
             </h1>
             
