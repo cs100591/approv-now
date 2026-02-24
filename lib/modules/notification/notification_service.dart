@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/config/app_config.dart';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/stream_helper.dart';
+import 'email_service.dart';
 import 'notification_models.dart';
 
 /// NotificationRepository - Database operations for notifications
@@ -175,12 +177,18 @@ class NotificationRepository {
 class NotificationService {
   final NotificationRepository _repository;
   final PushService _pushService;
+  final EmailService _emailService;
+  final SupabaseService _supabase;
 
   NotificationService({
     NotificationRepository? repository,
     PushService? pushService,
+    EmailService? emailService,
+    SupabaseService? supabase,
   })  : _repository = repository ?? NotificationRepository(),
-        _pushService = pushService ?? PushService();
+        _pushService = pushService ?? PushService(),
+        _emailService = emailService ?? EmailService(),
+        _supabase = supabase ?? SupabaseService();
 
   /// Create invitation notification
   Future<AppNotification> createInvitationNotification({
@@ -189,6 +197,7 @@ class NotificationService {
     required String workspaceName,
     required String inviterName,
     required String invitationToken,
+    String? recipientEmail,
   }) async {
     final notification = await _repository.createNotification(
       userId: userId,
@@ -218,7 +227,33 @@ class NotificationService {
       },
     );
 
+    // Send email notification if enabled and email is provided
+    if (AppConfig.enableEmailNotifications && recipientEmail != null) {
+      await _emailService.sendInvitationEmail(
+        email: recipientEmail,
+        workspaceName: workspaceName,
+        inviterName: inviterName,
+        inviteToken: invitationToken,
+        workspaceId: workspaceId,
+      );
+    }
+
     return notification;
+  }
+
+  /// Get user email by user ID
+  Future<String?> _getUserEmail(String userId) async {
+    try {
+      final response = await _supabase.client
+          .from('users')
+          .select('email')
+          .eq('id', userId)
+          .single();
+      return response['email'] as String?;
+    } catch (e) {
+      AppLogger.warning('Failed to get email for user $userId: $e');
+      return null;
+    }
   }
 
   /// Create pending request notification
@@ -228,6 +263,7 @@ class NotificationService {
     required String requestId,
     required String requestTitle,
     required String submitterName,
+    required String workspaceName,
   }) async {
     final notification = await _repository.createNotification(
       userId: userId,
@@ -257,6 +293,20 @@ class NotificationService {
       },
     );
 
+    // Send email notification if enabled
+    if (AppConfig.enableEmailNotifications) {
+      final email = await _getUserEmail(userId);
+      if (email != null) {
+        await _emailService.sendApprovalRequestEmail(
+          email: email,
+          requestorName: submitterName,
+          templateName: requestTitle,
+          workspaceName: workspaceName,
+          workspaceId: workspaceId,
+        );
+      }
+    }
+
     return notification;
   }
 
@@ -267,6 +317,7 @@ class NotificationService {
     required String requestId,
     required String requestTitle,
     required String approverName,
+    required String workspaceName,
   }) async {
     final notification = await _repository.createNotification(
       userId: userId,
@@ -296,6 +347,19 @@ class NotificationService {
       },
     );
 
+    // Send email notification if enabled
+    if (AppConfig.enableEmailNotifications) {
+      final email = await _getUserEmail(userId);
+      if (email != null) {
+        await _emailService.sendApprovalCompletedEmail(
+          email: email,
+          templateName: requestTitle,
+          workspaceName: workspaceName,
+          workspaceId: workspaceId,
+        );
+      }
+    }
+
     return notification;
   }
 
@@ -306,6 +370,7 @@ class NotificationService {
     required String requestId,
     required String requestTitle,
     required String rejectorName,
+    required String workspaceName,
     String? reason,
   }) async {
     final message =
@@ -339,6 +404,20 @@ class NotificationService {
         'notification_id': notification.id,
       },
     );
+
+    // Send email notification if enabled
+    if (AppConfig.enableEmailNotifications) {
+      final email = await _getUserEmail(userId);
+      if (email != null) {
+        await _emailService.sendRejectionEmail(
+          email: email,
+          templateName: requestTitle,
+          workspaceName: workspaceName,
+          workspaceId: workspaceId,
+          reason: reason,
+        );
+      }
+    }
 
     return notification;
   }

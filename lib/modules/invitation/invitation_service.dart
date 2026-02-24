@@ -1,13 +1,17 @@
 import '../../core/config/app_config.dart';
 import '../../core/utils/app_logger.dart';
+import '../notification/email_service.dart';
 import '../workspace/workspace_models.dart';
 import '../workspace/workspace_member.dart';
 
 /// Service to handle invitations
 /// Note: Email notifications are disabled by default (AppConfig.enableEmailNotifications = false)
-/// When enabled, this would integrate with Firebase Functions to send emails
+/// When enabled, this integrates with Supabase Edge Functions to send emails
 class InvitationService {
-  InvitationService();
+  final EmailService _emailService;
+
+  InvitationService({EmailService? emailService})
+      : _emailService = emailService ?? EmailService();
 
   /// Resend invitation email
   /// Returns true if successful, false if emails are disabled

@@ -190,6 +190,7 @@ class NotificationProvider extends ChangeNotifier {
     required String requestId,
     required String requestTitle,
     required String submitterName,
+    required String workspaceName,
   }) async {
     return await _service.createPendingRequestNotification(
       userId: userId,
@@ -197,6 +198,7 @@ class NotificationProvider extends ChangeNotifier {
       requestId: requestId,
       requestTitle: requestTitle,
       submitterName: submitterName,
+      workspaceName: workspaceName,
     );
   }
 
@@ -207,6 +209,7 @@ class NotificationProvider extends ChangeNotifier {
     required String requestId,
     required String requestTitle,
     required String approverName,
+    required String workspaceName,
   }) async {
     return await _service.createRequestApprovedNotification(
       userId: userId,
@@ -214,6 +217,7 @@ class NotificationProvider extends ChangeNotifier {
       requestId: requestId,
       requestTitle: requestTitle,
       approverName: approverName,
+      workspaceName: workspaceName,
     );
   }
 
@@ -224,6 +228,7 @@ class NotificationProvider extends ChangeNotifier {
     required String requestId,
     required String requestTitle,
     required String rejectorName,
+    required String workspaceName,
     String? reason,
   }) async {
     return await _service.createRequestRejectedNotification(
@@ -232,6 +237,7 @@ class NotificationProvider extends ChangeNotifier {
       requestId: requestId,
       requestTitle: requestTitle,
       rejectorName: rejectorName,
+      workspaceName: workspaceName,
       reason: reason,
     );
   }
