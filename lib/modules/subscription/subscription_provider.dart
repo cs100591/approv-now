@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../workspace/workspace_repository.dart';
 import 'subscription_models.dart';
 import 'subscription_service.dart';
 import 'subscription_repository.dart';
@@ -6,14 +7,17 @@ import 'subscription_repository.dart';
 class SubscriptionProvider extends ChangeNotifier {
   final SubscriptionService _subscriptionService;
   final SubscriptionRepository _subscriptionRepository;
+  final WorkspaceRepository _workspaceRepository;
 
   SubscriptionState _state = const SubscriptionState();
 
   SubscriptionProvider({
     required SubscriptionService subscriptionService,
     required SubscriptionRepository subscriptionRepository,
+    WorkspaceRepository? workspaceRepository,
   })  : _subscriptionService = subscriptionService,
-        _subscriptionRepository = subscriptionRepository;
+        _subscriptionRepository = subscriptionRepository,
+        _workspaceRepository = workspaceRepository ?? WorkspaceRepository();
 
   SubscriptionState get state => _state;
   Subscription? get subscription => _subscriptionService.currentSubscription;
@@ -85,6 +89,14 @@ class SubscriptionProvider extends ChangeNotifier {
       );
 
       await _subscriptionRepository.saveSubscription(subscription);
+
+      // Update plan for all workspaces owned by this user
+      // This ensures all members benefit from the owner's subscription
+      await _workspaceRepository.updateWorkspacesPlanForUser(
+        userId,
+        newPlan.name.toLowerCase(),
+      );
+
       _state = _state.copyWith(subscription: subscription);
     } catch (e) {
       _state = _state.copyWith(error: e.toString());

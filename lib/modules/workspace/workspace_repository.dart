@@ -108,6 +108,20 @@ class WorkspaceRepository {
     }
   }
 
+  /// Update plan for all workspaces owned by a user
+  Future<void> updateWorkspacesPlanForUser(String userId, String plan) async {
+    try {
+      await _supabase.client
+          .from('workspaces')
+          .update({'plan': plan}).eq('created_by', userId);
+      AppLogger.info(
+          'Updated plan to $plan for all workspaces of user $userId');
+    } catch (e) {
+      AppLogger.error('Error updating workspaces plan for user $userId', e);
+      rethrow;
+    }
+  }
+
   /// Stream workspaces for user with safe lifecycle management
   Stream<List<Workspace>> streamWorkspacesForUser(String userId) {
     return StreamHelper.createPollingStream(

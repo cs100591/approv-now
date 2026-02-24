@@ -378,12 +378,14 @@ class _WorkspaceManageScreenState extends State<WorkspaceManageScreen> {
       try {
         final workspaceProvider = context.read<WorkspaceProvider>();
         final authProvider = context.read<AuthProvider>();
+        final subscriptionProvider = context.read<SubscriptionProvider>();
 
         await workspaceProvider.createWorkspace(
           name: nameController.text.trim(),
           description: descriptionController.text.trim(),
           createdBy: authProvider.user!.id,
           creatorEmail: authProvider.user!.email,
+          plan: subscriptionProvider.currentPlan.name.toLowerCase(),
         );
 
         if (mounted) {

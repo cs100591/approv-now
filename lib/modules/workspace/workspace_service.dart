@@ -15,6 +15,7 @@ class WorkspaceService {
     String? address,
     required String createdBy,
     required String creatorEmail,
+    String plan = 'free',
   }) {
     return Workspace(
       id: _generateId(),
@@ -23,6 +24,7 @@ class WorkspaceService {
       companyName: companyName,
       address: address,
       createdBy: createdBy,
+      plan: plan,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       members: [

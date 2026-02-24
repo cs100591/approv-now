@@ -352,6 +352,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
 
               final authProvider = context.read<AuthProvider>();
               final workspaceProvider = context.read<WorkspaceProvider>();
+              final subscriptionProvider = context.read<SubscriptionProvider>();
 
               if (authProvider.user == null) return;
 
@@ -368,6 +369,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                       : descriptionController.text.trim(),
                   createdBy: authProvider.user!.id,
                   creatorEmail: authProvider.user!.email,
+                  plan: subscriptionProvider.currentPlan.name.toLowerCase(),
                 );
 
                 if (mounted) {

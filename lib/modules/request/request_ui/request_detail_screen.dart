@@ -166,8 +166,6 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     if (_request == null) return;
     final exportProvider = context.read<ExportProvider>();
     final workspaceProvider = context.read<WorkspaceProvider>();
-    final authProvider = context.read<AuthProvider>();
-    final subscriptionProvider = context.read<SubscriptionProvider>();
     final workspace = workspaceProvider.currentWorkspace;
     if (workspace == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -176,10 +174,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       return;
     }
 
-    final isOwner = workspace.createdBy == authProvider.user?.id ||
-        workspace.ownerId == authProvider.user?.id;
-    final displayPlan =
-        isOwner ? subscriptionProvider.currentPlan.name : workspace.plan;
+    // All workspace members use the workspace's plan (owner's subscription)
+    // This ensures consistent PDF export settings for all members
+    final displayPlan = workspace.plan.isNotEmpty ? workspace.plan : 'free';
 
     final bool isPro = displayPlan.toLowerCase() == 'pro' ||
         displayPlan.toLowerCase() == 'business';

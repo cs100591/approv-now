@@ -182,6 +182,7 @@ class WorkspaceProvider extends ChangeNotifier {
     String? address,
     required String createdBy,
     required String creatorEmail,
+    String plan = 'free',
   }) async {
     if (_currentUserId == null) {
       _state = _state.copyWith(error: 'No user logged in');
@@ -200,6 +201,7 @@ class WorkspaceProvider extends ChangeNotifier {
         address: address,
         createdBy: createdBy,
         creatorEmail: creatorEmail,
+        plan: plan,
       );
 
       // Create a Firestore-ready version with ownerId and memberIds
