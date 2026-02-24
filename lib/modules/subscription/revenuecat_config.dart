@@ -4,34 +4,17 @@ import '../auth/auth_provider.dart';
 
 /// RevenueCat configuration and initialization
 class RevenueCatConfig {
-  // RevenueCat API keys
-  static const String _iosApiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
-  static const String _androidApiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
-  static const String _webApiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
+  // RevenueCat API key (same for iOS and Android)
+  static const String _apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
 
-  /// Get the appropriate API key for the platform
-  static String get apiKey {
-    if (kIsWeb) return _webApiKey;
-    // Note: Use dart:io Platform for mobile detection
-    // This will be handled in the initialization method
-    return _iosApiKey; // Default fallback
-  }
+  /// Get the API key
+  static String get apiKey => _apiKey;
 
   /// Initialize RevenueCat SDK
   static Future<void> initialize() async {
     try {
-      String apiKey;
-
-      // Platform-specific API keys
-      if (kIsWeb) {
-        apiKey = _webApiKey;
-      } else {
-        // For mobile, we'll detect platform in the service
-        apiKey = _iosApiKey; // Default to iOS, will be overridden in service
-      }
-
       await Purchases.setLogLevel(LogLevel.debug);
-      await Purchases.configure(PurchasesConfiguration(apiKey));
+      await Purchases.configure(PurchasesConfiguration(_apiKey));
 
       debugPrint('✅ RevenueCat initialized successfully');
     } catch (e) {

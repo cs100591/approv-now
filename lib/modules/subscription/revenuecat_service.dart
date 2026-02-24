@@ -29,7 +29,9 @@ class RevenueCatService {
 
     try {
       // Get platform-specific API key
-      String apiKey;
+      // Using the provided RevenueCat API key
+      const apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
+
       if (kIsWeb) {
         // RevenueCat does not support web purchases
         debugPrint('⚠️ RevenueCat does not support web purchases');
@@ -37,15 +39,9 @@ class RevenueCatService {
       } else {
         // Use dart:io Platform for mobile
         if (Platform.isIOS) {
-          // TODO: Replace with your actual iOS API key from RevenueCat Dashboard
-          apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
           debugPrint('🍎 Initializing RevenueCat for iOS');
         } else if (Platform.isAndroid) {
-          // TODO: Replace with your actual Android API key from RevenueCat Dashboard
-          apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
           debugPrint('🤖 Initializing RevenueCat for Android');
-        } else {
-          apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR'; // Fallback
         }
       }
 
