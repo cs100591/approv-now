@@ -1,0 +1,39 @@
+# iOS
+ios/
+.android/
+
+# Android
+android/
+
+# Build artifacts
+build/
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store
+*.xcworkspace/
+*.xcuserdata/
+
+# Landing page (separate Vercel project)
+landing-page/
+
+# Test files
+test/
+*.test.dart
+*_test.dart
+
+# Documentation
+*.md
+!README.md
+
+# Environment files
+.env
+.env.*
