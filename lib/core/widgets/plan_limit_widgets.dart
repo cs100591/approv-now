@@ -76,7 +76,7 @@ class PlanLimitIndicator extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '$currentCount / ${maxCount == 1000 ? '∞' : maxCount}',
+                    '$currentCount / ${maxCount == -1 || maxCount == 1000 ? '∞' : maxCount}',
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: isAtLimit
                           ? AppColors.error
@@ -99,7 +99,8 @@ class PlanLimitIndicator extends StatelessWidget {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: Text(AppLocalizations.of(context)!.upgrade,
+                      child: Text(
+                        AppLocalizations.of(context)!.upgrade,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -205,7 +206,7 @@ class PlanLimitBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        '$currentCount/${maxCount == 1000 ? '∞' : maxCount}',
+        '$currentCount/${maxCount == -1 || maxCount == 1000 ? '∞' : maxCount}',
         style: AppTextStyles.bodySmall.copyWith(
           color: textColor,
           fontWeight: FontWeight.w600,
