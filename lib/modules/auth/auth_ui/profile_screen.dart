@@ -449,16 +449,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              // Clear workspace state before logout
-              context.read<WorkspaceProvider>().clearCurrentUser();
+              // AuthWrapper will automatically show LoginScreen when auth state changes
               await context.read<AuthProvider>().logout();
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  RouteNames.login,
-                  (route) => false,
-                );
-              }
             },
             child: Text(
               AppLocalizations.of(context)!.logout,

@@ -349,13 +349,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  context.read<WorkspaceProvider>().clearCurrentUser();
+                  // AuthWrapper will automatically show LoginScreen when auth state changes
                   context.read<AuthProvider>().logout();
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    RouteNames.login,
-                    (route) => false,
-                  );
                 },
                 child: const Text(
                   'Logout and try again',
@@ -497,9 +492,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              context.read<WorkspaceProvider>().clearCurrentUser();
+              // AuthWrapper will automatically show LoginScreen when auth state changes
               context.read<AuthProvider>().logout();
-              Navigator.pushReplacementNamed(context, RouteNames.login);
             },
             child: Text(AppLocalizations.of(context)!.logout,
                 style: TextStyle(color: AppColors.error)),
