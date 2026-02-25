@@ -429,8 +429,16 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
           final filename =
               '${template.name.replaceAll(' ', '_')}_${_formatDateForFilename(startDate)}_${_formatDateForFilename(endDate)}_Report.xlsx';
 
+          // Get button position for sharePositionOrigin (required for iPad)
+          final box = context.findRenderObject() as RenderBox?;
+          final sharePositionOrigin =
+              box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+
           try {
-            await exportProvider.shareExcel(filename);
+            await exportProvider.shareExcel(
+              filename,
+              sharePositionOrigin: sharePositionOrigin,
+            );
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -440,23 +448,24 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
             }
           } catch (shareError) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('❌ Share failed: $shareError'),
-                  action: SnackBarAction(
-                    label: 'Retry',
-                    onPressed: () async {
-                      try {
-                        await exportProvider.shareExcel(filename);
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Retry failed: $e')),
-                        );
-                      }
-                    },
-                  ),
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('❌ Share failed: $shareError'),
+                action: SnackBarAction(
+                  label: 'Retry',
+                  onPressed: () async {
+                    try {
+                      await exportProvider.shareExcel(
+                        filename,
+                        sharePositionOrigin: sharePositionOrigin,
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Retry failed: $e')),
+                      );
+                    }
+                  },
                 ),
-              );
+              ));
             }
           }
         } else {

@@ -10,7 +10,7 @@ class WorkspaceRepository {
   final SupabaseService _supabase;
 
   WorkspaceRepository({SupabaseService? supabase})
-      : _supabase = supabase ?? SupabaseService();
+    : _supabase = supabase ?? SupabaseService();
 
   /// Create a new workspace
   Future<Workspace> createWorkspace(Workspace workspace) async {
@@ -79,19 +79,16 @@ class WorkspaceRepository {
   /// Update workspace
   Future<void> updateWorkspace(Workspace workspace) async {
     try {
-      await _supabase.updateWorkspace(
-        workspace.id,
-        {
-          'name': workspace.name,
-          'description': workspace.description,
-          'logo_url': workspace.logoUrl,
-          'company_name': workspace.companyName,
-          'address': workspace.address,
-          'footer_text': workspace.footerText,
-          'plan': workspace.plan,
-          'settings': workspace.settings,
-        },
-      );
+      await _supabase.updateWorkspace(workspace.id, {
+        'name': workspace.name,
+        'description': workspace.description,
+        'logo_url': workspace.logoUrl,
+        'company_name': workspace.companyName,
+        'address': workspace.address,
+        'footer_text': workspace.footerText,
+        'plan': workspace.plan,
+        'settings': workspace.settings,
+      });
     } catch (e) {
       AppLogger.error('Error updating workspace', e);
       rethrow;
@@ -113,9 +110,11 @@ class WorkspaceRepository {
     try {
       await _supabase.client
           .from('workspaces')
-          .update({'plan': plan}).eq('created_by', userId);
+          .update({'plan': plan})
+          .eq('created_by', userId);
       AppLogger.info(
-          'Updated plan to $plan for all workspaces of user $userId');
+        'Updated plan to $plan for all workspaces of user $userId',
+      );
     } catch (e) {
       AppLogger.error('Error updating workspaces plan for user $userId', e);
       rethrow;
@@ -198,7 +197,10 @@ class WorkspaceRepository {
 
   /// Update member role
   Future<void> updateMemberRole(
-      String workspaceId, String userId, WorkspaceRole role) async {
+    String workspaceId,
+    String userId,
+    WorkspaceRole role,
+  ) async {
     try {
       await _supabase.client
           .from('workspace_members')
@@ -213,10 +215,20 @@ class WorkspaceRepository {
 
   /// Map Supabase response to Workspace model
   Workspace _mapToWorkspace(Map<String, dynamic> json) {
-    final memberIds = (json['member_ids'] as List<dynamic>?)
+    final memberIds =
+        (json['member_ids'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toList() ??
         [];
+
+    // Debug: log raw plan value from database
+    final rawPlan = json['plan'];
+    AppLogger.debug(
+      '📊 Database workspace plan: $rawPlan (type: ${rawPlan.runtimeType})',
+    );
+
+    final planString = rawPlan?.toString().toLowerCase() ?? 'free';
+    AppLogger.debug('📊 Mapped plan: $planString');
 
     return Workspace(
       id: json['id'].toString(),
@@ -232,7 +244,7 @@ class WorkspaceRepository {
       updatedAt: _parseDateTime(json['updated_at']),
       members: [], // Members are in separate table
       memberIds: memberIds,
-      plan: json['plan']?.toString() ?? 'free',
+      plan: planString,
       settings: Map<String, dynamic>.from(json['settings'] as Map? ?? {}),
     );
   }
@@ -247,8 +259,9 @@ class WorkspaceRepository {
       role: _parseRole(json['role']),
       status: _parseStatus(json['status']),
       invitedAt: _parseDateTime(json['invited_at']),
-      joinedAt:
-          json['joined_at'] != null ? _parseDateTime(json['joined_at']) : null,
+      joinedAt: json['joined_at'] != null
+          ? _parseDateTime(json['joined_at'])
+          : null,
       invitedBy: json['invited_by']?.toString() ?? '',
       inviteToken: json['invite_token']?.toString(),
     );
