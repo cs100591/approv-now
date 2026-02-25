@@ -183,11 +183,12 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     final bool canAddLogo = isPro;
 
     final bool customHeader = workspace.settings['pdfCustomHeader'] == true;
-    final bool removeWatermarkSetting =
-        workspace.settings['pdfRemoveWatermark'] == true;
+    // Pro/Starter plans can remove watermark by default unless explicitly disabled
+    final bool removeWatermarkSetting = canRemoveWatermark &&
+        (workspace.settings['pdfRemoveWatermark'] != false);
     final bool addLogo = workspace.settings['pdfAddLogo'] == true;
 
-    final includeWatermark = !(canRemoveWatermark && removeWatermarkSetting);
+    final includeWatermark = !removeWatermarkSetting;
 
     String headerMode = 'brand';
     if (customHeader) {
