@@ -2,13 +2,14 @@ name: Deploy Flutter Web
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
     paths:
       - 'lib/**'
       - 'web/**'
       - 'pubspec.yaml'
       - 'build-web.sh'
       - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
