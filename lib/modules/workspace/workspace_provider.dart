@@ -175,6 +175,7 @@ class WorkspaceProvider extends ChangeNotifier {
   }
 
   /// Create a new workspace
+  /// [userPlan] - The current user's subscription plan (used to set workspace plan)
   Future<Workspace?> createWorkspace({
     required String name,
     String? description,
@@ -182,7 +183,7 @@ class WorkspaceProvider extends ChangeNotifier {
     String? address,
     required String createdBy,
     required String creatorEmail,
-    String plan = 'free',
+    String? userPlan,
   }) async {
     if (_currentUserId == null) {
       _state = _state.copyWith(error: 'No user logged in');
@@ -193,6 +194,13 @@ class WorkspaceProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
+      // Set workspace plan based on user's subscription plan
+      // This ensures all workspace members benefit from owner's subscription
+      final plan = (userPlan ?? 'free').toLowerCase();
+
+      AppLogger.info(
+          'Creating workspace with plan: $plan (from user subscription: $userPlan)');
+
       // Create workspace via service (local logic)
       final workspace = _workspaceService.createWorkspace(
         name: name,
@@ -234,6 +242,45 @@ class WorkspaceProvider extends ChangeNotifier {
       return null;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  /// Sync all workspaces' plan with user's current subscription plan
+  /// This ensures workspace plan matches owner's subscription after plan upgrade/downgrade
+  /// Should be called on login and after subscription changes
+  Future<void> syncWorkspacesPlanForUser(String userId, String userPlan) async {
+    try {
+      final normalizedPlan = userPlan.toLowerCase();
+
+      // Update all workspaces owned by this user in database
+      await _workspaceRepository.updateWorkspacesPlanForUser(
+          userId, normalizedPlan);
+
+      // Update local state
+      final updatedWorkspaces = _state.workspaces.map((w) {
+        if (w.ownerId == userId || w.createdBy == userId) {
+          return w.copyWith(plan: normalizedPlan);
+        }
+        return w;
+      }).toList();
+
+      _state = _state.copyWith(
+        workspaces: updatedWorkspaces,
+        currentWorkspace: _state.currentWorkspace != null
+            ? updatedWorkspaces.firstWhere(
+                (w) => w.id == _state.currentWorkspace!.id,
+                orElse: () => _state.currentWorkspace!,
+              )
+            : null,
+      );
+
+      notifyListeners();
+
+      AppLogger.info(
+          'Synced ${updatedWorkspaces.length} workspaces to plan: $normalizedPlan');
+    } catch (e) {
+      AppLogger.error('Error syncing workspaces plan', e);
+      // Don't rethrow - this is a background sync operation
     }
   }
 

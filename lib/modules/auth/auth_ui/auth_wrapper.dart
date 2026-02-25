@@ -11,6 +11,7 @@ import '../../notification/notification_provider.dart';
 import '../../approval_engine/approval_engine_provider.dart';
 import 'login_screen.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_logger.dart';
 
 class AuthWrapper extends StatefulWidget {
   final Widget child;
@@ -40,12 +41,24 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   /// Called whenever we transition INTO authenticated.
-  void _onAuthenticated(String userId) {
+  void _onAuthenticated(String userId) async {
     final workspaceProvider = context.read<WorkspaceProvider>();
     final notificationProvider = context.read<NotificationProvider>();
+    final subscriptionProvider = context.read<SubscriptionProvider>();
 
     workspaceProvider.setCurrentUser(userId);
     notificationProvider.initialize(userId);
+
+    // Load user's subscription plan
+    await subscriptionProvider.loadSubscription(userId);
+
+    // Sync all workspaces' plan with user's current subscription
+    // This ensures workspace plan matches owner's subscription after plan upgrade/downgrade
+    final userPlan = subscriptionProvider.currentPlan.name.toLowerCase();
+    await workspaceProvider.syncWorkspacesPlanForUser(userId, userPlan);
+
+    AppLogger.info(
+        '✅ Synced workspace plans for user: $userId (plan: $userPlan)');
   }
 
   /// Called whenever we transition OUT OF authenticated (logout / account switch).
