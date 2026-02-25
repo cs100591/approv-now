@@ -210,7 +210,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       trailing: Switch(
                         value: _biometricEnabled,
                         onChanged: _toggleBiometric,
-                        activeThumbColor: AppColors.primary,
+                        thumbColor: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return AppColors.primary;
+                          }
+                          return null;
+                        }),
                       ),
                     ),
                   ],
