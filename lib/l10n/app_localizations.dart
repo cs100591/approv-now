@@ -109,7 +109,6 @@ abstract class AppLocalizations {
     Locale('ms'),
     Locale('th'),
     Locale('vi'),
-    Locale('zh'),
     Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
     Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')
   ];

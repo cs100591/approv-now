@@ -9,6 +9,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../workspace/workspace_provider.dart';
+import '../../subscription/subscription_provider.dart';
+import '../../subscription/subscription_models.dart';
 import '../biometric_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -212,6 +214,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ],
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _buildSectionTitle('Subscription'),
+            const SizedBox(height: AppSpacing.md),
+            AppCard(
+              child: Column(
+                children: [
+                  Consumer<SubscriptionProvider>(
+                    builder: (context, subscriptionProvider, child) {
+                      final currentPlan = subscriptionProvider.currentPlan;
+                      final isFree = currentPlan == PlanType.free;
+
+                      return _buildListTile(
+                        icon: Icons.workspace_premium,
+                        title: 'Current Plan',
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isFree
+                                ? AppColors.primary.withOpacity(0.1)
+                                : AppColors.success.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            currentPlan.displayName,
+                            style: TextStyle(
+                              color: isFree
+                                  ? AppColors.primary
+                                  : AppColors.success,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.pushNamed(context, RouteNames.subscription);
+                        },
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  _buildListTile(
+                    icon: Icons.upgrade,
+                    title: 'Upgrade Plan',
+                    trailing: const Icon(Icons.chevron_right,
+                        color: AppColors.textSecondary),
+                    onTap: () {
+                      Navigator.pushNamed(context, RouteNames.subscription);
+                    },
+                  ),
                 ],
               ),
             ),

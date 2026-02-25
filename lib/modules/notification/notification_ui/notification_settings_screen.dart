@@ -22,7 +22,6 @@ class _NotificationSettingsScreenState
   bool _emailNotificationsEnabled = false;
   bool _requestUpdatesEnabled = true;
   bool _invitationUpdatesEnabled = true;
-  bool _mentionUpdatesEnabled = true;
 
   @override
   void initState() {
@@ -72,7 +71,6 @@ class _NotificationSettingsScreenState
                       // Disable all sub-options when master is off
                       _requestUpdatesEnabled = false;
                       _invitationUpdatesEnabled = false;
-                      _mentionUpdatesEnabled = false;
                     }
                   });
                   _saveSettings();
@@ -136,20 +134,6 @@ class _NotificationSettingsScreenState
                   value: _invitationUpdatesEnabled,
                   onChanged: (value) {
                     setState(() => _invitationUpdatesEnabled = value);
-                    _saveSettings();
-                  },
-                  activeColor: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _buildSettingCard(
-                title: 'Mentions',
-                subtitle: 'When someone mentions you in comments',
-                icon: Icons.alternate_email,
-                trailing: Switch(
-                  value: _mentionUpdatesEnabled,
-                  onChanged: (value) {
-                    setState(() => _mentionUpdatesEnabled = value);
                     _saveSettings();
                   },
                   activeColor: AppColors.primary,
