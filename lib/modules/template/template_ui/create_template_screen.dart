@@ -458,7 +458,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
       ),
       child: Column(
         children: [
@@ -529,7 +529,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -540,7 +540,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(iconData, color: AppColors.primary, size: 20),
@@ -596,7 +596,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -1013,7 +1013,7 @@ class _AddFieldSheetState extends State<AddFieldSheet> {
                                 });
                               },
                               backgroundColor:
-                                  AppColors.primary.withValues(alpha: 0.1),
+                                  AppColors.primary.withOpacity(0.1),
                               side: BorderSide.none,
                             );
                           }).toList(),
@@ -1254,7 +1254,7 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.1),
+                          color: AppColors.error.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -1353,7 +1353,7 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
                               });
                             },
                             backgroundColor:
-                                AppColors.primary.withValues(alpha: 0.1),
+                                AppColors.primary.withOpacity(0.1),
                             side: BorderSide.none,
                           );
                         }).toList(),

@@ -485,7 +485,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           color: AppColors.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withOpacity(0.08),
               blurRadius: 8,
               offset: const Offset(0, -2),
             ),
@@ -527,7 +527,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           color: AppColors.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withOpacity(0.08),
               blurRadius: 8,
               offset: const Offset(0, -2),
             ),
@@ -583,7 +583,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       padding:
           const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -603,7 +603,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
         leading: CircleAvatar(
           backgroundColor:
               (action.approved ? AppColors.success : AppColors.error)
-                  .withValues(alpha: 0.1),
+                  .withOpacity(0.1),
           child: Icon(
             action.approved ? Icons.check : Icons.close,
             color: action.approved ? AppColors.success : AppColors.error,

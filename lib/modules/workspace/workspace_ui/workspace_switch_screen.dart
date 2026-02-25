@@ -165,7 +165,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
           height: 48,
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.1)
+                ? AppColors.primary.withOpacity(0.1)
                 : AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: isSelected
@@ -206,7 +206,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -242,7 +242,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                 vertical: 2,
               ),
               decoration: BoxDecoration(
-                color: _getPlanColor(workspace.plan).withValues(alpha: 0.1),
+                color: _getPlanColor(workspace.plan).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(

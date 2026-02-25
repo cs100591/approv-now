@@ -90,7 +90,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
           Icon(
             Icons.inbox_outlined,
             size: 64,
-            color: AppColors.textSecondary.withValues(alpha: 0.3),
+            color: AppColors.textSecondary.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -215,7 +215,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
           ),
           leading: CircleAvatar(
             backgroundColor:
-                _getStatusColor(request.status).withValues(alpha: 0.1),
+                _getStatusColor(request.status).withOpacity(0.1),
             child: Icon(
               _getStatusIcon(request.status),
               color: _getStatusColor(request.status),

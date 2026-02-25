@@ -72,7 +72,7 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
@@ -456,7 +456,7 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          backgroundColor: AppColors.primary.withOpacity(0.1),
           child: Text(
             (member.displayName ?? member.email)[0].toUpperCase(),
             style: TextStyle(color: AppColors.primary),

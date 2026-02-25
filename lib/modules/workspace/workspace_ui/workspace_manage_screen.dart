@@ -172,7 +172,7 @@ class _WorkspaceManageScreenState extends State<WorkspaceManageScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -227,7 +227,7 @@ class _WorkspaceManageScreenState extends State<WorkspaceManageScreen> {
       height: 48,
       decoration: BoxDecoration(
         color: isSelected
-            ? AppColors.primary.withValues(alpha: 0.1)
+            ? AppColors.primary.withOpacity(0.1)
             : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: isSelected

@@ -163,9 +163,9 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
           const SizedBox(height: AppSpacing.md),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.05),
+              color: AppColors.error.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.error.withOpacity(0.3)),
             ),
             child: ListTile(
               leading: const Icon(Icons.delete_forever, color: AppColors.error),
@@ -255,7 +255,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
       ),
       child: Column(
         children: [
@@ -326,7 +326,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -337,7 +337,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(iconData, color: AppColors.primary, size: 20),
@@ -393,7 +393,7 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(

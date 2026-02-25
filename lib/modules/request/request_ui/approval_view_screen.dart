@@ -490,7 +490,7 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

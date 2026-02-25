@@ -196,9 +196,9 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.1),
+        color: Colors.orange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -231,8 +231,8 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
         contentPadding: const EdgeInsets.all(AppSpacing.md),
         leading: CircleAvatar(
           backgroundColor: isPending
-              ? AppColors.textSecondary.withValues(alpha: 0.1)
-              : AppColors.primary.withValues(alpha: 0.1),
+              ? AppColors.textSecondary.withOpacity(0.1)
+              : AppColors.primary.withOpacity(0.1),
           child: Text(
             displayName[0].toUpperCase(),
             style: TextStyle(
@@ -271,7 +271,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
+                  color: Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -341,7 +341,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
         vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -482,10 +482,10 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.info.withValues(alpha: 0.1),
+                color: AppColors.info.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
                 border:
-                    Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+                    Border.all(color: AppColors.info.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,7 +565,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
+                  color: AppColors.primary.withOpacity(0.3),
                   width: 2,
                 ),
               ),

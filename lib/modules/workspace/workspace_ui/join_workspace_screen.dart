@@ -150,7 +150,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -158,7 +158,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.2),
+                      color: AppColors.primary.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -272,10 +272,10 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
+                  color: AppColors.success.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.3),
+                    color: AppColors.success.withOpacity(0.3),
                   ),
                 ),
                 child: Column(
@@ -286,7 +286,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: AppColors.success.withValues(alpha: 0.2),
+                            color: AppColors.success.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
@@ -401,7 +401,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
           width: 20,
           height: 20,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Center(

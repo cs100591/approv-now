@@ -35,7 +35,7 @@ class WorkspaceHeader extends StatelessWidget {
             color: AppColors.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Colors.black.withOpacity(0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -48,7 +48,7 @@ class WorkspaceHeader extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -160,7 +160,7 @@ class WorkspaceHeader extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: _getPlanColor(currentPlan.name)
-                                .withValues(alpha: 0.1),
+                                .withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(

@@ -57,8 +57,8 @@ class PlanLimitIndicator extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isAtLimit
-              ? AppColors.error.withValues(alpha: 0.3)
-              : AppColors.border.withValues(alpha: 0.3),
+              ? AppColors.error.withOpacity(0.3)
+              : AppColors.border.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -186,13 +186,13 @@ class PlanLimitBadge extends StatelessWidget {
     Color backgroundColor;
     Color textColor;
     if (percentage >= 1.0) {
-      backgroundColor = AppColors.error.withValues(alpha: 0.1);
+      backgroundColor = AppColors.error.withOpacity(0.1);
       textColor = AppColors.error;
     } else if (percentage >= 0.8) {
-      backgroundColor = Colors.orange.withValues(alpha: 0.1);
+      backgroundColor = Colors.orange.withOpacity(0.1);
       textColor = Colors.orange;
     } else {
-      backgroundColor = AppColors.success.withValues(alpha: 0.1);
+      backgroundColor = AppColors.success.withOpacity(0.1);
       textColor = AppColors.success;
     }
 
@@ -247,9 +247,9 @@ class PlanLimitReachedWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.05),
+        color: AppColors.error.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.error.withOpacity(0.2)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

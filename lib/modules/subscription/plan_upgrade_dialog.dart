@@ -59,7 +59,7 @@ class PlanUpgradeDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
                 ),
@@ -193,10 +193,10 @@ class PlanUpgradeDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.05),
+        color: AppColors.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
+          color: AppColors.primary.withOpacity(0.3),
           width: 2,
         ),
       ),
@@ -320,7 +320,7 @@ class PlanUpgradeDialog extends StatelessWidget {
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: isCurrent
-                            ? AppColors.primary.withValues(alpha: 0.05)
+                            ? AppColors.primary.withOpacity(0.05)
                             : AppColors.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
@@ -407,7 +407,7 @@ class PlanUpgradeDialog extends StatelessWidget {
                                       Icons.remove_circle,
                                       size: 16,
                                       color: AppColors.error
-                                          .withValues(alpha: 0.5),
+                                          .withOpacity(0.5),
                                     ),
                                     const SizedBox(width: AppSpacing.sm),
                                     Text(

@@ -78,10 +78,10 @@ class _WorkspaceSettingsScreenState extends State<WorkspaceSettingsScreen> {
           if (isOwner) ...[
             Container(
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.05),
+                color: AppColors.error.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
                 border:
-                    Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    Border.all(color: AppColors.error.withOpacity(0.3)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),

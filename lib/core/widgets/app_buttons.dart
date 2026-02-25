@@ -26,7 +26,7 @@ class PrimaryButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+        disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
         elevation: 0,
         minimumSize: Size(width ?? 0, height ?? 48),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -143,7 +143,7 @@ class PrimaryButtonFullWidth extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+          disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

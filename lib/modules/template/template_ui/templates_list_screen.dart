@@ -267,7 +267,7 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: (color ?? AppColors.textSecondary).withValues(alpha: 0.1),
+        color: (color ?? AppColors.textSecondary).withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(

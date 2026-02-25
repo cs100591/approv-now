@@ -432,8 +432,8 @@ class AnalyticsScreen extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppColors.primary.withValues(alpha: 0.3),
-            AppColors.primary.withValues(alpha: 0.05),
+            AppColors.primary.withOpacity(0.3),
+            AppColors.primary.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(8),
@@ -455,7 +455,7 @@ class AnalyticsScreen extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+            backgroundColor: AppColors.primary.withOpacity(0.1),
             child: Text(
               name.split(' ').map((n) => n[0]).join(),
               style: TextStyle(color: AppColors.primary),
@@ -487,7 +487,7 @@ class AnalyticsScreen extends StatelessWidget {
               vertical: 4,
             ),
             decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
+              color: AppColors.success.withOpacity(0.1),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
