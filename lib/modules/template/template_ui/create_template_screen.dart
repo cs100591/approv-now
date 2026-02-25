@@ -1276,8 +1276,8 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
                       Row(
                         children: [
                           Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _selectedApproverId,
+                            child: DropdownButtonFormField<String?>(
+                              value: _selectedApproverId,
                               decoration: InputDecoration(
                                 labelText: 'Select Approver',
                                 hintText: 'Choose from workspace members',
@@ -1352,8 +1352,7 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
                                 _approverIds.remove(approverId);
                               });
                             },
-                            backgroundColor:
-                                AppColors.primary.withOpacity(0.1),
+                            backgroundColor: AppColors.primary.withOpacity(0.1),
                             side: BorderSide.none,
                           );
                         }).toList(),
