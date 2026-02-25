@@ -119,7 +119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             description: 'Default workspace created automatically',
             createdBy: user.id,
             creatorEmail: user.email,
-            plan: subscriptionProvider.currentPlan.name.toLowerCase(),
+            userPlan: subscriptionProvider.currentPlan.name.toLowerCase(),
           );
 
           if (workspace != null && mounted) {

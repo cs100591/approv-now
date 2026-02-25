@@ -369,7 +369,7 @@ class _WorkspaceSwitchScreenState extends State<WorkspaceSwitchScreen> {
                       : descriptionController.text.trim(),
                   createdBy: authProvider.user!.id,
                   creatorEmail: authProvider.user!.email,
-                  plan: subscriptionProvider.currentPlan.name.toLowerCase(),
+                  userPlan: subscriptionProvider.currentPlan.name.toLowerCase(),
                 );
 
                 if (mounted) {
