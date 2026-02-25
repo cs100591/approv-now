@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "./build-web.sh",
-  "outputDirectory": "build/web",
+  "buildCommand": "echo 'Using pre-built files'",
+  "outputDirectory": "web-dist",
   "framework": null,
   "rewrites": [
     {
