@@ -98,9 +98,19 @@ class RevenueCatService {
   }
 
   /// Get available products/offerings
+  ///
+  /// For development testing, you can use test offerings:
+  /// - Create a test offering in RevenueCat Dashboard with identifier "test"
+  /// - Uncomment the line below to use test offering
   Future<Offerings?> getOfferings() async {
     try {
-      return await Purchases.getOfferings();
+      final offerings = await Purchases.getOfferings();
+
+      // TODO: For development testing only
+      // If you created a "test" offering in RevenueCat Dashboard, uncomment:
+      // return offerings.getOffering("test") ?? offerings.current;
+
+      return offerings;
     } catch (e) {
       debugPrint('❌ Error fetching offerings: $e');
       return null;
