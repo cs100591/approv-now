@@ -67,6 +67,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       AppLogger.error('Failed to initialize RevenueCat', e);
       // Don't fail auth if RevenueCat fails - user can still use basic features
+      // This is expected if products are not configured in RevenueCat Dashboard
     }
   }
 
