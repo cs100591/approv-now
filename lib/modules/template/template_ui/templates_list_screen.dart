@@ -429,11 +429,40 @@ class _TemplatesListScreenState extends State<TemplatesListScreen> {
           final filename =
               '${template.name.replaceAll(' ', '_')}_${_formatDateForFilename(startDate)}_${_formatDateForFilename(endDate)}_Report.xlsx';
 
-          await exportProvider.shareExcel(filename);
-
+          try {
+            await exportProvider.shareExcel(filename);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text(
+                        '✅ Report exported. Check your share sheet to save or send.')),
+              );
+            }
+          } catch (shareError) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('❌ Share failed: $shareError'),
+                  action: SnackBarAction(
+                    label: 'Retry',
+                    onPressed: () async {
+                      try {
+                        await exportProvider.shareExcel(filename);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Retry failed: $e')),
+                        );
+                      }
+                    },
+                  ),
+                ),
+              );
+            }
+          }
+        } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Report exported successfully')),
+              const SnackBar(content: Text('❌ Failed to generate Excel file')),
             );
           }
         }

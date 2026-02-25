@@ -1174,28 +1174,21 @@ class ExcelService {
   Future<void> shareExcel(Uint8List bytes, String filename,
       {Rect? sharePositionOrigin}) async {
     try {
-      if (kIsWeb) {
-        await Share.shareXFiles(
-          [
-            XFile.fromData(bytes,
-                name: filename,
-                mimeType:
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
-          ],
-          subject: 'Approval Request Export',
-          sharePositionOrigin: sharePositionOrigin,
-        );
-        return;
-      }
-      final path = await saveExcel(bytes, filename);
-      if (path != null) {
-        await Share.shareXFiles(
-          [XFile(path)],
-          subject: 'Approval Request Export',
-          text: 'Please find the approval request data attached.',
-          sharePositionOrigin: sharePositionOrigin,
-        );
-      }
+      // Share directly from memory bytes - works on all platforms including iOS
+      // This avoids file permission issues and provides immediate share sheet
+      await Share.shareXFiles(
+        [
+          XFile.fromData(bytes,
+              name: filename,
+              mimeType:
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+        ],
+        subject: 'Approval Request Export',
+        text: 'Please find the approval request data attached.',
+        sharePositionOrigin: sharePositionOrigin,
+      );
+
+      AppLogger.info('Excel shared successfully: $filename');
     } catch (e) {
       AppLogger.error('Error sharing Excel', e);
       rethrow;
