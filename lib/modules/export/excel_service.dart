@@ -1,11 +1,10 @@
-import 'dart:typed_data';
-import 'dart:ui' show Rect;
-import 'package:excel/excel.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:excel/excel.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/utils/app_logger.dart';
 import '../request/request_models.dart';
 import '../workspace/workspace_models.dart';
@@ -1174,21 +1173,35 @@ class ExcelService {
   Future<void> shareExcel(Uint8List bytes, String filename,
       {Rect? sharePositionOrigin}) async {
     try {
-      // Share directly from memory bytes - works on all platforms including iOS
-      // This avoids file permission issues and provides immediate share sheet
-      await Share.shareXFiles(
-        [
-          XFile.fromData(bytes,
-              name: filename,
-              mimeType:
-                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
-        ],
-        subject: 'Approval Request Export',
-        text: 'Please find the approval request data attached.',
-        sharePositionOrigin: sharePositionOrigin,
-      );
+      if (kIsWeb) {
+        // Web: share directly from memory
+        await Share.shareXFiles(
+          [
+            XFile.fromData(bytes,
+                name: filename,
+                mimeType:
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+          ],
+          subject: 'Approval Request Export',
+          text: 'Please find the approval request data attached.',
+          sharePositionOrigin: sharePositionOrigin,
+        );
+        return;
+      }
 
-      AppLogger.info('Excel shared successfully: $filename');
+      // iOS/Android: Save to file first, then share (required for proper share sheet)
+      final path = await saveExcel(bytes, filename);
+      if (path != null) {
+        await Share.shareXFiles(
+          [XFile(path)],
+          subject: 'Approval Request Export',
+          text: 'Please find the approval request data attached.',
+          sharePositionOrigin: sharePositionOrigin,
+        );
+        AppLogger.info('Excel shared successfully: $filename');
+      } else {
+        throw Exception('Failed to save Excel file for sharing');
+      }
     } catch (e) {
       AppLogger.error('Error sharing Excel', e);
       rethrow;

@@ -176,7 +176,13 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
 
     // All workspace members inherit the workspace owner's plan settings
     // This ensures consistent PDF export for all members (Pro members get Pro exports)
-    final displayPlan = workspace.plan.isNotEmpty ? workspace.plan : 'free';
+    final displayPlan =
+        workspace.plan.isNotEmpty ? workspace.plan.toLowerCase() : 'free';
+
+    // Debug logging to trace plan and watermark settings
+    debugPrint('📄 PDF Export - workspace.plan: ${workspace.plan}');
+    debugPrint('📄 PDF Export - displayPlan: $displayPlan');
+    debugPrint('📄 PDF Export - settings: ${workspace.settings}');
 
     final bool isPro = displayPlan == 'pro' || displayPlan == 'business';
     final bool canRemoveWatermark = displayPlan != 'free';
@@ -189,6 +195,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     final bool addLogo = workspace.settings['pdfAddLogo'] == true;
 
     final includeWatermark = !removeWatermarkSetting;
+    debugPrint('📄 PDF Export - canRemoveWatermark: $canRemoveWatermark');
+    debugPrint(
+        '📄 PDF Export - removeWatermarkSetting: $removeWatermarkSetting');
+    debugPrint('📄 PDF Export - includeWatermark: $includeWatermark');
 
     String headerMode = 'brand';
     if (customHeader) {
