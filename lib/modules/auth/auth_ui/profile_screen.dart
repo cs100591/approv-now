@@ -449,6 +449,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
+              // Clear workspace state before logout
+              context.read<WorkspaceProvider>().clearCurrentUser();
               await context.read<AuthProvider>().logout();
               if (context.mounted) {
                 Navigator.pushNamedAndRemoveUntil(

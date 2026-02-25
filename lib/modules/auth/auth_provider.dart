@@ -176,10 +176,16 @@ class AuthProvider extends ChangeNotifier {
       await BiometricService().disableBiometric();
       await _authService.signOut();
       // Stream fires signedOut → _listenToAuthChanges sets unauthenticated.
+      // Reset all state to ensure clean logout
+      _operationLoading = false;
+      _operationError = null;
+      _state = const AuthState(status: AuthStatus.unauthenticated);
+      notifyListeners();
     } catch (e) {
       AppLogger.error('Logout error', e);
       // Force unauthenticated even if signOut threw (e.g. network error).
       _operationLoading = false;
+      _operationError = null;
       _state = const AuthState(status: AuthStatus.unauthenticated);
       notifyListeners();
     }

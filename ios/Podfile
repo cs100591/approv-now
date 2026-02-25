@@ -42,13 +42,17 @@ post_install do |installer|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       
-      # Strip simulator architectures from all frameworks for App Store submission
-      config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      # Only strip simulator architectures for Release builds (App Store submission)
+      # Debug builds need arm64 for simulator
+      if config.name == 'Release' || config.name == 'Profile'
+        config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      else
+        config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+      end
     end
   end
   
-  # Remove simulator slices from frameworks for App Store submission
-  # This fixes the "objective_c.framework" arm64 slice issue
-  system('cd Pods && find . -name "*.framework" -exec sh -c \'lipo -info "{}" 2>/dev/null | grep -q "x86_64\\|i386" && lipo -remove x86_64 -output "{}" "{}" 2>/dev/null; lipo -remove i386 -output "{}" "{}" 2>/dev/null\' \\; || true')
+  # Note: Architecture stripping for App Store is now handled in build_settings above
+  # The EXCLUDED_ARCHS setting in Release/Profile configs handles this automatically
 end

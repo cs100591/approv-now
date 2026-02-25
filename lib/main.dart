@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -73,18 +74,43 @@ void main() async {
     return true;
   };
 
-  // Initialize Supabase
+  // Initialize Supabase with timeout protection
+  Timer? initTimeout;
+  bool initializationCompleted = false;
+
   try {
+    // Set up a safety timeout (10 seconds) to prevent watchdog termination
+    initTimeout = Timer(Duration(seconds: 10), () {
+      if (!initializationCompleted) {
+        AppLogger.error(
+            '⚠️ App initialization timeout - Watchdog may terminate app');
+        runApp(InitializationTimeoutApp());
+      }
+    });
+
     final supabaseService = SupabaseService();
-    await supabaseService.initialize();
+
+    // Initialize with 8-second timeout
+    await supabaseService.initialize().timeout(Duration(seconds: 8),
+        onTimeout: () {
+      throw TimeoutException(
+          'Supabase initialization timed out after 8 seconds. '
+          'This may be due to poor network connectivity.');
+    });
+
+    initializationCompleted = true;
+    initTimeout.cancel();
+
     AppLogger.info('✅ Supabase initialized successfully');
     AppLogger.info(
         '📱 Project: ${supabaseService.currentUserId ?? "Not logged in"}');
 
     runApp(const MyApp());
   } catch (e) {
+    initializationCompleted = true;
+    initTimeout?.cancel();
     AppLogger.error('❌ Supabase initialization failed: $e');
-    runApp(SupabaseInitializationErrorApp(error: e));
+    runApp(InitializationErrorApp(error: e.toString()));
   }
 }
 
@@ -261,6 +287,138 @@ class SupabaseInitializationErrorApp extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// App shown when initialization times out (prevents watchdog crash)
+class InitializationTimeoutApp extends StatelessWidget {
+  const InitializationTimeoutApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.wifi_off,
+                    size: 64,
+                    color: Colors.orange,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Connection Timeout',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'The app is taking longer than expected to initialize. '
+                    'This may be due to poor network connectivity.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      // Restart the app
+                      main();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () {
+                      // Continue in offline mode
+                      runApp(const MyApp());
+                    },
+                    child: const Text('Continue Offline'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// App shown when initialization fails with specific error
+class InitializationErrorApp extends StatelessWidget {
+  final String error;
+
+  const InitializationErrorApp({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Initialization Error',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    error,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      main();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -6,6 +6,9 @@ import 'subscription_service.dart';
 import 'revenuecat_config.dart';
 
 /// RevenueCat service - Handles all in-app purchase operations
+///
+/// This service is designed to fail gracefully - if RevenueCat fails to
+/// initialize, the app will continue to work with the free plan.
 class RevenueCatService {
   static final RevenueCatService _instance = RevenueCatService._internal();
   factory RevenueCatService() => _instance;
@@ -15,55 +18,61 @@ class RevenueCatService {
 
   SubscriptionService? _subscriptionService;
   bool _isInitialized = false;
+  bool _initializationFailed = false;
+
+  /// Check if RevenueCat is initialized
+  bool get isInitialized => _isInitialized;
+
+  /// Check if initialization failed (app can still function)
+  bool get initializationFailed => _initializationFailed;
 
   /// Initialize RevenueCat SDK
   ///
-  /// NOTE: You need to configure your actual RevenueCat API keys in the Dashboard:
-  /// - iOS: Use your iOS API key (starts with appl_)
-  /// - Android: Use your Android API key (starts with goog_)
-  /// - Web: RevenueCat does not support web purchases
-  ///
-  /// Get your keys from: https://app.revenuecat.com/settings/api-keys
+  /// This method is safe to call multiple times and will not crash the app
+  /// if RevenueCat fails to initialize. The app will continue to work
+  /// with the free plan.
   Future<void> initialize(String userId) async {
     if (_isInitialized) return;
+    if (_initializationFailed) {
+      debugPrint(
+          '⚠️ RevenueCat initialization was previously failed. Skipping.');
+      return;
+    }
 
     try {
-      // Get platform-specific API key
-      // Using the provided RevenueCat API key
-      const apiKey = 'appl_rbDFMjFEccCpjTqajpmrXQVFNNR';
+      // Verify configuration before initializing
+      RevenueCatConfig.verifyProductionConfiguration();
 
-      if (kIsWeb) {
-        // RevenueCat does not support web purchases
-        debugPrint('⚠️ RevenueCat does not support web purchases');
+      // Attempt to initialize
+      final success = await RevenueCatConfig.initialize(userId: userId);
+
+      if (!success) {
+        _initializationFailed = true;
+        debugPrint(
+            '⚠️ RevenueCat initialization failed. App will use free plan.');
         return;
-      } else {
-        // Use dart:io Platform for mobile
-        if (Platform.isIOS) {
-          debugPrint('🍎 Initializing RevenueCat for iOS');
-        } else if (Platform.isAndroid) {
-          debugPrint('🤖 Initializing RevenueCat for Android');
-        }
       }
-
-      // Configure RevenueCat
-      await Purchases.setLogLevel(LogLevel.debug);
-      final configuration = PurchasesConfiguration(apiKey)..appUserID = userId;
-
-      await Purchases.configure(configuration);
 
       // Set up listener for purchase updates
       Purchases.addCustomerInfoUpdateListener(_handlePurchaseUpdate);
 
       _isInitialized = true;
-      debugPrint('✅ RevenueCat initialized for user: $userId');
-    } catch (e) {
+      debugPrint('✅ RevenueCat fully initialized for user: $userId');
+    } catch (e, stackTrace) {
+      _initializationFailed = true;
       debugPrint('❌ RevenueCat initialization error: $e');
-      rethrow;
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint(
+          'ℹ️ App will continue with free plan. Subscriptions unavailable.');
+
+      // Don't rethrow - app should continue to function
     }
   }
 
   /// Handle purchase status updates
   void _handlePurchaseUpdate(CustomerInfo customerInfo) {
+    if (_subscriptionService == null) return;
+
     try {
       // Get entitlements
       final entitlementInfo = customerInfo.entitlements.all['pro'];
@@ -99,17 +108,15 @@ class RevenueCatService {
 
   /// Get available products/offerings
   ///
-  /// For development testing, you can use test offerings:
-  /// - Create a test offering in RevenueCat Dashboard with identifier "test"
-  /// - Uncomment the line below to use test offering
+  /// Returns null if RevenueCat is not initialized or failed to initialize
   Future<Offerings?> getOfferings() async {
+    if (!_isInitialized) {
+      debugPrint('⚠️ RevenueCat not initialized. Cannot fetch offerings.');
+      return null;
+    }
+
     try {
       final offerings = await Purchases.getOfferings();
-
-      // TODO: For development testing only
-      // If you created a "test" offering in RevenueCat Dashboard, uncomment:
-      // return offerings.getOffering("test") ?? offerings.current;
-
       return offerings;
     } catch (e) {
       debugPrint('❌ Error fetching offerings: $e');
@@ -118,7 +125,14 @@ class RevenueCatService {
   }
 
   /// Purchase a package
+  ///
+  /// Returns false if RevenueCat is not initialized or purchase failed
   Future<bool> purchasePackage(Package package) async {
+    if (!_isInitialized) {
+      debugPrint('⚠️ RevenueCat not initialized. Cannot purchase.');
+      return false;
+    }
+
     try {
       final customerInfo = await Purchases.purchasePackage(package);
       return customerInfo.entitlements.all.values.any((e) => e.isActive);
@@ -129,7 +143,14 @@ class RevenueCatService {
   }
 
   /// Restore purchases
+  ///
+  /// Returns false if RevenueCat is not initialized or restore failed
   Future<bool> restorePurchases() async {
+    if (!_isInitialized) {
+      debugPrint('⚠️ RevenueCat not initialized. Cannot restore purchases.');
+      return false;
+    }
+
     try {
       final customerInfo = await Purchases.restorePurchases();
       return customerInfo.entitlements.all.values.any((e) => e.isActive);
@@ -140,7 +161,14 @@ class RevenueCatService {
   }
 
   /// Get current customer info
+  ///
+  /// Returns null if RevenueCat is not initialized
   Future<CustomerInfo?> getCustomerInfo() async {
+    if (!_isInitialized) {
+      debugPrint('⚠️ RevenueCat not initialized. Cannot get customer info.');
+      return null;
+    }
+
     try {
       return await Purchases.getCustomerInfo();
     } catch (e) {
@@ -150,7 +178,14 @@ class RevenueCatService {
   }
 
   /// Check if user has active subscription
+  ///
+  /// Returns false if RevenueCat is not initialized
   Future<bool> hasActiveSubscription() async {
+    if (!_isInitialized) {
+      debugPrint('⚠️ RevenueCat not initialized. Cannot check subscription.');
+      return false;
+    }
+
     try {
       final customerInfo = await Purchases.getCustomerInfo();
       return customerInfo.entitlements.all.values.any((e) => e.isActive);
@@ -162,16 +197,29 @@ class RevenueCatService {
 
   /// Log out user (clear RevenueCat data)
   Future<void> logout() async {
+    if (!_isInitialized) {
+      debugPrint('⚠️ RevenueCat not initialized. Nothing to log out.');
+      return;
+    }
+
     try {
       await Purchases.logOut();
       _isInitialized = false;
+      _initializationFailed = false;
     } catch (e) {
       debugPrint('❌ Logout error: $e');
     }
   }
 
-  /// Dispose
+  /// Dispose and cleanup
   void dispose() {
-    Purchases.removeCustomerInfoUpdateListener(_handlePurchaseUpdate);
+    if (_isInitialized) {
+      Purchases.removeCustomerInfoUpdateListener(_handlePurchaseUpdate);
+    }
+  }
+
+  /// Set subscription service for callbacks
+  void setSubscriptionService(SubscriptionService service) {
+    _subscriptionService = service;
   }
 }

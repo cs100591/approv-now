@@ -12,8 +12,6 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
-	<key>CFBundleDisplayName</key>
-	<string>Approv Now</string>
 	<key>CFBundleName</key>
 	<string>approve_now</string>
 	<key>CFBundlePackageType</key>
@@ -48,6 +46,20 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	
+	<!-- App Transport Security - Allow HTTP for development if needed -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+	
+	<!-- Background Modes - Required for push notifications -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	
 	<!-- Privacy Permissions -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Approv Now needs access to your photo library to upload workspace logos and attachment photos for approval requests.</string>
@@ -64,5 +76,22 @@
 	<!-- Face ID Permission -->
 	<key>NSFaceIDUsageDescription</key>
 	<string>Approv Now uses Face ID to enable quick and secure access to your account.</string>
+	
+	<!-- Push Notification Permission -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Approv Now sends notifications for approval requests, team member activities, and important updates.</string>
+	
+	<!-- URL Scheme for Supabase Auth -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.approvenow.approveNow</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>approvnow</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

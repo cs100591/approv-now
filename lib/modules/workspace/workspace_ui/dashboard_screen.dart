@@ -349,6 +349,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
+                  context.read<WorkspaceProvider>().clearCurrentUser();
                   context.read<AuthProvider>().logout();
                   Navigator.pushNamedAndRemoveUntil(
                     context,
@@ -496,6 +497,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
+              context.read<WorkspaceProvider>().clearCurrentUser();
               context.read<AuthProvider>().logout();
               Navigator.pushReplacementNamed(context, RouteNames.login);
             },

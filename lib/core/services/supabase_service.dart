@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 import '../utils/app_logger.dart';
@@ -82,6 +83,7 @@ class SupabaseService {
         data: {
           if (displayName != null) 'display_name': displayName,
         },
+        emailRedirectTo: kIsWeb ? null : 'approvnow://auth/callback',
       );
       AppLogger.info('User signed up: $email');
       return response;

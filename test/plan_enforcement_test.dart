@@ -121,8 +121,8 @@ void main() {
         expect(PlanGuardService.canUseCustomHeader(plan), isFalse);
       });
 
-      test('should allow email notifications', () {
-        expect(PlanGuardService.canUseEmailNotification(plan), isTrue);
+      test('should not allow email notifications (Pro only)', () {
+        expect(PlanGuardService.canUseEmailNotification(plan), isFalse);
       });
 
       test('should allow excel export', () {
