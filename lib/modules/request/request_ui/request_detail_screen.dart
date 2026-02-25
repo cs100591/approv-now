@@ -166,7 +166,6 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     if (_request == null) return;
     final exportProvider = context.read<ExportProvider>();
     final workspaceProvider = context.read<WorkspaceProvider>();
-    final subscriptionProvider = context.read<SubscriptionProvider>();
     final workspace = workspaceProvider.currentWorkspace;
     if (workspace == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -175,10 +174,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       return;
     }
 
-    // Use the current user's subscription plan for PDF export settings
-    // This ensures the export respects the user's actual plan (not just workspace default)
-    final currentPlan = subscriptionProvider.currentPlan;
-    final String displayPlan = currentPlan.name.toLowerCase();
+    // All workspace members inherit the workspace owner's plan settings
+    // This ensures consistent PDF export for all members (Pro members get Pro exports)
+    final displayPlan = workspace.plan.isNotEmpty ? workspace.plan : 'free';
 
     final bool isPro = displayPlan == 'pro' || displayPlan == 'business';
     final bool canRemoveWatermark = displayPlan != 'free';
