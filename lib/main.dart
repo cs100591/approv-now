@@ -74,13 +74,16 @@ void main() async {
   // Note: Firebase is only used for FCM, all data storage is via Supabase
   if (!kIsWeb) {
     try {
-      // Register background message handler BEFORE Firebase initializes
-      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-      AppLogger.info('✅ FCM background handler registered');
+      // Add a small delay to ensure native side is ready
+      await Future.delayed(Duration(milliseconds: 100));
 
-      // Initialize Firebase
+      // Initialize Firebase FIRST
       await Firebase.initializeApp();
       AppLogger.info('✅ Firebase initialized for push notifications');
+
+      // Then register background message handler
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      AppLogger.info('✅ FCM background handler registered');
 
       // Initialize FCM Service
       final fcmInitialized = await FCMService.initialize();

@@ -9,30 +9,36 @@ import UIKit
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     
-    // Initialize Firebase
-    FirebaseApp.configure()
-    print("✅ Firebase configured in AppDelegate")
-    
-    // Register for remote notifications
-    UNUserNotificationCenter.current().delegate = self
-    
-    let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-    UNUserNotificationCenter.current().requestAuthorization(
-      options: authOptions,
-      completionHandler: { granted, error in
-        if granted {
-          print("✅ Push notification permission granted")
-        } else {
-          print("❌ Push notification permission denied: \(error?.localizedDescription ?? "unknown")")
+    do {
+      // Initialize Firebase
+      // Note: Firebase imports are in Runner-Bridging-Header.h
+      FirebaseApp.configure()
+      print("✅ Firebase configured in AppDelegate")
+      
+      // Register for remote notifications
+      UNUserNotificationCenter.current().delegate = self
+      
+      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+      UNUserNotificationCenter.current().requestAuthorization(
+        options: authOptions,
+        completionHandler: { granted, error in
+          if granted {
+            print("✅ Push notification permission granted")
+          } else {
+            print("❌ Push notification permission denied: \(error?.localizedDescription ?? "unknown")")
+          }
         }
-      }
-    )
-    
-    application.registerForRemoteNotifications()
-    print("✅ Registered for remote notifications")
-    
-    // Set Messaging delegate
-    Messaging.messaging().delegate = self
+      )
+      
+      application.registerForRemoteNotifications()
+      print("✅ Registered for remote notifications")
+      
+      // Set Messaging delegate
+      Messaging.messaging().delegate = self
+      
+    } catch {
+      print("❌ Error initializing Firebase: \(error)")
+    }
     
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -106,9 +112,6 @@ extension AppDelegate: MessagingDelegate {
   func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
     if let token = fcmToken {
       print("✅ FCM Token received in AppDelegate: \(token)")
-      
-      // Send token to Flutter via MethodChannel if needed
-      // Or it will be handled by the Flutter firebase_messaging plugin
     } else {
       print("❌ FCM Token is nil")
     }
