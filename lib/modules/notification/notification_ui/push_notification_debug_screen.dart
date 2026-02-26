@@ -3,6 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/services/supabase_service.dart';
 import '../fcm_service.dart';
+import '../push_notification_tester.dart';
 
 /// Debug screen for testing push notifications
 class PushNotificationDebugScreen extends StatefulWidget {
@@ -45,6 +46,40 @@ class _PushNotificationDebugScreenState
     } catch (e) {
       setState(() {
         _error = 'Failed to check token: $e';
+      });
+    }
+  }
+
+  Future<void> _testDirectHttp() async {
+    setState(() {
+      _isLoading = true;
+      _status = 'Testing direct HTTP call...';
+      _error = null;
+    });
+
+    try {
+      final supabase = SupabaseService();
+      final userId = supabase.currentUserId;
+
+      if (userId == null) {
+        setState(() {
+          _error = 'User not logged in';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      await PushNotificationTester.testDirectHttpCall(userId);
+
+      setState(() {
+        _status = 'Direct HTTP test completed! Check Xcode logs.';
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Error: $e';
+        _status = 'Direct HTTP test failed';
+        _isLoading = false;
       });
     }
   }
@@ -280,6 +315,23 @@ class _PushNotificationDebugScreenState
               '5. Refresh from Database',
               _checkCurrentToken,
               Icons.refresh,
+            ),
+            const SizedBox(height: 16),
+            Divider(),
+            const SizedBox(height: 16),
+            _buildButton(
+              '🔴 TEST: Direct HTTP Call (CRITICAL)',
+              _testDirectHttp,
+              Icons.http,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This bypasses Supabase client and calls Edge Function directly via HTTP',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.red,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ],
         ),
