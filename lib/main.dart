@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
@@ -65,6 +67,18 @@ import 'modules/plan_enforcement/plan_guard_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase (for push notifications only)
+  // Note: Firebase is only used for FCM, all data storage is via Supabase
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      AppLogger.info('✅ Firebase initialized for push notifications');
+    } catch (e) {
+      AppLogger.error('❌ Failed to initialize Firebase', e);
+      // Continue without Firebase - app will still work with in-app notifications
+    }
+  }
 
   // Setup global error handling
   setupErrorHandling();

@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/config/app_config.dart';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/stream_helper.dart';
-import 'email_service.dart';
 import 'notification_models.dart';
-import 'notification_settings_repository.dart';
 
 /// NotificationRepository - Database operations for notifications
 class NotificationRepository {
@@ -175,25 +172,16 @@ class NotificationRepository {
 }
 
 /// NotificationService - Business logic for notifications
+/// Note: Email notifications have been removed
 class NotificationService {
   final NotificationRepository _repository;
   final PushService _pushService;
-  final EmailService _emailService;
-  final SupabaseService _supabase;
-  final NotificationSettingsRepository _settingsRepository;
 
   NotificationService({
     NotificationRepository? repository,
     PushService? pushService,
-    EmailService? emailService,
-    SupabaseService? supabase,
-    NotificationSettingsRepository? settingsRepository,
   })  : _repository = repository ?? NotificationRepository(),
-        _pushService = pushService ?? PushService(),
-        _emailService = emailService ?? EmailService(),
-        _supabase = supabase ?? SupabaseService(),
-        _settingsRepository =
-            settingsRepository ?? NotificationSettingsRepository();
+        _pushService = pushService ?? PushService();
 
   /// Create invitation notification
   Future<AppNotification> createInvitationNotification({
@@ -232,71 +220,7 @@ class NotificationService {
       },
     );
 
-    // Send invitation email if email is provided
-    // Note: Invitations are special - we send to the provided email address
-    // regardless of user settings since the recipient may not be registered yet
-    if (recipientEmail != null) {
-      AppLogger.info(
-          '📧 [NotificationService] Sending invitation email to: $recipientEmail');
-      final success = await _emailService.sendInvitationEmail(
-        email: recipientEmail,
-        workspaceName: workspaceName,
-        inviterName: inviterName,
-        inviteToken: invitationToken,
-        workspaceId: workspaceId,
-      );
-      AppLogger.info(
-          '📧 [NotificationService] Invitation email result: $success');
-    } else {
-      AppLogger.info(
-          '📧 [NotificationService] No recipient email provided for invitation');
-    }
-
     return notification;
-  }
-
-  /// Get user email by user ID using database function
-  /// This queries auth.users which is not directly accessible from client
-  Future<String?> _getUserEmail(String userId) async {
-    try {
-      AppLogger.info(
-          '📧 [NotificationService] Looking up email for userId: $userId');
-
-      // Use the database function to get email from auth.users
-      final response = await _supabase.client
-          .rpc('get_user_email', params: {'user_id': userId});
-
-      if (response != null) {
-        AppLogger.info(
-            '📧 [NotificationService] Found email for user $userId: $response');
-        return response as String;
-      }
-
-      AppLogger.warning(
-          '📧 [NotificationService] No email found for user $userId');
-      return null;
-    } catch (e, stackTrace) {
-      AppLogger.warning(
-          '📧 [NotificationService] Failed to get email for user $userId: $e',
-          stackTrace);
-      return null;
-    }
-  }
-
-  /// Check if user has email notifications enabled
-  /// Returns false if settings don't exist or are disabled
-  Future<bool> _isEmailNotificationsEnabled(String userId) async {
-    try {
-      final settings = await _settingsRepository.getUserSettings(userId);
-      final enabled = settings?.emailNotificationsEnabled ?? false;
-      AppLogger.info(
-          '📧 [NotificationService] Email notifications enabled for user $userId: $enabled');
-      return enabled;
-    } catch (e) {
-      AppLogger.warning(
-          '📧 [NotificationService] Error checking email settings for user $userId: $e');
-      return false;
-    }
   }
 
   /// Create pending request notification
@@ -335,31 +259,6 @@ class NotificationService {
         'notification_id': notification.id,
       },
     );
-
-    // Send email notification if user has enabled it
-    final emailEnabled = await _isEmailNotificationsEnabled(userId);
-    if (emailEnabled) {
-      final email = await _getUserEmail(userId);
-      if (email != null) {
-        AppLogger.info(
-            '📧 [NotificationService] Sending approval request email to: $email');
-        final success = await _emailService.sendApprovalRequestEmail(
-          email: email,
-          requestorName: submitterName,
-          templateName: requestTitle,
-          workspaceName: workspaceName,
-          workspaceId: workspaceId,
-        );
-        AppLogger.info(
-            '📧 [NotificationService] Approval request email result: $success');
-      } else {
-        AppLogger.warning(
-            '📧 [NotificationService] No email found for user: $userId');
-      }
-    } else {
-      AppLogger.info(
-          '📧 [NotificationService] User has email notifications disabled or no settings');
-    }
 
     return notification;
   }
@@ -400,30 +299,6 @@ class NotificationService {
         'notification_id': notification.id,
       },
     );
-
-    // Send email notification if user has enabled it
-    final emailEnabled = await _isEmailNotificationsEnabled(userId);
-    if (emailEnabled) {
-      final email = await _getUserEmail(userId);
-      if (email != null) {
-        AppLogger.info(
-            '📧 [NotificationService] Sending approval completed email to: $email');
-        final success = await _emailService.sendApprovalCompletedEmail(
-          email: email,
-          templateName: requestTitle,
-          workspaceName: workspaceName,
-          workspaceId: workspaceId,
-        );
-        AppLogger.info(
-            '📧 [NotificationService] Approval completed email result: $success');
-      } else {
-        AppLogger.warning(
-            '📧 [NotificationService] No email found for user: $userId');
-      }
-    } else {
-      AppLogger.info(
-          '📧 [NotificationService] User has email notifications disabled or no settings');
-    }
 
     return notification;
   }
@@ -469,31 +344,6 @@ class NotificationService {
         'notification_id': notification.id,
       },
     );
-
-    // Send email notification if user has enabled it
-    final emailEnabled = await _isEmailNotificationsEnabled(userId);
-    if (emailEnabled) {
-      final email = await _getUserEmail(userId);
-      if (email != null) {
-        AppLogger.info(
-            '📧 [NotificationService] Sending rejection email to: $email');
-        final success = await _emailService.sendRejectionEmail(
-          email: email,
-          templateName: requestTitle,
-          workspaceName: workspaceName,
-          workspaceId: workspaceId,
-          reason: reason,
-        );
-        AppLogger.info(
-            '📧 [NotificationService] Rejection email result: $success');
-      } else {
-        AppLogger.warning(
-            '📧 [NotificationService] No email found for user: $userId');
-      }
-    } else {
-      AppLogger.info(
-          '📧 [NotificationService] User has email notifications disabled or no settings');
-    }
 
     return notification;
   }
@@ -564,22 +414,52 @@ class NotificationService {
   }
 }
 
-/// PushService - Handles FCM push notifications
+/// PushService - Handles FCM push notifications via Supabase Edge Functions
 class PushService {
+  final SupabaseService _supabase;
   final List<PendingPush> _pendingPushes = [];
+
+  PushService({SupabaseService? supabase})
+      : _supabase = supabase ?? SupabaseService();
 
   void initialize(String userId) {
     // Track userId for future push routing if needed
+    AppLogger.info('PushService initialized for user: $userId');
   }
 
+  /// Send push notification to user via Supabase Edge Function
   Future<void> sendPushNotification({
     required String userId,
     required String title,
     required String body,
     Map<String, dynamic>? data,
   }) async {
-    AppLogger.info('Push notification for $userId: $title - $body');
+    AppLogger.info('📨 Sending push notification to user $userId: $title');
 
+    try {
+      // Call Supabase Edge Function to send FCM notification
+      final response = await _supabase.client.functions.invoke(
+        'send-push-notification',
+        body: {
+          'userId': userId,
+          'title': title,
+          'body': body,
+          'data': data ?? {},
+        },
+      );
+
+      if (response.status == 200) {
+        AppLogger.info('✅ Push notification sent successfully');
+      } else {
+        AppLogger.warning(
+            '⚠️ Push notification failed with status: ${response.status}');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Failed to send push notification', e);
+      // Don't throw - notification failure shouldn't break the app
+    }
+
+    // Keep local tracking for testing/debugging
     _pendingPushes.add(PendingPush(
       userId: userId,
       title: title,
@@ -593,17 +473,20 @@ class PushService {
     }
   }
 
+  /// Save FCM token to local storage (legacy, use FCMService for backend storage)
   Future<void> saveFcmToken(String userId, String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('fcm_token_$userId', token);
-    AppLogger.info('FCM token saved for user $userId');
+    AppLogger.info('FCM token saved locally for user $userId');
   }
 
+  /// Get FCM token from local storage
   Future<String?> getFcmToken(String userId) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('fcm_token_$userId');
   }
 
+  /// Get pending pushes for user (for debugging)
   List<PendingPush> getPendingPushesForUser(String userId) {
     return _pendingPushes.where((p) => p.userId == userId).toList();
   }

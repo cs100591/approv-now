@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../l10n/app_localizations.dart';
-import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../auth/auth_provider.dart';
-import '../notification_settings_repository.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -18,112 +14,9 @@ class NotificationSettingsScreen extends StatefulWidget {
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   bool _pushNotificationsEnabled = true;
-  bool _emailNotificationsEnabled = false;
-  bool _isLoading = true;
-  bool _isSaving = false;
-  String? _error;
-
-  late NotificationSettingsRepository _settingsRepository;
-
-  @override
-  void initState() {
-    super.initState();
-    _settingsRepository = NotificationSettingsRepository();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final authProvider = context.read<AuthProvider>();
-      final userId = authProvider.user?.id;
-
-      if (userId == null) {
-        setState(() {
-          _error = 'User not logged in';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final settings = await _settingsRepository.getUserSettings(userId);
-
-      setState(() {
-        _emailNotificationsEnabled =
-            settings?.emailNotificationsEnabled ?? false;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load settings: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _saveEmailSettings(bool enabled) async {
-    setState(() {
-      _isSaving = true;
-    });
-
-    try {
-      final authProvider = context.read<AuthProvider>();
-      final userId = authProvider.user?.id;
-
-      if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User not logged in')),
-        );
-        return;
-      }
-
-      await _settingsRepository.updateSettings(
-        userId: userId,
-        emailNotificationsEnabled: enabled,
-      );
-
-      setState(() {
-        _emailNotificationsEnabled = enabled;
-        _isSaving = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            enabled
-                ? 'Email notifications enabled'
-                : 'Email notifications disabled',
-          ),
-        ),
-      );
-    } catch (e) {
-      setState(() {
-        _isSaving = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save settings: $e')),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('Notification Settings'),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -134,34 +27,7 @@ class _NotificationSettingsScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Error message if any
-            if (_error != null) ...[
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline, color: AppColors.error),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.error,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-
-            // Push Notifications Master Switch
+            // Push Notifications
             _buildSettingCard(
               title: 'Push Notifications',
               subtitle: 'Receive push notifications on your device',
@@ -175,27 +41,6 @@ class _NotificationSettingsScreenState
                 },
                 activeColor: AppColors.primary,
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Email Notifications (now available to all users)
-            _buildSettingCard(
-              title: 'Email Notifications',
-              subtitle: _emailNotificationsEnabled
-                  ? 'You will receive email notifications for approvals and requests'
-                  : 'Enable to receive email notifications (disabled by default to save costs)',
-              icon: Icons.email,
-              trailing: _isSaving
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Switch(
-                      value: _emailNotificationsEnabled,
-                      onChanged: _saveEmailSettings,
-                      activeColor: AppColors.primary,
-                    ),
             ),
             const SizedBox(height: AppSpacing.lg),
 
@@ -216,7 +61,7 @@ class _NotificationSettingsScreenState
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          'About Email Notifications',
+                          'Notification Types',
                           style: AppTextStyles.bodyLarge.copyWith(
                             fontWeight: FontWeight.w600,
                             color: AppColors.info,
@@ -227,11 +72,11 @@ class _NotificationSettingsScreenState
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Email notifications are disabled by default to help manage costs. '
-                    'Enable this feature if you want to receive emails when:\n\n'
-                    '• Someone submits a request for your approval\n'
-                    '• Your request is approved or rejected\n'
-                    '• You are invited to a workspace',
+                    'You will receive notifications for:\n\n'
+                    '• New requests requiring your approval\n'
+                    '• Status updates on your requests\n'
+                    '• Workspace invitations\n'
+                    '• Request revisions and restarts',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),

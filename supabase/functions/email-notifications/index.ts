@@ -18,84 +18,20 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  try {
-    // Use service_role key to bypass RLS and access any user's profile
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        }
-      }
-    )
-
-    const { type, data } = await req.json()
-
-    // Log request details for debugging
-    const workspaceIdentifier = data.workspaceId || data.workspace_id;
-    console.log('📧 Email notification request:', { type, workspaceIdentifier, workspaceName: data.workspaceName });
-    
-    // Note: Pro plan check removed - all users can use email notifications
-    // Email sending is controlled by user preferences in the Flutter app
-    // --- PRO PLAN CHECK END ---
-
-    // Get Resend API key from environment
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
-
-    if (!resendApiKey) {
-      console.log('Resend API key not configured - email notifications disabled')
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Email notifications are not configured'
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      )
+  // Email notifications are disabled
+  // This function is kept for API compatibility but does not send emails
+  console.log('Email notifications are disabled')
+  
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      message: 'Email notifications are currently disabled' 
+    }),
+    {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
     }
-
-    let emailResponse
-
-    switch (type) {
-      case 'invitation':
-        emailResponse = await sendInvitationEmail(resendApiKey, data)
-        break
-      case 'approval_request':
-        emailResponse = await sendApprovalRequestEmail(resendApiKey, data)
-        break
-      case 'approval_completed':
-        emailResponse = await sendApprovalCompletedEmail(resendApiKey, data)
-        break
-      case 'request_rejected':
-        emailResponse = await sendRejectionEmail(resendApiKey, data)
-        break
-      default:
-        throw new Error(`Unknown email type: ${type}`)
-    }
-
-    return new Response(
-      JSON.stringify({ success: true, data: emailResponse }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    )
-
-  } catch (error) {
-    console.error('Error in email-notifications function:', error)
-
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
-  }
+  )
 })
 
 // === RESEND EMAIL FUNCTIONS ===

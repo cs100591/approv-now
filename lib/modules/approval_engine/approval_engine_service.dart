@@ -69,9 +69,11 @@ class ApprovalEngineService {
         );
         isFinalized = true;
       } else {
-        // Advance to next level
+        // Advance to next level - capture the approvers for the new level
+        final nextLevelApprovers = _getApproversForLevel(template, nextLevel);
         updatedRequest = request.copyWith(
           currentLevel: nextLevel,
+          currentApproverIds: nextLevelApprovers,
           approvalActions: [...request.approvalActions, action],
         );
       }
@@ -199,6 +201,33 @@ class ApprovalEngineService {
       return currentStep.approvers;
     } catch (e) {
       print('ERROR getCurrentLevelApprovers: $e');
+      print(
+          'ERROR: template.id=${template.id}, template.name=${template.name}');
+      return []; // Return empty list to prevent crash
+    }
+  }
+
+  /// Get approvers for a specific level
+  List<String> _getApproversForLevel(Template template, int level) {
+    print('DEBUG _getApproversForLevel: level=$level');
+    print(
+        'DEBUG _getApproversForLevel: available levels=${template.approvalSteps.map((s) => s.level).toList()}');
+
+    try {
+      final step = template.approvalSteps.firstWhere((s) => s.level == level,
+          orElse: () =>
+              throw Exception('No approval step found for level $level'));
+
+      print(
+          'DEBUG _getApproversForLevel: found step level=${step.level}, approvers=${step.approvers}');
+
+      if (step.approvers.isEmpty) {
+        print('WARNING: Step ${step.level} has empty approvers list!');
+      }
+
+      return step.approvers;
+    } catch (e) {
+      print('ERROR _getApproversForLevel: $e');
       print(
           'ERROR: template.id=${template.id}, template.name=${template.name}');
       return []; // Return empty list to prevent crash

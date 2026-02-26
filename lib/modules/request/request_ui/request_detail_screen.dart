@@ -423,13 +423,31 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
       // Never show approve/reject to the original submitter
       final isSubmitter = request.submittedBy == userId;
       if (!isSubmitter) {
-        final isAssigned = request.currentApproverIds.contains(userId);
+        // Use currentApproverIds if available, otherwise fall back to template approvers
+        List<String> effectiveApproverIds = request.currentApproverIds;
+        if (effectiveApproverIds.isEmpty && template.approvalSteps.isNotEmpty) {
+          // Fallback: Get approvers from template for current level
+          try {
+            final currentStep = template.approvalSteps.firstWhere(
+              (s) => s.level == request.currentLevel,
+            );
+            effectiveApproverIds = currentStep.approvers;
+            print(
+                'DEBUG _buildActionBar: Using template approvers fallback: $effectiveApproverIds');
+          } catch (e) {
+            // No matching step found, keep empty
+            print('DEBUG _buildActionBar: No matching approval step found');
+          }
+        }
+        final isAssigned = effectiveApproverIds.contains(userId);
         canApprove = isAssigned;
 
         // DEBUG: Print diagnostic info
         print('DEBUG _buildActionBar: userId=$userId');
         print(
             'DEBUG _buildActionBar: currentApproverIds=${request.currentApproverIds}');
+        print(
+            'DEBUG _buildActionBar: effectiveApproverIds=$effectiveApproverIds');
         print('DEBUG _buildActionBar: currentLevel=${request.currentLevel}');
         print('DEBUG _buildActionBar: templateId=${request.templateId}');
         print(

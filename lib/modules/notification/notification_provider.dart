@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/utils/app_logger.dart';
 import 'notification_models.dart';
 import 'notification_service.dart';
+import 'fcm_service.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationRepository _repository;
@@ -12,6 +13,7 @@ class NotificationProvider extends ChangeNotifier {
   NotificationState _state = const NotificationState();
   StreamSubscription<List<AppNotification>>? _subscription;
   String? _currentUserId;
+  bool _isFcmInitialized = false;
 
   NotificationProvider({
     NotificationRepository? repository,
@@ -30,19 +32,61 @@ class NotificationProvider extends ChangeNotifier {
   String? get error => _state.error;
   bool get hasPendingInvitations => pendingInvitations.isNotEmpty;
 
-  /// Initialize with user ID
-  void initialize(String userId) {
-    if (_currentUserId == userId) return;
+  /// Initialize with user ID - sets up FCM and notification streams
+  Future<void> initialize(String userId) async {
+    if (_currentUserId == userId && _isFcmInitialized) return;
 
     _currentUserId = userId;
+
+    // Initialize FCM (only on mobile platforms)
+    if (!kIsWeb) {
+      try {
+        await FCMService.initialize();
+        await _setupFcmToken(userId);
+        _isFcmInitialized = true;
+        AppLogger.info('✅ FCM initialized for user: $userId');
+      } catch (e) {
+        AppLogger.error('❌ Failed to initialize FCM', e);
+        // Continue without FCM - in-app notifications still work
+      }
+    }
+
     _pushService.initialize(userId);
     _subscribeToNotifications(userId);
     loadNotifications();
   }
 
+  /// Setup FCM token for user
+  Future<void> _setupFcmToken(String userId) async {
+    try {
+      final token = await FCMService.getToken();
+      if (token != null) {
+        await FCMService.saveTokenToBackend(userId, token);
+        FCMService.subscribeToTokenRefresh(userId);
+        AppLogger.info('📱 FCM token registered for user: $userId');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Failed to setup FCM token', e);
+    }
+  }
+
   /// Clear state (on logout)
-  void clear() {
+  Future<void> clear() async {
+    final userId = _currentUserId;
+
+    // Cleanup FCM
+    if (userId != null && !kIsWeb) {
+      try {
+        await FCMService.deleteTokenFromBackend(userId);
+        FCMService.unsubscribeFromTokenRefresh();
+        await FCMService.dispose();
+      } catch (e) {
+        AppLogger.error('❌ Error during FCM cleanup', e);
+      }
+    }
+
     _currentUserId = null;
+    _isFcmInitialized = false;
     _subscription?.cancel();
     _subscription = null;
     _state = const NotificationState();

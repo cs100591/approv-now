@@ -1,37 +1,18 @@
-import '../../core/config/app_config.dart';
 import '../../core/utils/app_logger.dart';
-import '../notification/email_service.dart';
 import '../workspace/workspace_models.dart';
 import '../workspace/workspace_member.dart';
 
 /// Service to handle invitations
-/// Note: Email notifications are disabled by default (AppConfig.enableEmailNotifications = false)
-/// When enabled, this integrates with Supabase Edge Functions to send emails
+/// Note: Email notifications have been removed. Invitations work via in-app notifications and shareable links.
 class InvitationService {
-  final EmailService _emailService;
-
-  InvitationService({EmailService? emailService})
-      : _emailService = emailService ?? EmailService();
-
   /// Resend invitation email
-  /// Returns true if successful, false if emails are disabled
+  /// Always returns false since email notifications are disabled
   Future<bool> resendInvitationEmail({
     required String workspaceId,
     required String invitationId,
   }) async {
-    if (!AppConfig.emailsEnabled) {
-      AppLogger.info('Email notifications disabled - skipping resend');
-      return false;
-    }
-
-    try {
-      // When Firebase Functions are enabled, this would call the cloud function
-      AppLogger.info('Would resend invitation email: $invitationId');
-      return true;
-    } catch (e) {
-      AppLogger.error('Error resending invitation', e);
-      return false;
-    }
+    AppLogger.info('Email notifications disabled - cannot resend invitation');
+    return false;
   }
 
   /// Accept invitation
