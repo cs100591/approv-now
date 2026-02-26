@@ -60,16 +60,13 @@ class L10n {
   ];
 
   static String getLanguageName(Locale locale) {
-    final code = locale.languageCode;
-    final script = locale.scriptCode ?? locale.countryCode;
+    final tag = locale.toLanguageTag(); // e.g. 'zh-Hans', 'zh-Hant', 'en', 'ja'
 
-    if (code == 'zh') {
-      if (script == 'Hans') return '简体中文';
-      if (script == 'Hant') return '繁體中文';
-      return '中文';
-    }
-
-    switch (code) {
+    switch (tag) {
+      case 'zh-Hans':
+        return '简体中文';
+      case 'zh-Hant':
+        return '繁體中文';
       case 'en':
         return 'English';
       case 'ja':
