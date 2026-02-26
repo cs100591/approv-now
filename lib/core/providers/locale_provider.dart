@@ -66,7 +66,6 @@ class L10n {
     if (code == 'zh') {
       if (script == 'Hans') return '简体中文';
       if (script == 'Hant') return '繁體中文';
-      return '简体中文';
     }
 
     switch (code) {
