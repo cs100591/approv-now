@@ -5,8 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../auth/auth_provider.dart';
-import '../../subscription/subscription_provider.dart';
-import '../notification_provider.dart';
+import '../notification_settings_repository.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -20,43 +19,148 @@ class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   bool _pushNotificationsEnabled = true;
   bool _emailNotificationsEnabled = false;
-  bool _requestUpdatesEnabled = true;
-  bool _invitationUpdatesEnabled = true;
+  bool _isLoading = true;
+  bool _isSaving = false;
+  String? _error;
+
+  late NotificationSettingsRepository _settingsRepository;
 
   @override
   void initState() {
     super.initState();
+    _settingsRepository = NotificationSettingsRepository();
     _loadSettings();
   }
 
   Future<void> _loadSettings() async {
-    // TODO: Load from shared preferences or backend
-    // For now using defaults
-    setState(() {});
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final userId = authProvider.user?.id;
+
+      if (userId == null) {
+        setState(() {
+          _error = 'User not logged in';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final settings = await _settingsRepository.getUserSettings(userId);
+
+      setState(() {
+        _emailNotificationsEnabled =
+            settings?.emailNotificationsEnabled ?? false;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load settings: $e';
+        _isLoading = false;
+      });
+    }
   }
 
-  Future<void> _saveSettings() async {
-    // TODO: Save to shared preferences or backend
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.settingsSaved)),
-    );
+  Future<void> _saveEmailSettings(bool enabled) async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final userId = authProvider.user?.id;
+
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in')),
+        );
+        return;
+      }
+
+      await _settingsRepository.updateSettings(
+        userId: userId,
+        emailNotificationsEnabled: enabled,
+      );
+
+      setState(() {
+        _emailNotificationsEnabled = enabled;
+        _isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            enabled
+                ? 'Email notifications enabled'
+                : 'Email notifications disabled',
+          ),
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isSaving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save settings: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final subscriptionProvider = context.watch<SubscriptionProvider>();
-    final isPro = subscriptionProvider.currentPlan.name.toLowerCase() == 'pro';
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Notification Settings'),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.notificationSettings),
+        title: const Text('Notification Settings'),
       ),
       body: SingleChildScrollView(
         padding: AppSpacing.screenPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Error message if any
+            if (_error != null) ...[
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: AppColors.error),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+
             // Push Notifications Master Switch
             _buildSettingCard(
               title: 'Push Notifications',
@@ -67,80 +171,33 @@ class _NotificationSettingsScreenState
                 onChanged: (value) {
                   setState(() {
                     _pushNotificationsEnabled = value;
-                    if (!value) {
-                      // Disable all sub-options when master is off
-                      _requestUpdatesEnabled = false;
-                      _invitationUpdatesEnabled = false;
-                    }
                   });
-                  _saveSettings();
                 },
                 activeColor: AppColors.primary,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // Email Notifications (Pro only)
+            // Email Notifications (now available to all users)
             _buildSettingCard(
               title: 'Email Notifications',
-              subtitle: isPro
-                  ? 'Receive email notifications'
-                  : 'Upgrade to Pro to enable email notifications',
+              subtitle: _emailNotificationsEnabled
+                  ? 'You will receive email notifications for approvals and requests'
+                  : 'Enable to receive email notifications (disabled by default to save costs)',
               icon: Icons.email,
-              trailing: isPro
-                  ? Switch(
-                      value: _emailNotificationsEnabled,
-                      onChanged: (value) {
-                        setState(() => _emailNotificationsEnabled = value);
-                        _saveSettings();
-                      },
-                      activeColor: AppColors.primary,
+              trailing: _isSaving
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Chip(
-                      label: Text(AppLocalizations.of(context)!.pro),
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      labelStyle: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  : Switch(
+                      value: _emailNotificationsEnabled,
+                      onChanged: _saveEmailSettings,
+                      activeColor: AppColors.primary,
                     ),
-              onTap: !isPro ? () => _showProFeatureDialog(context) : null,
             ),
             const SizedBox(height: AppSpacing.lg),
-
-            // Notification Types (only if push is enabled)
-            if (_pushNotificationsEnabled) ...[
-              _buildSectionTitle('Notification Types'),
-              const SizedBox(height: AppSpacing.md),
-              _buildSettingCard(
-                title: 'Request Updates',
-                subtitle: 'New requests, approvals, and rejections',
-                icon: Icons.description,
-                trailing: Switch(
-                  value: _requestUpdatesEnabled,
-                  onChanged: (value) {
-                    setState(() => _requestUpdatesEnabled = value);
-                    _saveSettings();
-                  },
-                  activeColor: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _buildSettingCard(
-                title: 'Workspace Invitations',
-                subtitle: 'When you are invited to a workspace',
-                icon: Icons.group_add,
-                trailing: Switch(
-                  value: _invitationUpdatesEnabled,
-                  onChanged: (value) {
-                    setState(() => _invitationUpdatesEnabled = value);
-                    _saveSettings();
-                  },
-                  activeColor: AppColors.primary,
-                ),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.xl),
 
             // Info Card
             Container(
@@ -150,16 +207,33 @@ class _NotificationSettingsScreenState
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.info.withOpacity(0.3)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.info),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      'You can view all your notifications in the Notifications tab.',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: AppColors.info),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'About Email Notifications',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.info,
+                          ),
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Email notifications are disabled by default to help manage costs. '
+                    'Enable this feature if you want to receive emails when:\n\n'
+                    '• Someone submits a request for your approval\n'
+                    '• Your request is approved or rejected\n'
+                    '• You are invited to a workspace',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -218,42 +292,6 @@ class _NotificationSettingsScreenState
         ),
         trailing: trailing,
         onTap: onTap,
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: AppTextStyles.h4,
-    );
-  }
-
-  void _showProFeatureDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.proFeature),
-        content: const Text(
-          'Email notifications are available for Pro users only. Upgrade to Pro to enable this feature.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navigate to upgrade page
-              Navigator.pushNamed(context, '/subscription');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
-            child: Text(AppLocalizations.of(context)!.upgradeToPro),
-          ),
-        ],
       ),
     );
   }
