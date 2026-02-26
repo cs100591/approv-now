@@ -231,4 +231,24 @@ class RequestRepository {
     if (value is String) return DateTime.parse(value);
     return DateTime.now();
   }
+
+  /// Get user profile by ID
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+    try {
+      return await _supabase.getUserProfile(userId);
+    } catch (e) {
+      AppLogger.warning('Error getting user profile: $e');
+      return null;
+    }
+  }
+
+  /// Get workspace by ID
+  Future<Map<String, dynamic>?> getWorkspace(String workspaceId) async {
+    try {
+      return await _supabase.getWorkspaceById(workspaceId);
+    } catch (e) {
+      AppLogger.warning('Error getting workspace: $e');
+      return null;
+    }
+  }
 }

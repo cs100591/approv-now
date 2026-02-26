@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../approval_engine/approval_engine_service.dart';
+import '../notification/notification_service.dart';
 import '../template/template_models.dart';
 import 'request_models.dart';
 import 'request_repository.dart';
@@ -9,6 +10,7 @@ import '../../core/utils/app_logger.dart';
 class RequestProvider extends ChangeNotifier {
   final RequestRepository _requestRepository;
   final ApprovalEngineService _approvalEngine;
+  final NotificationService _notificationService;
 
   RequestState _state = const RequestState();
   StreamSubscription<List<ApprovalRequest>>? _requestsSubscription;
@@ -21,8 +23,10 @@ class RequestProvider extends ChangeNotifier {
   RequestProvider({
     required RequestRepository requestRepository,
     ApprovalEngineService? approvalEngine,
+    NotificationService? notificationService,
   })  : _requestRepository = requestRepository,
-        _approvalEngine = approvalEngine ?? ApprovalEngineService() {
+        _approvalEngine = approvalEngine ?? ApprovalEngineService(),
+        _notificationService = notificationService ?? NotificationService() {
     _initialize();
   }
 
@@ -301,6 +305,15 @@ class RequestProvider extends ChangeNotifier {
 
       await _requestRepository.updateRequest(updated, newApprovers);
 
+      // Send email notifications to approvers
+      await _notifyApprovers(
+        workspaceId: template.workspaceId,
+        requestId: requestId,
+        requestTitle: template.name,
+        submitterId: request.submittedBy,
+        approverIds: newApprovers,
+      );
+
       AppLogger.info('Submitted request: $requestId');
     } catch (e) {
       AppLogger.error('Error submitting request', e);
@@ -411,6 +424,26 @@ class RequestProvider extends ChangeNotifier {
       // reflect the change without waiting for the 30s polling stream.
       await refreshPendingRequests();
 
+      // Send email notifications
+      if (result.finalized) {
+        // Request fully approved - notify submitter
+        await _notifyRequestApproved(
+          workspaceId: template.workspaceId,
+          requestId: requestId,
+          requestTitle: template.name,
+          submitterId: request.submittedBy,
+        );
+      } else if (result.advanced && newApprovers.isNotEmpty) {
+        // Advanced to next level - notify new approvers
+        await _notifyApprovers(
+          workspaceId: template.workspaceId,
+          requestId: requestId,
+          requestTitle: template.name,
+          submitterId: request.submittedBy,
+          approverIds: newApprovers,
+        );
+      }
+
       AppLogger.info('Approved request: $requestId');
     } catch (e) {
       AppLogger.error('Error approving request', e);
@@ -468,6 +501,15 @@ class RequestProvider extends ChangeNotifier {
       // Immediately refresh pending list so the dashboard and pending tab
       // reflect the change without waiting for the 30s polling stream.
       await refreshPendingRequests();
+
+      // Send email notification to submitter
+      await _notifyRequestRejected(
+        workspaceId: template.workspaceId,
+        requestId: requestId,
+        requestTitle: template.name,
+        submitterId: request.submittedBy,
+        reason: comment,
+      );
 
       AppLogger.info('Rejected request: $requestId');
     } catch (e) {
@@ -550,6 +592,140 @@ class RequestProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     _state = _state.copyWith(isLoading: loading);
     notifyListeners();
+  }
+
+  // ============ Email Notification Helpers ============
+
+  /// Notify approvers when a request is submitted
+  Future<void> _notifyApprovers({
+    required String workspaceId,
+    required String requestId,
+    required String requestTitle,
+    required String submitterId,
+    required List<String> approverIds,
+  }) async {
+    try {
+      AppLogger.info(
+          '📧 [RequestProvider] Notifying ${approverIds.length} approvers for request: $requestId');
+
+      // Get submitter name and workspace name
+      final submitterName = await _getUserDisplayName(submitterId);
+      final workspaceName = await _getWorkspaceName(workspaceId);
+
+      // Send notification to each approver
+      for (final approverId in approverIds) {
+        try {
+          await _notificationService.createPendingRequestNotification(
+            userId: approverId,
+            workspaceId: workspaceId,
+            requestId: requestId,
+            requestTitle: requestTitle,
+            submitterName: submitterName,
+            workspaceName: workspaceName,
+          );
+          AppLogger.info(
+              '📧 [RequestProvider] Notification sent to approver: $approverId');
+        } catch (e) {
+          AppLogger.warning(
+              '📧 [RequestProvider] Failed to notify approver $approverId: $e');
+          // Continue with other approvers even if one fails
+        }
+      }
+    } catch (e) {
+      AppLogger.error('📧 [RequestProvider] Error in _notifyApprovers: $e');
+      // Don't throw - notification failure shouldn't break the request flow
+    }
+  }
+
+  /// Notify request submitter when request is approved
+  Future<void> _notifyRequestApproved({
+    required String workspaceId,
+    required String requestId,
+    required String requestTitle,
+    required String submitterId,
+  }) async {
+    try {
+      AppLogger.info(
+          '📧 [RequestProvider] Notifying submitter of approval: $submitterId');
+
+      final workspaceName = await _getWorkspaceName(workspaceId);
+
+      await _notificationService.createRequestApprovedNotification(
+        userId: submitterId,
+        workspaceId: workspaceId,
+        requestId: requestId,
+        requestTitle: requestTitle,
+        approverName: 'System', // Could be improved to show actual approver
+        workspaceName: workspaceName,
+      );
+
+      AppLogger.info(
+          '📧 [RequestProvider] Approval notification sent to submitter: $submitterId');
+    } catch (e) {
+      AppLogger.error(
+          '📧 [RequestProvider] Error in _notifyRequestApproved: $e');
+    }
+  }
+
+  /// Notify request submitter when request is rejected
+  Future<void> _notifyRequestRejected({
+    required String workspaceId,
+    required String requestId,
+    required String requestTitle,
+    required String submitterId,
+    String? reason,
+  }) async {
+    try {
+      AppLogger.info(
+          '📧 [RequestProvider] Notifying submitter of rejection: $submitterId');
+
+      final workspaceName = await _getWorkspaceName(workspaceId);
+
+      await _notificationService.createRequestRejectedNotification(
+        userId: submitterId,
+        workspaceId: workspaceId,
+        requestId: requestId,
+        requestTitle: requestTitle,
+        rejectorName: 'System', // Could be improved to show actual rejector
+        workspaceName: workspaceName,
+        reason: reason,
+      );
+
+      AppLogger.info(
+          '📧 [RequestProvider] Rejection notification sent to submitter: $submitterId');
+    } catch (e) {
+      AppLogger.error(
+          '📧 [RequestProvider] Error in _notifyRequestRejected: $e');
+    }
+  }
+
+  /// Get user display name from profiles
+  Future<String> _getUserDisplayName(String userId) async {
+    try {
+      // Try to get from profiles table
+      final response = await _requestRepository.getUserProfile(userId);
+      if (response != null) {
+        return response['display_name'] as String? ??
+            response['email'] as String? ??
+            userId;
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to get user display name: $e');
+    }
+    return userId; // Fallback to userId
+  }
+
+  /// Get workspace name
+  Future<String> _getWorkspaceName(String workspaceId) async {
+    try {
+      final response = await _requestRepository.getWorkspace(workspaceId);
+      if (response != null) {
+        return response['name'] as String? ?? workspaceId;
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to get workspace name: $e');
+    }
+    return workspaceId; // Fallback to workspaceId
   }
 
   @override

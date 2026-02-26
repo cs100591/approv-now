@@ -166,6 +166,33 @@ class SupabaseService {
     }
   }
 
+  /// Get user profile by ID
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+    try {
+      final response =
+          await client.from('profiles').select().eq('id', userId).single();
+      return response;
+    } catch (e) {
+      AppLogger.warning('Failed to get user profile: $e');
+      return null;
+    }
+  }
+
+  /// Get workspace by ID
+  Future<Map<String, dynamic>?> getWorkspaceById(String workspaceId) async {
+    try {
+      final response = await client
+          .from(SupabaseConfig.workspacesTable)
+          .select()
+          .eq('id', workspaceId)
+          .single();
+      return response;
+    } catch (e) {
+      AppLogger.warning('Failed to get workspace: $e');
+      return null;
+    }
+  }
+
   // ============================================
   // WORKSPACE METHODS
   // ============================================

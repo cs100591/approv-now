@@ -55,6 +55,7 @@ import 'modules/subscription/subscription_repository.dart';
 
 // Notification Module
 import 'modules/notification/notification_provider.dart';
+import 'modules/notification/notification_service.dart';
 
 // Analytics Module
 import 'modules/analytics/analytics_service.dart';
@@ -163,6 +164,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => RequestProvider(
             requestRepository: RequestRepository(),
+            notificationService: NotificationService(),
           ),
         ),
 
