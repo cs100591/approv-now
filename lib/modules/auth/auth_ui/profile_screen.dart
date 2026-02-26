@@ -491,15 +491,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Flexible(
                 child: ListView.builder(
                   shrinkWrap: true,
-                  itemCount: L10n.all.length,
+                  itemCount: L10n.options.length,
                   itemBuilder: (context, index) {
-                    final locale = L10n.all[index];
+                    final option = L10n.options[index];
+                    final locale = option.locale;
                     final isSelected = localeProvider.locale?.languageCode ==
                             locale.languageCode &&
                         localeProvider.locale?.scriptCode == locale.scriptCode;
 
                     return ListTile(
-                      title: Text(L10n.getLanguageName(locale)),
+                      title: Text(option.displayName),
                       trailing: isSelected
                           ? const Icon(Icons.check, color: AppColors.primary)
                           : null,

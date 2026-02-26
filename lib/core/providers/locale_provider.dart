@@ -24,7 +24,13 @@ class LocaleProvider extends ChangeNotifier {
   }
 
   void setLocale(Locale loc) async {
-    if (!L10n.all.contains(loc)) return;
+    // Use manual check since Locale.fromSubtags equality may not work with List.contains
+    final isValid = L10n.options.any(
+      (o) =>
+          o.locale.languageCode == loc.languageCode &&
+          o.locale.scriptCode == loc.scriptCode,
+    );
+    if (!isValid) return;
 
     _locale = loc;
     final prefs = await SharedPreferences.getInstance();
@@ -45,46 +51,50 @@ class LocaleProvider extends ChangeNotifier {
   }
 }
 
+class LanguageOption {
+  final Locale locale;
+  final String displayName;
+
+  const LanguageOption({required this.locale, required this.displayName});
+}
+
 class L10n {
-  static final all = [
-    const Locale('en'),
-    const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
-    const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
-    const Locale('ja'),
-    const Locale('ko'),
-    const Locale('id'),
-    const Locale('vi'),
-    const Locale('th'),
-    const Locale('ms'),
-    const Locale('es'),
+  static final options = [
+    const LanguageOption(locale: Locale('en'), displayName: 'English'),
+    LanguageOption(
+      locale: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+      displayName: '简体中文',
+    ),
+    LanguageOption(
+      locale: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+      displayName: '繁體中文',
+    ),
+    const LanguageOption(locale: Locale('ja'), displayName: '日本語'),
+    const LanguageOption(locale: Locale('ko'), displayName: '한국어'),
+    const LanguageOption(locale: Locale('id'), displayName: 'Bahasa Indonesia'),
+    const LanguageOption(locale: Locale('vi'), displayName: 'Tiếng Việt'),
+    const LanguageOption(locale: Locale('th'), displayName: 'ภาษาไทย'),
+    const LanguageOption(locale: Locale('ms'), displayName: 'Bahasa Melayu'),
+    const LanguageOption(locale: Locale('es'), displayName: 'Español'),
   ];
 
-  static String getLanguageName(Locale locale) {
-    final tag = locale.toLanguageTag(); // e.g. 'zh-Hans', 'zh-Hant', 'en', 'ja'
+  static List<Locale> get all => options.map((o) => o.locale).toList();
 
-    switch (tag) {
-      case 'zh-Hans':
-        return '简体中文';
-      case 'zh-Hant':
-        return '繁體中文';
-      case 'en':
-        return 'English';
-      case 'ja':
-        return '日本語';
-      case 'ko':
-        return '한국어';
-      case 'id':
-        return 'Bahasa Indonesia';
-      case 'vi':
-        return 'Tiếng Việt';
-      case 'th':
-        return 'ภาษาไทย';
-      case 'ms':
-        return 'Bahasa Melayu';
-      case 'es':
-        return 'Español';
-      default:
-        return 'English';
+  static String getLanguageName(Locale locale) {
+    // Match by languageCode + scriptCode
+    for (final option in options) {
+      if (option.locale.languageCode == locale.languageCode &&
+          option.locale.scriptCode == locale.scriptCode) {
+        return option.displayName;
+      }
     }
+    // Fallback: match by languageCode only (for non-script locales)
+    for (final option in options) {
+      if (option.locale.languageCode == locale.languageCode &&
+          option.locale.scriptCode == null) {
+        return option.displayName;
+      }
+    }
+    return 'English';
   }
 }
