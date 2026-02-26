@@ -48,8 +48,8 @@ class LocaleProvider extends ChangeNotifier {
 class L10n {
   static final all = [
     const Locale('en'),
-    const Locale('zh', 'Hans'),
-    const Locale('zh', 'Hant'),
+    const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+    const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
     const Locale('ja'),
     const Locale('ko'),
     const Locale('id'),
@@ -61,11 +61,12 @@ class L10n {
 
   static String getLanguageName(Locale locale) {
     final code = locale.languageCode;
-    final script = locale.scriptCode;
+    final script = locale.scriptCode ?? locale.countryCode;
 
     if (code == 'zh') {
       if (script == 'Hans') return '简体中文';
       if (script == 'Hant') return '繁體中文';
+      return '中文';
     }
 
     switch (code) {
