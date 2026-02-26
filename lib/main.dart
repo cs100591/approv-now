@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
@@ -58,6 +59,7 @@ import 'modules/subscription/subscription_repository.dart';
 // Notification Module
 import 'modules/notification/notification_provider.dart';
 import 'modules/notification/notification_service.dart';
+import 'modules/notification/fcm_service.dart';
 
 // Analytics Module
 import 'modules/analytics/analytics_service.dart';
@@ -72,10 +74,24 @@ void main() async {
   // Note: Firebase is only used for FCM, all data storage is via Supabase
   if (!kIsWeb) {
     try {
+      // Register background message handler BEFORE Firebase initializes
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      AppLogger.info('✅ FCM background handler registered');
+
+      // Initialize Firebase
       await Firebase.initializeApp();
       AppLogger.info('✅ Firebase initialized for push notifications');
-    } catch (e) {
-      AppLogger.error('❌ Failed to initialize Firebase', e);
+
+      // Initialize FCM Service
+      final fcmInitialized = await FCMService.initialize();
+      if (fcmInitialized) {
+        AppLogger.info('✅ FCM Service initialized successfully');
+      } else {
+        AppLogger.warning('⚠️ FCM Service initialization had issues');
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Failed to initialize Firebase/FCM: $e');
+      AppLogger.error('❌ Stack trace: $stackTrace');
       // Continue without Firebase - app will still work with in-app notifications
     }
   }

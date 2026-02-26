@@ -36,19 +36,13 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> initialize(String userId) async {
     if (_currentUserId == userId && _isFcmInitialized) return;
 
+    AppLogger.info(
+        '🔔 NotificationProvider.initialize() called for user: $userId');
     _currentUserId = userId;
 
-    // Initialize FCM (only on mobile platforms)
+    // Setup FCM token for user (FCM should already be initialized in main.dart)
     if (!kIsWeb) {
-      try {
-        await FCMService.initialize();
-        await _setupFcmToken(userId);
-        _isFcmInitialized = true;
-        AppLogger.info('✅ FCM initialized for user: $userId');
-      } catch (e) {
-        AppLogger.error('❌ Failed to initialize FCM', e);
-        // Continue without FCM - in-app notifications still work
-      }
+      await _setupFcmToken(userId);
     }
 
     _pushService.initialize(userId);
@@ -61,38 +55,52 @@ class NotificationProvider extends ChangeNotifier {
     try {
       AppLogger.info('🔔 Setting up FCM token for user: $userId');
 
-      // First check if permission is granted
+      // Check permission status
       final hasPermission = await FCMService.checkPermission();
-      AppLogger.info('🔔 Notification permission status: $hasPermission');
+      AppLogger.info('🔔 Notification permission: $hasPermission');
 
       if (!hasPermission) {
-        AppLogger.warning(
-            '⚠️ Notification permission not granted, requesting...');
+        // Request permission
+        AppLogger.info('🔔 Requesting notification permission...');
         final granted = await FCMService.requestPermission();
         if (!granted) {
           AppLogger.warning('⚠️ User denied notification permission');
-          return;
+          // Continue anyway - user might enable later in Settings
         }
       }
 
-      // Get token
+      // Get FCM token
       final token = await FCMService.getToken();
-      AppLogger.info('🔔 FCM token retrieved: ${token != null ? "Yes" : "No"}');
 
       if (token != null && token.isNotEmpty) {
-        AppLogger.info('📱 Token length: ${token.length}');
+        AppLogger.info('📱 Got FCM token, saving to backend...');
         AppLogger.info(
-            '📱 Token preview: ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
+            '📱 Token preview: ${token.substring(0, token.length > 30 ? 30 : token.length)}...');
 
-        await FCMService.saveTokenToBackend(userId, token);
-        FCMService.subscribeToTokenRefresh(userId);
-        AppLogger.info('✅ FCM token registered successfully for user: $userId');
+        // Save to backend
+        final saved = await FCMService.saveTokenToBackend(userId, token);
+        if (saved) {
+          AppLogger.info('✅ FCM token saved to backend successfully');
+
+          // Subscribe to token refresh
+          FCMService.subscribeToTokenRefresh(userId);
+          _isFcmInitialized = true;
+        } else {
+          AppLogger.warning('⚠️ Failed to save FCM token to backend');
+        }
       } else {
         AppLogger.error('❌ FCM token is null or empty');
+        AppLogger.error('❌ This usually means APNs is not configured');
+        AppLogger.error('❌ Check:');
+        AppLogger.error(
+            '   1. Apple Developer APNs key is uploaded to Firebase Console');
+        AppLogger.error('   2. Runner.entitlements has aps-environment');
+        AppLogger.error(
+            '   3. AppDelegate.swift registers for remote notifications');
       }
     } catch (e, stackTrace) {
-      AppLogger.error('❌ Failed to setup FCM token', e);
-      AppLogger.error('❌ Stack trace', stackTrace);
+      AppLogger.error('❌ Failed to setup FCM token: $e');
+      AppLogger.error('❌ Stack trace: $stackTrace');
     }
   }
 
@@ -146,24 +154,24 @@ class NotificationProvider extends ChangeNotifier {
       notifications: notifications,
       unreadCount: unreadCount,
       isLoading: false,
-      error: null,
     );
+
     notifyListeners();
   }
 
-  /// Load notifications for current user
-  Future<void> loadNotifications({bool unreadOnly = false}) async {
+  /// Load all notifications
+  Future<void> loadNotifications() async {
     if (_currentUserId == null) return;
 
-    _state = _state.copyWith(isLoading: true);
+    _state = _state.copyWith(isLoading: true, error: null);
     notifyListeners();
 
     try {
-      final notifications = await _repository
-          .getUserNotifications(_currentUserId!, unreadOnly: unreadOnly);
+      final notifications =
+          await _repository.getUserNotifications(_currentUserId!);
       _updateNotifications(notifications);
     } catch (e) {
-      AppLogger.error('Failed to load notifications', e);
+      AppLogger.error('Error loading notifications', e);
       _state = _state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -176,23 +184,9 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> markAsRead(String notificationId) async {
     try {
       await _repository.markAsRead(notificationId);
-
-      final notifications = _state.notifications.map((n) {
-        if (n.id == notificationId) {
-          return n.copyWith(isRead: true, readAt: DateTime.now());
-        }
-        return n;
-      }).toList();
-
-      final unreadCount = _state.unreadCount > 0 ? _state.unreadCount - 1 : 0;
-
-      _state = _state.copyWith(
-        notifications: notifications,
-        unreadCount: unreadCount,
-      );
-      notifyListeners();
+      await loadNotifications();
     } catch (e) {
-      AppLogger.error('Failed to mark notification as read', e);
+      AppLogger.error('Error marking notification as read', e);
     }
   }
 
@@ -202,18 +196,9 @@ class NotificationProvider extends ChangeNotifier {
 
     try {
       await _repository.markAllAsRead(_currentUserId!);
-
-      final notifications = _state.notifications
-          .map((n) => n.copyWith(isRead: true, readAt: DateTime.now()))
-          .toList();
-
-      _state = _state.copyWith(
-        notifications: notifications,
-        unreadCount: 0,
-      );
-      notifyListeners();
+      await loadNotifications();
     } catch (e) {
-      AppLogger.error('Failed to mark all notifications as read', e);
+      AppLogger.error('Error marking all notifications as read', e);
     }
   }
 
@@ -221,127 +206,28 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> dismissNotification(String notificationId) async {
     try {
       await _repository.dismissNotification(notificationId);
-
-      final notifications = _state.notifications.map((n) {
-        if (n.id == notificationId) {
-          return n.copyWith(isDismissed: true, dismissedAt: DateTime.now());
-        }
-        return n;
-      }).toList();
-
-      _state = _state.copyWith(notifications: notifications);
-      notifyListeners();
+      await loadNotifications();
     } catch (e) {
-      AppLogger.error('Failed to dismiss notification', e);
+      AppLogger.error('Error dismissing notification', e);
     }
   }
 
-  /// Create invitation notification
-  Future<AppNotification> createInvitationNotification({
-    required String userId,
-    required String workspaceId,
-    required String workspaceName,
-    required String inviterName,
-    required String invitationToken,
-  }) async {
-    return await _service.createInvitationNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      workspaceName: workspaceName,
-      inviterName: inviterName,
-      invitationToken: invitationToken,
-    );
-  }
+  /// Clear all notifications
+  Future<void> clearAllNotifications() async {
+    if (_currentUserId == null) return;
 
-  /// Create pending request notification
-  Future<AppNotification> createPendingRequestNotification({
-    required String userId,
-    required String workspaceId,
-    required String requestId,
-    required String requestTitle,
-    required String submitterName,
-    required String workspaceName,
-  }) async {
-    return await _service.createPendingRequestNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      requestId: requestId,
-      requestTitle: requestTitle,
-      submitterName: submitterName,
-      workspaceName: workspaceName,
-    );
-  }
-
-  /// Create request approved notification
-  Future<AppNotification> createRequestApprovedNotification({
-    required String userId,
-    required String workspaceId,
-    required String requestId,
-    required String requestTitle,
-    required String approverName,
-    required String workspaceName,
-  }) async {
-    return await _service.createRequestApprovedNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      requestId: requestId,
-      requestTitle: requestTitle,
-      approverName: approverName,
-      workspaceName: workspaceName,
-    );
-  }
-
-  /// Create request rejected notification
-  Future<AppNotification> createRequestRejectedNotification({
-    required String userId,
-    required String workspaceId,
-    required String requestId,
-    required String requestTitle,
-    required String rejectorName,
-    required String workspaceName,
-    String? reason,
-  }) async {
-    return await _service.createRequestRejectedNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      requestId: requestId,
-      requestTitle: requestTitle,
-      rejectorName: rejectorName,
-      workspaceName: workspaceName,
-      reason: reason,
-    );
-  }
-
-  /// Create request revision notification
-  Future<AppNotification> createRequestRevisionNotification({
-    required String userId,
-    required String workspaceId,
-    required String requestId,
-    required String requestTitle,
-    required String editorName,
-  }) async {
-    return await _service.createRequestRevisionNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      requestId: requestId,
-      requestTitle: requestTitle,
-      editorName: editorName,
-    );
-  }
-
-  /// Cleanup expired notifications
-  Future<void> cleanupExpiredNotifications() async {
-    await _repository.deleteOldNotifications(30);
-  }
-
-  /// Save FCM token
-  Future<void> saveFcmToken(String userId, String token) async {
-    await _pushService.saveFcmToken(userId, token);
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
+    try {
+      // Mark all as dismissed instead
+      for (final notification in _state.notifications) {
+        await _repository.dismissNotification(notification.id);
+      }
+      _state = _state.copyWith(
+        notifications: [],
+        unreadCount: 0,
+      );
+      notifyListeners();
+    } catch (e) {
+      AppLogger.error('Error clearing notifications', e);
+    }
   }
 }
