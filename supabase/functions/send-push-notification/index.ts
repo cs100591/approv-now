@@ -179,11 +179,20 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  console.log('========================================')
+  console.log('FCM SEND: Starting push notification send')
+  console.log('========================================')
+
   try {
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const serviceAccountJson = Deno.env.get('FCM_SERVICE_ACCOUNT')
+
+    console.log('Environment check:')
+    console.log('- SUPABASE_URL:', supabaseUrl ? 'Set' : 'MISSING')
+    console.log('- SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'Set' : 'MISSING')
+    console.log('- FCM_SERVICE_ACCOUNT:', serviceAccountJson ? 'Set' : 'MISSING')
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error('Missing Supabase configuration')
@@ -194,10 +203,16 @@ Deno.serve(async (req) => {
     }
 
     const serviceAccount: ServiceAccount = JSON.parse(serviceAccountJson)
+    console.log('Service Account Project ID:', serviceAccount.project_id)
 
     // Parse request body
     const payload: NotificationPayload = await req.json()
     const { userId, title, body, data = {} } = payload
+
+    console.log('Request payload:')
+    console.log('- userId:', userId)
+    console.log('- title:', title)
+    console.log('- body:', body)
 
     if (!userId || !title || !body) {
       return new Response(
@@ -210,6 +225,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Get user's FCM token from their profile
+    console.log('Fetching FCM token for user:', userId)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('fcm_token')
@@ -223,6 +239,9 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('Profile found:', profile ? 'Yes' : 'No')
+    console.log('FCM Token exists:', profile?.fcm_token ? 'Yes' : 'No')
 
     if (!profile?.fcm_token) {
       console.log(`No FCM token found for user ${userId}`)
@@ -279,9 +298,16 @@ Deno.serve(async (req) => {
       }),
     })
 
+    console.log('FCM Response Status:', fcmResponse.status)
+    console.log('FCM Response OK:', fcmResponse.ok)
+
     if (!fcmResponse.ok) {
       const fcmError = await fcmResponse.text()
-      console.error('FCM send failed:', fcmError)
+      console.error('========================================')
+      console.error('FCM SEND FAILED')
+      console.error('Status:', fcmResponse.status)
+      console.error('Error:', fcmError)
+      console.error('========================================')
       
       // If token is invalid (404 or 410), clear it from the database
       if (fcmResponse.status === 404 || fcmResponse.status === 410) {
@@ -303,7 +329,10 @@ Deno.serve(async (req) => {
     }
 
     const fcmResult = await fcmResponse.json()
-    console.log('FCM notification sent successfully:', fcmResult)
+    console.log('========================================')
+    console.log('FCM SEND SUCCESS')
+    console.log('Response:', fcmResult)
+    console.log('========================================')
 
     return new Response(
       JSON.stringify({ 
@@ -316,7 +345,10 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error in send-push-notification function:', error)
+    console.error('========================================')
+    console.error('FCM SEND EXCEPTION')
+    console.error('Error:', error)
+    console.error('========================================')
     return new Response(
       JSON.stringify({ 
         success: false, 

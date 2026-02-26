@@ -2,9 +2,9 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import os
 import textwrap
 
-# App Store 6.7" size
-CANVAS_WIDTH = 1290
-CANVAS_HEIGHT = 2796
+# App Store 6.5" size (1284 x 2778)
+CANVAS_WIDTH = 1284
+CANVAS_HEIGHT = 2778
 
 # Device dimensions
 DEVICE_WIDTH = 1170

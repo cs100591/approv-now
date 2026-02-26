@@ -434,9 +434,17 @@ class PushService {
     required String body,
     Map<String, dynamic>? data,
   }) async {
-    AppLogger.info('📨 Sending push notification to user $userId: $title');
+    AppLogger.info('📨 ==================================================');
+    AppLogger.info('📨 PUSH NOTIFICATION: Starting send process');
+    AppLogger.info('📨 ==================================================');
+    AppLogger.info('📨 Target User ID: $userId');
+    AppLogger.info('📨 Title: $title');
+    AppLogger.info('📨 Body: $body');
+    AppLogger.info('📨 Data: $data');
 
     try {
+      AppLogger.info('📨 Calling Edge Function: send-push-notification');
+
       // Call Supabase Edge Function to send FCM notification
       final response = await _supabase.client.functions.invoke(
         'send-push-notification',
@@ -448,16 +456,27 @@ class PushService {
         },
       );
 
+      AppLogger.info('📨 Edge Function Response Status: ${response.status}');
+      AppLogger.info('📨 Edge Function Response Data: ${response.data}');
+
       if (response.status == 200) {
-        AppLogger.info('✅ Push notification sent successfully');
+        AppLogger.info('✅ Push notification API call succeeded');
+        AppLogger.info('✅ Response: ${response.data}');
       } else {
-        AppLogger.warning(
-            '⚠️ Push notification failed with status: ${response.status}');
+        AppLogger.error('❌ Push notification API call failed');
+        AppLogger.error('❌ Status: ${response.status}');
+        AppLogger.error('❌ Response: ${response.data}');
       }
-    } catch (e) {
-      AppLogger.error('❌ Failed to send push notification', e);
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Exception during push notification send');
+      AppLogger.error('❌ Error: $e');
+      AppLogger.error('❌ StackTrace: $stackTrace');
       // Don't throw - notification failure shouldn't break the app
     }
+
+    AppLogger.info('📨 ==================================================');
+    AppLogger.info('📨 PUSH NOTIFICATION: Send process completed');
+    AppLogger.info('📨 ==================================================');
 
     // Keep local tracking for testing/debugging
     _pendingPushes.add(PendingPush(
