@@ -37,36 +37,65 @@ serve(async (req) => {
     // --- PRO PLAN CHECK START ---
     let isProPlan = false;
     const workspaceIdentifier = data.workspaceId || data.workspace_id;
+    
+    console.log('📧 Email notification request:', { type, workspaceIdentifier, workspaceName: data.workspaceName });
 
     try {
       if (workspaceIdentifier) {
+        console.log('🔍 Checking workspace plan for ID:', workspaceIdentifier);
         const { data: workspace, error } = await supabaseClient
           .from('workspaces')
-          .select('plan')
+          .select('plan, name')
           .eq('id', workspaceIdentifier)
           .single()
 
-        if (!error && workspace && workspace.plan?.toLowerCase() === 'pro') {
-          isProPlan = true;
+        console.log('📊 Workspace query result:', { workspace, error });
+
+        if (error) {
+          console.error('❌ Error querying workspace:', error);
+        } else if (!workspace) {
+          console.error('❌ Workspace not found for ID:', workspaceIdentifier);
+        } else {
+          console.log('✅ Workspace found:', workspace.name, 'Plan:', workspace.plan);
+          if (workspace.plan?.toLowerCase() === 'pro') {
+            isProPlan = true;
+            console.log('✅ Workspace is on Pro plan');
+          } else {
+            console.log('❌ Workspace plan is not Pro:', workspace.plan);
+          }
         }
       } else if (data.workspaceName) {
-        // Fallback to name if ID is not provided
+        console.log('🔍 Checking workspace plan for name:', data.workspaceName);
         const { data: workspaces, error } = await supabaseClient
           .from('workspaces')
-          .select('plan')
+          .select('plan, name')
           .eq('name', data.workspaceName)
           .limit(1)
 
-        if (!error && workspaces && workspaces.length > 0 && workspaces[0].plan?.toLowerCase() === 'pro') {
-          isProPlan = true;
+        console.log('📊 Workspace query result:', { workspaces, error });
+
+        if (error) {
+          console.error('❌ Error querying workspace:', error);
+        } else if (!workspaces || workspaces.length === 0) {
+          console.error('❌ Workspace not found for name:', data.workspaceName);
+        } else {
+          console.log('✅ Workspace found:', workspaces[0].name, 'Plan:', workspaces[0].plan);
+          if (workspaces[0].plan?.toLowerCase() === 'pro') {
+            isProPlan = true;
+            console.log('✅ Workspace is on Pro plan');
+          } else {
+            console.log('❌ Workspace plan is not Pro:', workspaces[0].plan);
+          }
         }
+      } else {
+        console.error('❌ No workspace identifier provided');
       }
     } catch (err) {
-      console.error('Error checking workspace plan:', err);
+      console.error('❌ Error checking workspace plan:', err);
     }
 
     if (!isProPlan) {
-      console.log('Workspace is not on Pro plan - email notifications skipped');
+      console.log('❌ Workspace is not on Pro plan - email notifications skipped');
       return new Response(
         JSON.stringify({
           success: false,

@@ -92,7 +92,10 @@ class EmailService {
     required Map<String, dynamic> data,
   }) async {
     try {
-      AppLogger.info('Sending email: $type to ${data['email']}');
+      AppLogger.info(
+          '📧 [EmailService] Sending email: $type to ${data['email']}');
+      AppLogger.info(
+          '📧 [EmailService] Request data: workspaceId=${data['workspaceId']}, workspaceName=${data['workspaceName']}');
 
       final response = await _supabase.client.functions.invoke(
         'email-notifications',
@@ -102,18 +105,21 @@ class EmailService {
         },
       );
 
+      AppLogger.info('📧 [EmailService] Response received: ${response.data}');
+
       final responseData = response.data as Map<String, dynamic>;
 
       if (responseData['success'] == true) {
-        AppLogger.info('Email sent successfully: $type');
+        AppLogger.info('✅ [EmailService] Email sent successfully: $type');
         return true;
       } else {
         AppLogger.warning(
-            'Email sending failed: ${responseData['message'] ?? 'Unknown error'}');
+            '❌ [EmailService] Email sending failed: ${responseData['message'] ?? 'Unknown error'}');
         return false;
       }
-    } catch (e) {
-      AppLogger.error('Failed to send email: $type', e);
+    } catch (e, stackTrace) {
+      AppLogger.error(
+          '❌ [EmailService] Failed to send email: $type', e, stackTrace);
       return false;
     }
   }

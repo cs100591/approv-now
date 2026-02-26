@@ -228,14 +228,23 @@ class NotificationService {
     );
 
     // Send email notification if enabled and email is provided
+    AppLogger.info(
+        '📧 [NotificationService] Checking email conditions: enableEmailNotifications=${AppConfig.enableEmailNotifications}, recipientEmail=$recipientEmail');
     if (AppConfig.enableEmailNotifications && recipientEmail != null) {
-      await _emailService.sendInvitationEmail(
+      AppLogger.info(
+          '📧 [NotificationService] Sending invitation email to: $recipientEmail');
+      final success = await _emailService.sendInvitationEmail(
         email: recipientEmail,
         workspaceName: workspaceName,
         inviterName: inviterName,
         inviteToken: invitationToken,
         workspaceId: workspaceId,
       );
+      AppLogger.info(
+          '📧 [NotificationService] Invitation email result: $success');
+    } else {
+      AppLogger.info(
+          '📧 [NotificationService] Skipping email: enableEmailNotifications=${AppConfig.enableEmailNotifications}, hasRecipient=${recipientEmail != null}');
     }
 
     return notification;
@@ -244,14 +253,20 @@ class NotificationService {
   /// Get user email by user ID from profiles table
   Future<String?> _getUserEmail(String userId) async {
     try {
+      AppLogger.info(
+          '📧 [NotificationService] Looking up email for userId: $userId');
       final response = await _supabase.client
           .from('profiles')
           .select('email')
           .eq('id', userId)
           .single();
+      AppLogger.info(
+          '📧 [NotificationService] Profile lookup result: $response');
       return response['email'] as String?;
-    } catch (e) {
-      AppLogger.warning('Failed to get email for user $userId: $e');
+    } catch (e, stackTrace) {
+      AppLogger.warning(
+          '📧 [NotificationService] Failed to get email for user $userId: $e',
+          stackTrace);
       return null;
     }
   }
@@ -294,17 +309,30 @@ class NotificationService {
     );
 
     // Send email notification if enabled
+    AppLogger.info(
+        '📧 [NotificationService] createPendingRequestNotification - enableEmailNotifications=${AppConfig.enableEmailNotifications}');
     if (AppConfig.enableEmailNotifications) {
       final email = await _getUserEmail(userId);
+      AppLogger.info(
+          '📧 [NotificationService] User email lookup result: $email');
       if (email != null) {
-        await _emailService.sendApprovalRequestEmail(
+        AppLogger.info(
+            '📧 [NotificationService] Sending approval request email to: $email');
+        final success = await _emailService.sendApprovalRequestEmail(
           email: email,
           requestorName: submitterName,
           templateName: requestTitle,
           workspaceName: workspaceName,
           workspaceId: workspaceId,
         );
+        AppLogger.info(
+            '📧 [NotificationService] Approval request email result: $success');
+      } else {
+        AppLogger.warning(
+            '📧 [NotificationService] No email found for user: $userId');
       }
+    } else {
+      AppLogger.info('📧 [NotificationService] Email notifications disabled');
     }
 
     return notification;
@@ -348,16 +376,29 @@ class NotificationService {
     );
 
     // Send email notification if enabled
+    AppLogger.info(
+        '📧 [NotificationService] createRequestApprovedNotification - enableEmailNotifications=${AppConfig.enableEmailNotifications}');
     if (AppConfig.enableEmailNotifications) {
       final email = await _getUserEmail(userId);
+      AppLogger.info(
+          '📧 [NotificationService] User email lookup result: $email');
       if (email != null) {
-        await _emailService.sendApprovalCompletedEmail(
+        AppLogger.info(
+            '📧 [NotificationService] Sending approval completed email to: $email');
+        final success = await _emailService.sendApprovalCompletedEmail(
           email: email,
           templateName: requestTitle,
           workspaceName: workspaceName,
           workspaceId: workspaceId,
         );
+        AppLogger.info(
+            '📧 [NotificationService] Approval completed email result: $success');
+      } else {
+        AppLogger.warning(
+            '📧 [NotificationService] No email found for user: $userId');
       }
+    } else {
+      AppLogger.info('📧 [NotificationService] Email notifications disabled');
     }
 
     return notification;
@@ -406,17 +447,30 @@ class NotificationService {
     );
 
     // Send email notification if enabled
+    AppLogger.info(
+        '📧 [NotificationService] createRequestRejectedNotification - enableEmailNotifications=${AppConfig.enableEmailNotifications}');
     if (AppConfig.enableEmailNotifications) {
       final email = await _getUserEmail(userId);
+      AppLogger.info(
+          '📧 [NotificationService] User email lookup result: $email');
       if (email != null) {
-        await _emailService.sendRejectionEmail(
+        AppLogger.info(
+            '📧 [NotificationService] Sending rejection email to: $email');
+        final success = await _emailService.sendRejectionEmail(
           email: email,
           templateName: requestTitle,
           workspaceName: workspaceName,
           workspaceId: workspaceId,
           reason: reason,
         );
+        AppLogger.info(
+            '📧 [NotificationService] Rejection email result: $success');
+      } else {
+        AppLogger.warning(
+            '📧 [NotificationService] No email found for user: $userId');
       }
+    } else {
+      AppLogger.info('📧 [NotificationService] Email notifications disabled');
     }
 
     return notification;
