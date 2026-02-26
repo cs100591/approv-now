@@ -84,6 +84,23 @@ class _NotificationSettingsScreenState
                 ],
               ),
             ),
+
+            const SizedBox(height: AppSpacing.lg),
+
+            // Debug Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/push-notification-debug');
+                },
+                icon: const Icon(Icons.bug_report),
+                label: const Text('Debug Push Notifications'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
           ],
         ),
       ),
