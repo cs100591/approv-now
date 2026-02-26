@@ -59,14 +59,40 @@ class NotificationProvider extends ChangeNotifier {
   /// Setup FCM token for user
   Future<void> _setupFcmToken(String userId) async {
     try {
+      AppLogger.info('🔔 Setting up FCM token for user: $userId');
+
+      // First check if permission is granted
+      final hasPermission = await FCMService.checkPermission();
+      AppLogger.info('🔔 Notification permission status: $hasPermission');
+
+      if (!hasPermission) {
+        AppLogger.warning(
+            '⚠️ Notification permission not granted, requesting...');
+        final granted = await FCMService.requestPermission();
+        if (!granted) {
+          AppLogger.warning('⚠️ User denied notification permission');
+          return;
+        }
+      }
+
+      // Get token
       final token = await FCMService.getToken();
-      if (token != null) {
+      AppLogger.info('🔔 FCM token retrieved: ${token != null ? "Yes" : "No"}');
+
+      if (token != null && token.isNotEmpty) {
+        AppLogger.info('📱 Token length: ${token.length}');
+        AppLogger.info(
+            '📱 Token preview: ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
+
         await FCMService.saveTokenToBackend(userId, token);
         FCMService.subscribeToTokenRefresh(userId);
-        AppLogger.info('📱 FCM token registered for user: $userId');
+        AppLogger.info('✅ FCM token registered successfully for user: $userId');
+      } else {
+        AppLogger.error('❌ FCM token is null or empty');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       AppLogger.error('❌ Failed to setup FCM token', e);
+      AppLogger.error('❌ Stack trace', stackTrace);
     }
   }
 

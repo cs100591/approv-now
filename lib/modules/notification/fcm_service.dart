@@ -24,16 +24,26 @@ class FCMService {
 
   /// Initialize FCM service
   static Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      AppLogger.info('🔔 FCM Service already initialized');
+      return;
+    }
 
     try {
+      AppLogger.info('🔔 Initializing FCM Service...');
+
       // Initialize Firebase (if not already done)
       if (Firebase.apps.isEmpty) {
+        AppLogger.info('🔔 Initializing Firebase...');
         await Firebase.initializeApp();
+        AppLogger.info('✅ Firebase initialized');
+      } else {
+        AppLogger.info('🔔 Firebase already initialized');
       }
 
-      // Request notification permissions
-      await _requestPermission();
+      // Check current permission status
+      final currentStatus = await checkPermission();
+      AppLogger.info('🔔 Current notification permission: $currentStatus');
 
       // Initialize local notifications (for foreground display)
       await _initLocalNotifications();
@@ -50,26 +60,11 @@ class FCMService {
 
       _isInitialized = true;
       AppLogger.info('✅ FCM Service initialized successfully');
-    } catch (e) {
+    } catch (e, stackTrace) {
       AppLogger.error('❌ Failed to initialize FCM Service', e);
+      AppLogger.error('❌ Stack trace', stackTrace);
       rethrow;
     }
-  }
-
-  /// Request notification permissions from user
-  static Future<bool> _requestPermission() async {
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
-
-    final granted =
-        settings.authorizationStatus == AuthorizationStatus.authorized;
-    AppLogger.info(
-        '🔔 Notification permission: ${granted ? "granted" : "denied"}');
-    return granted;
   }
 
   /// Initialize local notifications plugin (for displaying notifications
@@ -190,11 +185,52 @@ class FCMService {
     AppLogger.info('🔔 Processing notification tap with data: $data');
   }
 
+  /// Check current notification permission status
+  static Future<bool> checkPermission() async {
+    try {
+      final settings = await _messaging.getNotificationSettings();
+      final authorized =
+          settings.authorizationStatus == AuthorizationStatus.authorized;
+      AppLogger.info(
+          '🔔 Current permission status: ${settings.authorizationStatus}');
+      return authorized;
+    } catch (e) {
+      AppLogger.error('❌ Failed to check permission', e);
+      return false;
+    }
+  }
+
+  /// Request notification permission from user
+  static Future<bool> requestPermission() async {
+    try {
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
+      final granted =
+          settings.authorizationStatus == AuthorizationStatus.authorized;
+      AppLogger.info(
+          '🔔 Permission request result: ${granted ? "granted" : "denied"}');
+      return granted;
+    } catch (e) {
+      AppLogger.error('❌ Failed to request permission', e);
+      return false;
+    }
+  }
+
   /// Get FCM token for current device
   static Future<String?> getToken() async {
     try {
+      AppLogger.info('🔔 Getting FCM token...');
       final token = await _messaging.getToken();
-      AppLogger.info('📱 FCM Token retrieved: ${token?.substring(0, 20)}...');
+      if (token != null) {
+        AppLogger.info('📱 FCM Token retrieved: ${token.substring(0, 20)}...');
+      } else {
+        AppLogger.warning('⚠️ FCM Token is null');
+      }
       return token;
     } catch (e) {
       AppLogger.error('❌ Failed to get FCM token', e);
