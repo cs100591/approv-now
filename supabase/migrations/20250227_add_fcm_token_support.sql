@@ -10,17 +10,20 @@ CREATE INDEX IF NOT EXISTS idx_profiles_fcm_token
 ON profiles(fcm_token) 
 WHERE fcm_token IS NOT NULL;
 
--- Update RLS policies to allow users to update their own FCM token
--- Note: Assumes id column is the user_id (UUID)
-CREATE POLICY IF NOT EXISTS "Users can update their own FCM token"
+-- Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "Users can update their own FCM token" ON profiles;
+DROP POLICY IF EXISTS "Users can read their own profile" ON profiles;
+
+-- Create policy to allow users to update their own FCM token
+CREATE POLICY "Users can update their own FCM token"
 ON profiles
 FOR UPDATE
 TO authenticated
 USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
--- Allow users to read their own profile (if not already exists)
-CREATE POLICY IF NOT EXISTS "Users can read their own profile"
+-- Create policy to allow users to read their own profile
+CREATE POLICY "Users can read their own profile"
 ON profiles
 FOR SELECT
 TO authenticated
