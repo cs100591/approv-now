@@ -490,10 +490,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // AuthWrapper will automatically show LoginScreen when auth state changes
-              context.read<AuthProvider>().logout();
+              await context.read<AuthProvider>().logout();
+              // Navigate to login screen after logout
+              if (mounted) {
+                Navigator.of(context).pushReplacementNamed(RouteNames.login);
+              }
             },
             child: Text(AppLocalizations.of(context)!.logout,
                 style: TextStyle(color: AppColors.error)),

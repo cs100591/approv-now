@@ -241,11 +241,11 @@ class NotificationService {
     return notification;
   }
 
-  /// Get user email by user ID
+  /// Get user email by user ID from profiles table
   Future<String?> _getUserEmail(String userId) async {
     try {
       final response = await _supabase.client
-          .from('users')
+          .from('profiles')
           .select('email')
           .eq('id', userId)
           .single();

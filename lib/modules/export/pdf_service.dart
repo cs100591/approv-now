@@ -56,7 +56,6 @@ class PdfService {
             pw.SizedBox(height: 10),
             _buildActionTable(request),
           ],
-          if (includeWatermark) _buildWatermark(),
         ],
       ),
     );
@@ -361,22 +360,6 @@ class PdfService {
           final isEven = e.key % 2 == 0;
           return _actionRow(e.value, isEven ? null : _kLight);
         }).toList(),
-      ),
-    );
-  }
-
-  pw.Widget _buildWatermark() {
-    return pw.Center(
-      child: pw.Transform.rotate(
-        angle: -0.785,
-        child: pw.Text(
-          'CONFIDENTIAL',
-          style: pw.TextStyle(
-            fontSize: 80,
-            color: PdfColors.grey200,
-            fontWeight: pw.FontWeight.bold,
-          ),
-        ),
       ),
     );
   }

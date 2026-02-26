@@ -13,8 +13,12 @@ class LocaleProvider extends ChangeNotifier {
   void _loadSavedLocale() async {
     final prefs = await SharedPreferences.getInstance();
     final languageCode = prefs.getString('language_code');
-    final scriptCode = prefs.getString('script_code');
+    var scriptCode = prefs.getString('script_code');
     if (languageCode != null) {
+      // Convert generic 'zh' to 'zh_Hans' for backward compatibility
+      if (languageCode == 'zh' && scriptCode == null) {
+        scriptCode = 'Hans';
+      }
       _locale = Locale.fromSubtags(
         languageCode: languageCode,
         scriptCode: scriptCode,
@@ -61,12 +65,12 @@ class LanguageOption {
 class L10n {
   static final options = [
     const LanguageOption(locale: Locale('en'), displayName: 'English'),
-    LanguageOption(
-      locale: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+    const LanguageOption(
+      locale: Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
       displayName: '简体中文',
     ),
-    LanguageOption(
-      locale: const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+    const LanguageOption(
+      locale: Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
       displayName: '繁體中文',
     ),
     const LanguageOption(locale: Locale('ja'), displayName: '日本語'),
@@ -94,6 +98,10 @@ class L10n {
           option.locale.scriptCode == null) {
         return option.displayName;
       }
+    }
+    // Special handling for zh without script code - default to Simplified Chinese
+    if (locale.languageCode == 'zh') {
+      return '简体中文';
     }
     return 'English';
   }

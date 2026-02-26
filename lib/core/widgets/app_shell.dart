@@ -222,7 +222,9 @@ class _AppShellState extends State<AppShell> {
         Navigator.pushNamed(context, RouteNames.joinWorkspace);
         break;
       case 'logout':
-        authProvider.logout();
+        authProvider.logout().then((_) {
+          Navigator.of(context).pushReplacementNamed(RouteNames.login);
+        });
         break;
     }
   }

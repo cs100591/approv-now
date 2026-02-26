@@ -98,8 +98,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = authProvider.user;
 
     if (user == null) {
-      return Scaffold(
-        body: Center(child: Text(AppLocalizations.of(context)!.notLoggedIn)),
+      // Redirect to login screen if not authenticated
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed(RouteNames.login);
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -454,8 +458,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              // AuthWrapper will automatically show LoginScreen when auth state changes
               await context.read<AuthProvider>().logout();
+              // Navigate to login screen after logout
+              if (mounted) {
+                Navigator.of(context).pushReplacementNamed(RouteNames.login);
+              }
             },
             child: Text(
               AppLocalizations.of(context)!.logout,
