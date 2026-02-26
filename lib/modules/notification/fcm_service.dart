@@ -206,10 +206,10 @@ class FCMService {
   static Future<void> saveTokenToBackend(String userId, String token) async {
     try {
       final supabase = SupabaseService();
-      await supabase.client.from('user_profiles').update({
+      await supabase.client.from('profiles').update({
         'fcm_token': token,
         'fcm_token_updated_at': DateTime.now().toIso8601String(),
-      }).eq('user_id', userId);
+      }).eq('id', userId);
 
       AppLogger.info('💾 FCM token saved to backend for user: $userId');
     } catch (e) {
@@ -222,10 +222,10 @@ class FCMService {
   static Future<void> deleteTokenFromBackend(String userId) async {
     try {
       final supabase = SupabaseService();
-      await supabase.client.from('user_profiles').update({
+      await supabase.client.from('profiles').update({
         'fcm_token': null,
         'fcm_token_updated_at': null,
-      }).eq('user_id', userId);
+      }).eq('id', userId);
 
       AppLogger.info('🗑️ FCM token removed from backend for user: $userId');
     } catch (e) {

@@ -211,9 +211,9 @@ Deno.serve(async (req) => {
 
     // Get user's FCM token from their profile
     const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('fcm_token')
-      .eq('user_id', userId)
+      .eq('id', userId)
       .single()
 
     if (profileError) {
@@ -286,9 +286,9 @@ Deno.serve(async (req) => {
       // If token is invalid (404 or 410), clear it from the database
       if (fcmResponse.status === 404 || fcmResponse.status === 410) {
         await supabase
-          .from('user_profiles')
+          .from('profiles')
           .update({ fcm_token: null })
-          .eq('user_id', userId)
+          .eq('id', userId)
         console.log(`Cleared invalid FCM token for user ${userId}`)
       }
 
