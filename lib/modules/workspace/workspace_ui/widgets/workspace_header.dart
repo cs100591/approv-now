@@ -5,7 +5,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/routing/route_names.dart';
-import '../../../subscription/subscription_provider.dart';
 import '../../../template/template_provider.dart';
 import '../../../request/request_provider.dart';
 import '../../../auth/auth_provider.dart';
@@ -17,10 +16,12 @@ class WorkspaceHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<WorkspaceProvider, SubscriptionProvider>(
-      builder: (context, workspaceProvider, subscriptionProvider, child) {
+    return Consumer<WorkspaceProvider>(
+      builder: (context, workspaceProvider, child) {
         final currentWorkspace = workspaceProvider.currentWorkspace;
-        final currentPlan = subscriptionProvider.currentPlan;
+        // Use workspace plan instead of user's personal subscription plan
+        // This ensures members see the workspace's actual plan (e.g., PRO)
+        final workspacePlan = currentWorkspace?.plan ?? 'free';
 
         if (currentWorkspace == null) {
           return const SizedBox.shrink();
@@ -159,20 +160,20 @@ class WorkspaceHeader extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: _getPlanColor(currentPlan.name)
-                                .withOpacity(0.1),
+                            color:
+                                _getPlanColor(workspacePlan).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            _capitalizeFirst(currentPlan.name),
+                            _capitalizeFirst(workspacePlan),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: _getPlanColor(currentPlan.name),
+                              color: _getPlanColor(workspacePlan),
                             ),
                           ),
                         ),
-                        if (currentPlan.name == 'free') ...[
+                        if (workspacePlan == 'free') ...[
                           const SizedBox(width: 8),
                           GestureDetector(
                             onTap: () => Navigator.pushNamed(
