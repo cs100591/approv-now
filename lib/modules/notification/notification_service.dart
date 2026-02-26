@@ -6,6 +6,7 @@ import '../../core/utils/app_logger.dart';
 import '../../core/utils/stream_helper.dart';
 import 'email_service.dart';
 import 'notification_models.dart';
+import 'notification_settings_repository.dart';
 
 /// NotificationRepository - Database operations for notifications
 class NotificationRepository {
@@ -179,16 +180,20 @@ class NotificationService {
   final PushService _pushService;
   final EmailService _emailService;
   final SupabaseService _supabase;
+  final NotificationSettingsRepository _settingsRepository;
 
   NotificationService({
     NotificationRepository? repository,
     PushService? pushService,
     EmailService? emailService,
     SupabaseService? supabase,
+    NotificationSettingsRepository? settingsRepository,
   })  : _repository = repository ?? NotificationRepository(),
         _pushService = pushService ?? PushService(),
         _emailService = emailService ?? EmailService(),
-        _supabase = supabase ?? SupabaseService();
+        _supabase = supabase ?? SupabaseService(),
+        _settingsRepository =
+            settingsRepository ?? NotificationSettingsRepository();
 
   /// Create invitation notification
   Future<AppNotification> createInvitationNotification({
@@ -227,10 +232,10 @@ class NotificationService {
       },
     );
 
-    // Send email notification if enabled and email is provided
-    AppLogger.info(
-        '📧 [NotificationService] Checking email conditions: enableEmailNotifications=${AppConfig.enableEmailNotifications}, recipientEmail=$recipientEmail');
-    if (AppConfig.enableEmailNotifications && recipientEmail != null) {
+    // Send invitation email if email is provided
+    // Note: Invitations are special - we send to the provided email address
+    // regardless of user settings since the recipient may not be registered yet
+    if (recipientEmail != null) {
       AppLogger.info(
           '📧 [NotificationService] Sending invitation email to: $recipientEmail');
       final success = await _emailService.sendInvitationEmail(
@@ -244,30 +249,53 @@ class NotificationService {
           '📧 [NotificationService] Invitation email result: $success');
     } else {
       AppLogger.info(
-          '📧 [NotificationService] Skipping email: enableEmailNotifications=${AppConfig.enableEmailNotifications}, hasRecipient=${recipientEmail != null}');
+          '📧 [NotificationService] No recipient email provided for invitation');
     }
 
     return notification;
   }
 
-  /// Get user email by user ID from profiles table
+  /// Get user email by user ID using database function
+  /// This queries auth.users which is not directly accessible from client
   Future<String?> _getUserEmail(String userId) async {
     try {
       AppLogger.info(
           '📧 [NotificationService] Looking up email for userId: $userId');
+
+      // Use the database function to get email from auth.users
       final response = await _supabase.client
-          .from('profiles')
-          .select('email')
-          .eq('id', userId)
-          .single();
-      AppLogger.info(
-          '📧 [NotificationService] Profile lookup result: $response');
-      return response['email'] as String?;
+          .rpc('get_user_email', params: {'user_id': userId});
+
+      if (response != null) {
+        AppLogger.info(
+            '📧 [NotificationService] Found email for user $userId: $response');
+        return response as String;
+      }
+
+      AppLogger.warning(
+          '📧 [NotificationService] No email found for user $userId');
+      return null;
     } catch (e, stackTrace) {
       AppLogger.warning(
           '📧 [NotificationService] Failed to get email for user $userId: $e',
           stackTrace);
       return null;
+    }
+  }
+
+  /// Check if user has email notifications enabled
+  /// Returns false if settings don't exist or are disabled
+  Future<bool> _isEmailNotificationsEnabled(String userId) async {
+    try {
+      final settings = await _settingsRepository.getUserSettings(userId);
+      final enabled = settings?.emailNotificationsEnabled ?? false;
+      AppLogger.info(
+          '📧 [NotificationService] Email notifications enabled for user $userId: $enabled');
+      return enabled;
+    } catch (e) {
+      AppLogger.warning(
+          '📧 [NotificationService] Error checking email settings for user $userId: $e');
+      return false;
     }
   }
 
@@ -308,13 +336,10 @@ class NotificationService {
       },
     );
 
-    // Send email notification if enabled
-    AppLogger.info(
-        '📧 [NotificationService] createPendingRequestNotification - enableEmailNotifications=${AppConfig.enableEmailNotifications}');
-    if (AppConfig.enableEmailNotifications) {
+    // Send email notification if user has enabled it
+    final emailEnabled = await _isEmailNotificationsEnabled(userId);
+    if (emailEnabled) {
       final email = await _getUserEmail(userId);
-      AppLogger.info(
-          '📧 [NotificationService] User email lookup result: $email');
       if (email != null) {
         AppLogger.info(
             '📧 [NotificationService] Sending approval request email to: $email');
@@ -332,7 +357,8 @@ class NotificationService {
             '📧 [NotificationService] No email found for user: $userId');
       }
     } else {
-      AppLogger.info('📧 [NotificationService] Email notifications disabled');
+      AppLogger.info(
+          '📧 [NotificationService] User has email notifications disabled or no settings');
     }
 
     return notification;
@@ -375,13 +401,10 @@ class NotificationService {
       },
     );
 
-    // Send email notification if enabled
-    AppLogger.info(
-        '📧 [NotificationService] createRequestApprovedNotification - enableEmailNotifications=${AppConfig.enableEmailNotifications}');
-    if (AppConfig.enableEmailNotifications) {
+    // Send email notification if user has enabled it
+    final emailEnabled = await _isEmailNotificationsEnabled(userId);
+    if (emailEnabled) {
       final email = await _getUserEmail(userId);
-      AppLogger.info(
-          '📧 [NotificationService] User email lookup result: $email');
       if (email != null) {
         AppLogger.info(
             '📧 [NotificationService] Sending approval completed email to: $email');
@@ -398,7 +421,8 @@ class NotificationService {
             '📧 [NotificationService] No email found for user: $userId');
       }
     } else {
-      AppLogger.info('📧 [NotificationService] Email notifications disabled');
+      AppLogger.info(
+          '📧 [NotificationService] User has email notifications disabled or no settings');
     }
 
     return notification;
@@ -446,13 +470,10 @@ class NotificationService {
       },
     );
 
-    // Send email notification if enabled
-    AppLogger.info(
-        '📧 [NotificationService] createRequestRejectedNotification - enableEmailNotifications=${AppConfig.enableEmailNotifications}');
-    if (AppConfig.enableEmailNotifications) {
+    // Send email notification if user has enabled it
+    final emailEnabled = await _isEmailNotificationsEnabled(userId);
+    if (emailEnabled) {
       final email = await _getUserEmail(userId);
-      AppLogger.info(
-          '📧 [NotificationService] User email lookup result: $email');
       if (email != null) {
         AppLogger.info(
             '📧 [NotificationService] Sending rejection email to: $email');
@@ -470,7 +491,8 @@ class NotificationService {
             '📧 [NotificationService] No email found for user: $userId');
       }
     } else {
-      AppLogger.info('📧 [NotificationService] Email notifications disabled');
+      AppLogger.info(
+          '📧 [NotificationService] User has email notifications disabled or no settings');
     }
 
     return notification;

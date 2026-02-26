@@ -20,10 +20,9 @@ serve(async (req) => {
 
   try {
     // Use service_role key to bypass RLS and access any user's profile
-    // Note: SERVICE_ROLE_KEY is set manually, SUPABASE_URL is auto-provided
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         auth: {
           persistSession: false,
@@ -34,79 +33,12 @@ serve(async (req) => {
 
     const { type, data } = await req.json()
 
-    // --- PRO PLAN CHECK START ---
-    let isProPlan = false;
+    // Log request details for debugging
     const workspaceIdentifier = data.workspaceId || data.workspace_id;
-    
     console.log('📧 Email notification request:', { type, workspaceIdentifier, workspaceName: data.workspaceName });
-
-    try {
-      if (workspaceIdentifier) {
-        console.log('🔍 Checking workspace plan for ID:', workspaceIdentifier);
-        const { data: workspace, error } = await supabaseClient
-          .from('workspaces')
-          .select('plan, name')
-          .eq('id', workspaceIdentifier)
-          .single()
-
-        console.log('📊 Workspace query result:', { workspace, error });
-
-        if (error) {
-          console.error('❌ Error querying workspace:', error);
-        } else if (!workspace) {
-          console.error('❌ Workspace not found for ID:', workspaceIdentifier);
-        } else {
-          console.log('✅ Workspace found:', workspace.name, 'Plan:', workspace.plan);
-          if (workspace.plan?.toLowerCase() === 'pro') {
-            isProPlan = true;
-            console.log('✅ Workspace is on Pro plan');
-          } else {
-            console.log('❌ Workspace plan is not Pro:', workspace.plan);
-          }
-        }
-      } else if (data.workspaceName) {
-        console.log('🔍 Checking workspace plan for name:', data.workspaceName);
-        const { data: workspaces, error } = await supabaseClient
-          .from('workspaces')
-          .select('plan, name')
-          .eq('name', data.workspaceName)
-          .limit(1)
-
-        console.log('📊 Workspace query result:', { workspaces, error });
-
-        if (error) {
-          console.error('❌ Error querying workspace:', error);
-        } else if (!workspaces || workspaces.length === 0) {
-          console.error('❌ Workspace not found for name:', data.workspaceName);
-        } else {
-          console.log('✅ Workspace found:', workspaces[0].name, 'Plan:', workspaces[0].plan);
-          if (workspaces[0].plan?.toLowerCase() === 'pro') {
-            isProPlan = true;
-            console.log('✅ Workspace is on Pro plan');
-          } else {
-            console.log('❌ Workspace plan is not Pro:', workspaces[0].plan);
-          }
-        }
-      } else {
-        console.error('❌ No workspace identifier provided');
-      }
-    } catch (err) {
-      console.error('❌ Error checking workspace plan:', err);
-    }
-
-    if (!isProPlan) {
-      console.log('❌ Workspace is not on Pro plan - email notifications skipped');
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Email notifications are only available for Pro plan workspaces'
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      )
-    }
+    
+    // Note: Pro plan check removed - all users can use email notifications
+    // Email sending is controlled by user preferences in the Flutter app
     // --- PRO PLAN CHECK END ---
 
     // Get Resend API key from environment
