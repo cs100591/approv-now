@@ -20,9 +20,10 @@ serve(async (req) => {
 
   try {
     // Use service_role key to bypass RLS and access any user's profile
+    // Note: SERVICE_ROLE_KEY is set manually, SUPABASE_URL is auto-provided
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SERVICE_ROLE_KEY') ?? '',
       {
         auth: {
           persistSession: false,
