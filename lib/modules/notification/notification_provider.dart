@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../../core/utils/app_logger.dart';
 import 'notification_models.dart';
 import 'notification_service.dart';
-import 'fcm_service.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationRepository _repository;
@@ -13,7 +12,6 @@ class NotificationProvider extends ChangeNotifier {
   NotificationState _state = const NotificationState();
   StreamSubscription<List<AppNotification>>? _subscription;
   String? _currentUserId;
-  bool _isFcmInitialized = false;
 
   NotificationProvider({
     NotificationRepository? repository,
@@ -32,95 +30,26 @@ class NotificationProvider extends ChangeNotifier {
   String? get error => _state.error;
   bool get hasPendingInvitations => pendingInvitations.isNotEmpty;
 
-  /// Initialize with user ID - sets up FCM and notification streams
+  /// Initialize with user ID - sets up push notifications and notification streams
   Future<void> initialize(String userId) async {
-    if (_currentUserId == userId && _isFcmInitialized) return;
+    if (_currentUserId == userId) return;
 
     AppLogger.info(
         '🔔 NotificationProvider.initialize() called for user: $userId');
     _currentUserId = userId;
 
-    // Setup FCM token for user (FCM should already be initialized in main.dart)
-    if (!kIsWeb) {
-      await _setupFcmToken(userId);
-    }
+    // Note: Push notifications are handled by Pusher Beams (native iOS)
+    // No Flutter-side FCM initialization needed
+    AppLogger.info('🔔 Using Pusher Beams for push notifications (native iOS)');
 
     _pushService.initialize(userId);
     _subscribeToNotifications(userId);
     loadNotifications();
   }
 
-  /// Setup FCM token for user
-  Future<void> _setupFcmToken(String userId) async {
-    try {
-      AppLogger.info('🔔 Setting up FCM token for user: $userId');
-
-      // Check permission status
-      final hasPermission = await FCMService.checkPermission();
-      AppLogger.info('🔔 Notification permission: $hasPermission');
-
-      if (!hasPermission) {
-        // Request permission
-        AppLogger.info('🔔 Requesting notification permission...');
-        final granted = await FCMService.requestPermission();
-        if (!granted) {
-          AppLogger.warning('⚠️ User denied notification permission');
-          // Continue anyway - user might enable later in Settings
-        }
-      }
-
-      // Get FCM token
-      final token = await FCMService.getToken();
-
-      if (token != null && token.isNotEmpty) {
-        AppLogger.info('📱 Got FCM token, saving to backend...');
-        AppLogger.info(
-            '📱 Token preview: ${token.substring(0, token.length > 30 ? 30 : token.length)}...');
-
-        // Save to backend
-        final saved = await FCMService.saveTokenToBackend(userId, token);
-        if (saved) {
-          AppLogger.info('✅ FCM token saved to backend successfully');
-
-          // Subscribe to token refresh
-          FCMService.subscribeToTokenRefresh(userId);
-          _isFcmInitialized = true;
-        } else {
-          AppLogger.warning('⚠️ Failed to save FCM token to backend');
-        }
-      } else {
-        AppLogger.error('❌ FCM token is null or empty');
-        AppLogger.error('❌ This usually means APNs is not configured');
-        AppLogger.error('❌ Check:');
-        AppLogger.error(
-            '   1. Apple Developer APNs key is uploaded to Firebase Console');
-        AppLogger.error('   2. Runner.entitlements has aps-environment');
-        AppLogger.error(
-            '   3. AppDelegate.swift registers for remote notifications');
-      }
-    } catch (e, stackTrace) {
-      AppLogger.error('❌ Failed to setup FCM token: $e');
-      AppLogger.error('❌ Stack trace: $stackTrace');
-    }
-  }
-
   /// Clear state (on logout)
   Future<void> clear() async {
-    final userId = _currentUserId;
-
-    // Cleanup FCM
-    if (userId != null && !kIsWeb) {
-      try {
-        await FCMService.deleteTokenFromBackend(userId);
-        FCMService.unsubscribeFromTokenRefresh();
-        await FCMService.dispose();
-      } catch (e) {
-        AppLogger.error('❌ Error during FCM cleanup', e);
-      }
-    }
-
     _currentUserId = null;
-    _isFcmInitialized = false;
     _subscription?.cancel();
     _subscription = null;
     _state = const NotificationState();

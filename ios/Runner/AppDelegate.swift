@@ -1,5 +1,6 @@
-import Flutter
 import UIKit
+import Flutter
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -9,81 +10,41 @@ import UIKit
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     
-    do {
-      // Initialize Firebase
-      // Note: Firebase imports are in Runner-Bridging-Header.h
-      FirebaseApp.configure()
-      print("✅ Firebase configured in AppDelegate")
-      
-      // Register for remote notifications
-      UNUserNotificationCenter.current().delegate = self
-      
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-      UNUserNotificationCenter.current().requestAuthorization(
-        options: authOptions,
-        completionHandler: { granted, error in
-          if granted {
-            print("✅ Push notification permission granted")
-          } else {
-            print("❌ Push notification permission denied: \(error?.localizedDescription ?? "unknown")")
-          }
-        }
-      )
-      
-      application.registerForRemoteNotifications()
-      print("✅ Registered for remote notifications")
-      
-      // Set Messaging delegate
-      Messaging.messaging().delegate = self
-      
-    } catch {
-      print("❌ Error initializing Firebase: \(error)")
-    }
+    NSLog("🚀 [AppDelegate] Application starting...")
     
+    // Set UNUserNotificationCenter delegate for iOS 10+
+    UNUserNotificationCenter.current().delegate = self
+    
+    // Initialize Flutter
     GeneratedPluginRegistrant.register(with: self)
+    NSLog("🚀 [AppDelegate] Flutter plugins registered")
+    
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   
-  // Handle APNs token registration
-  override func application(
-    _ application: UIApplication,
-    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
-  ) {
+  override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
     let tokenParts = deviceToken.map { data in String(format: "%02.2hhx", data) }
     let token = tokenParts.joined()
-    print("✅ APNs Device Token: \(token)")
+    NSLog("✅ [AppDelegate] APNs device token received: \(token)")
     
-    // Set APNs token for Firebase Messaging
-    Messaging.messaging().apnsToken = deviceToken
-    print("✅ APNs token set for Firebase Messaging")
-    
-    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+    // Note: OneSignal handles token registration automatically via Flutter SDK
+    NSLog("✅ [AppDelegate] Device token will be sent to OneSignal")
   }
   
-  // Handle APNs registration failure
-  override func application(
-    _ application: UIApplication,
-    didFailToRegisterForRemoteNotificationsWithError error: Error
-  ) {
-    print("❌ Failed to register for remote notifications: \(error.localizedDescription)")
-    print("❌ Error details: \(error)")
-    
-    super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+  override func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+    NSLog("❌ [AppDelegate] Failed to register for remote notifications: \(error.localizedDescription)")
+    NSLog("❌ [AppDelegate] Error domain: \((error as NSError).domain)")
+    NSLog("❌ [AppDelegate] Error code: \((error as NSError).code)")
   }
   
-  // Handle incoming notification when app is in foreground
-  override func userNotificationCenter(
-    _ center: UNUserNotificationCenter,
-    willPresent notification: UNNotification,
-    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
-  ) {
-    let userInfo = notification.request.content.userInfo
+  // MARK: - UNUserNotificationCenterDelegate
+  
+  // Called when notification arrives while app is in foreground
+  override func userNotificationCenter(_ center: UNUserNotificationCenter, 
+                              willPresent notification: UNNotification, 
+                              withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    NSLog("📱 [AppDelegate] Notification received in foreground: \(notification.request.content.title)")
     
-    print("📨 Received notification in foreground")
-    print("📨 UserInfo: \(userInfo)")
-    
-    // Show notification even when app is in foreground
-    // Use banner for iOS 14+, fallback to alert for older versions
     if #available(iOS 14.0, *) {
       completionHandler([.banner, .sound, .badge])
     } else {
@@ -91,29 +52,16 @@ import UIKit
     }
   }
   
-  // Handle notification tap
-  override func userNotificationCenter(
-    _ center: UNUserNotificationCenter,
-    didReceive response: UNNotificationResponse,
-    withCompletionHandler completionHandler: @escaping () -> Void
-  ) {
-    let userInfo = response.notification.request.content.userInfo
+  // Called when user taps on notification
+  override func userNotificationCenter(_ center: UNUserNotificationCenter, 
+                              didReceive response: UNNotificationResponse, 
+                              withCompletionHandler completionHandler: @escaping () -> Void) {
+    NSLog("👆 [AppDelegate] User tapped notification: \(response.notification.request.content.title)")
     
-    print("📨 Notification tapped")
-    print("📨 UserInfo: \(userInfo)")
+    // Handle the notification tap
+    let userInfo = response.notification.request.content.userInfo
+    NSLog("📱 [AppDelegate] Notification data: \(userInfo)")
     
     completionHandler()
-  }
-}
-
-// MARK: - MessagingDelegate
-extension AppDelegate: MessagingDelegate {
-  
-  func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-    if let token = fcmToken {
-      print("✅ FCM Token received in AppDelegate: \(token)")
-    } else {
-      print("❌ FCM Token is nil")
-    }
   }
 }

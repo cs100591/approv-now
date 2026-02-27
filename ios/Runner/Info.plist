@@ -81,6 +81,10 @@
 	<key>NSUserNotificationUsageDescription</key>
 	<string>Approv Now sends notifications for approval requests, team member activities, and important updates.</string>
 	
+	<!-- Location Permission - Required by some SDKs -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Approv Now may use your location for analytics and to provide location-based features.</string>
+	
 	<!-- URL Scheme for Supabase Auth -->
 	<key>CFBundleURLTypes</key>
 	<array>

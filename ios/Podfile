@@ -31,10 +31,16 @@ target 'Runner' do
   use_frameworks! :linkage => :static
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  
+  # OneSignal for push notifications
+  pod 'OneSignalXCFramework', '>= 5.0.0', '< 6.0'
+  
   target 'RunnerTests' do
     inherit! :search_paths
   end
 end
+
+
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|

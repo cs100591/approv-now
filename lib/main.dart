@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
@@ -59,44 +57,69 @@ import 'modules/subscription/subscription_repository.dart';
 // Notification Module
 import 'modules/notification/notification_provider.dart';
 import 'modules/notification/notification_service.dart';
-import 'modules/notification/fcm_service.dart';
 
 // Analytics Module
 import 'modules/analytics/analytics_service.dart';
 
 // Plan Enforcement Module
 import 'modules/plan_enforcement/plan_guard_service.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+
+/// Save OneSignal Player ID to database for push notifications
+Future<void> _savePlayerIdToDatabase(String playerId) async {
+  try {
+    final supabase = SupabaseService();
+    final userId = supabase.currentUserId;
+
+    if (userId == null) {
+      AppLogger.info('🔔 Cannot save Player ID: User not logged in');
+      return;
+    }
+
+    // Upsert player ID to database
+    await supabase.client.from('user_push_tokens').upsert({
+      'user_id': userId,
+      'player_id': playerId,
+      'platform': 'ios',
+      'enabled': true,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'user_id,player_id');
+
+    AppLogger.info('🔔 Player ID saved to database: $playerId');
+  } catch (e) {
+    AppLogger.error('🔔 Failed to save Player ID: $e');
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase (for push notifications only)
-  // Note: Firebase is only used for FCM, all data storage is via Supabase
+  // Initialize OneSignal for push notifications
+  // App ID: 21617a87-ab08-4adb-8551-840f1e7d534a
   if (!kIsWeb) {
-    try {
-      // Add a small delay to ensure native side is ready
-      await Future.delayed(Duration(milliseconds: 100));
+    // Enable verbose logging for debugging (remove in production)
+    OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
 
-      // Initialize Firebase FIRST
-      await Firebase.initializeApp();
-      AppLogger.info('✅ Firebase initialized for push notifications');
+    // Initialize with your OneSignal App ID
+    OneSignal.initialize("21617a87-ab08-4adb-8551-840f1e7d534a");
 
-      // Then register background message handler
-      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-      AppLogger.info('✅ FCM background handler registered');
+    AppLogger.info('✅ OneSignal initialized successfully');
 
-      // Initialize FCM Service
-      final fcmInitialized = await FCMService.initialize();
-      if (fcmInitialized) {
-        AppLogger.info('✅ FCM Service initialized successfully');
-      } else {
-        AppLogger.warning('⚠️ FCM Service initialization had issues');
+    // Listen for subscription changes and save to database
+    OneSignal.User.pushSubscription.addObserver((state) {
+      final current = state.current;
+      if (current?.id != null) {
+        AppLogger.info('🔔 OneSignal Player ID: ${current?.id}');
+        // Save to database when user is logged in
+        _savePlayerIdToDatabase(current!.id!);
       }
-    } catch (e, stackTrace) {
-      AppLogger.error('❌ Failed to initialize Firebase/FCM: $e');
-      AppLogger.error('❌ Stack trace: $stackTrace');
-      // Continue without Firebase - app will still work with in-app notifications
-    }
+    });
+
+    // Request permission (will show prompt to user)
+    // In production, you should use In-App Messages to prompt instead
+    OneSignal.Notifications.requestPermission(false).then((granted) {
+      AppLogger.info('🔔 OneSignal notification permission: $granted');
+    });
   }
 
   // Setup global error handling
