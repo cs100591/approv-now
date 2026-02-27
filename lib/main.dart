@@ -66,29 +66,49 @@ import 'modules/plan_enforcement/plan_guard_service.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 /// Save OneSignal Player ID to database for push notifications
+/// Retries up to 5 times with 2-second intervals
 Future<void> _savePlayerIdToDatabase(String playerId) async {
-  try {
-    final supabase = SupabaseService();
-    final userId = supabase.currentUserId;
+  const maxRetries = 5;
+  const retryDelay = Duration(seconds: 2);
 
-    if (userId == null) {
-      AppLogger.info('🔔 Cannot save Player ID: User not logged in');
-      return;
+  for (int attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      final supabase = SupabaseService();
+      final userId = supabase.currentUserId;
+
+      if (userId == null) {
+        AppLogger.info(
+            '🔔 Attempt $attempt: User not logged in yet, retrying...');
+        if (attempt < maxRetries) {
+          await Future.delayed(retryDelay);
+          continue;
+        }
+        AppLogger.warning(
+            '🔔 Failed to save Player ID after $maxRetries attempts: User not logged in');
+        return;
+      }
+
+      // Upsert player ID to database
+      await supabase.client.from('user_push_tokens').upsert({
+        'user_id': userId,
+        'player_id': playerId,
+        'platform': 'ios',
+        'enabled': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id,player_id');
+
+      AppLogger.info(
+          '🔔 Player ID saved to database: $playerId (attempt $attempt)');
+      return; // Success, exit
+    } catch (e) {
+      AppLogger.error('🔔 Attempt $attempt failed: $e');
+      if (attempt < maxRetries) {
+        await Future.delayed(retryDelay);
+      }
     }
-
-    // Upsert player ID to database
-    await supabase.client.from('user_push_tokens').upsert({
-      'user_id': userId,
-      'player_id': playerId,
-      'platform': 'ios',
-      'enabled': true,
-      'updated_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'user_id,player_id');
-
-    AppLogger.info('🔔 Player ID saved to database: $playerId');
-  } catch (e) {
-    AppLogger.error('🔔 Failed to save Player ID: $e');
   }
+
+  AppLogger.error('🔔 Failed to save Player ID after $maxRetries attempts');
 }
 
 void main() async {

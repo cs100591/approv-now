@@ -616,16 +616,15 @@ class _EditTemplateScreenState extends State<EditTemplateScreen> {
     try {
       final templateProvider = context.read<TemplateProvider>();
 
-      // Update template basic info
+      // Update template with all changes including fields and approval steps
       await templateProvider.updateTemplate(
         templateId: widget.template.id,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         isActive: _isActive,
+        fields: _fields,
+        approvalSteps: _approvalSteps,
       );
-
-      // Note: For a complete implementation, you would need methods in TemplateProvider
-      // to update fields and approval steps. For now, we save the basic info.
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -192,6 +192,8 @@ class TemplateProvider extends ChangeNotifier {
     String? name,
     String? description,
     bool? isActive,
+    List<TemplateField>? fields,
+    List<ApprovalStep>? approvalSteps,
   }) async {
     _setLoading(true);
 
@@ -207,6 +209,8 @@ class TemplateProvider extends ChangeNotifier {
         name: name,
         description: description,
         isActive: isActive,
+        fields: fields,
+        approvalSteps: approvalSteps,
       );
 
       await _templateRepository.updateTemplate(template);

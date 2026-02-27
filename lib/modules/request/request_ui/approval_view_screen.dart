@@ -657,6 +657,13 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
           TextButton(
             onPressed: () {
               if (requireComment && controller.text.trim().isEmpty) {
+                // Show error feedback when rejection reason is required but empty
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a reason for rejection'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
                 return;
               }
               Navigator.pop(context, controller.text.trim());

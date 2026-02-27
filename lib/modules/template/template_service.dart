@@ -30,11 +30,15 @@ class TemplateService {
     String? name,
     String? description,
     bool? isActive,
+    List<TemplateField>? fields,
+    List<ApprovalStep>? approvalSteps,
   }) {
     return existingTemplate.copyWith(
       name: name,
       description: description,
       isActive: isActive,
+      fields: fields,
+      approvalSteps: approvalSteps,
       updatedAt: DateTime.now(),
     );
   }
