@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'auth_models.dart';
 import 'auth_service.dart';
 import 'biometric_service.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/services/supabase_service.dart';
 import '../subscription/revenuecat_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -40,6 +42,9 @@ class AuthProvider extends ChangeNotifier {
 
         // Initialize RevenueCat with user ID
         _initializeRevenueCat(user.id);
+
+        // Save OneSignal Player ID when user logs in
+        _savePlayerIdOnLogin(user.id);
       } else {
         // Signed out, session expired, or intermediate null during account-switch.
         // Always transition to unauthenticated — never stay in loading/initial.
@@ -68,6 +73,39 @@ class AuthProvider extends ChangeNotifier {
       AppLogger.error('Failed to initialize RevenueCat', e);
       // Don't fail auth if RevenueCat fails - user can still use basic features
       // This is expected if products are not configured in RevenueCat Dashboard
+    }
+  }
+
+  /// Save OneSignal Player ID to database when user logs in
+  Future<void> _savePlayerIdOnLogin(String userId) async {
+    try {
+      if (kIsWeb) return; // Skip for web
+
+      // Get current Player ID from OneSignal
+      final subscription = OneSignal.User.pushSubscription;
+      final playerId = subscription.id;
+
+      if (playerId == null) {
+        AppLogger.info('🔔 No Player ID available yet, skipping save');
+        return;
+      }
+
+      AppLogger.info(
+          '🔔 Saving Player ID on login: $playerId for user: $userId');
+
+      // Save to database
+      final supabase = SupabaseService();
+      await supabase.client.from('user_push_tokens').upsert({
+        'user_id': userId,
+        'player_id': playerId,
+        'platform': 'ios',
+        'enabled': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id,player_id');
+
+      AppLogger.info('🔔 Player ID saved successfully on login');
+    } catch (e) {
+      AppLogger.error('🔔 Failed to save Player ID on login: $e');
     }
   }
 
