@@ -259,6 +259,7 @@
   "noFilteredNotifications": "Sin notificaciones de {filter}",
   "all": "Todas",
   "invitations": "Invitaciones",
+  "requests": "Solicitudes",
   "invitationDismissed": "Invitación descartada",
   "workspaceInvitation": "Invitación al Espacio de Trabajo",
   "invitedYou": "{name} te ha invitado a unirte a este espacio de trabajo",

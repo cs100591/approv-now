@@ -257,9 +257,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileUpdatedSuccessfully => 'Perfil actualizado con éxito';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return 'Error al actualizar el perfil';
-  }
+  String get failedToUpdateProfile => 'Error al actualizar el perfil';
 
   @override
   String get settingsComingSoon => 'Configuración próximamente';
@@ -833,7 +831,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get invitations => 'Invitaciones';
 
   @override
-  String get requests => 'Requests';
+  String get requests => 'Solicitudes';
 
   @override
   String get invitationDismissed => 'Invitación descartada';
@@ -864,9 +862,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get invitationAccepted => 'Invitación aceptada';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return 'Error al aceptar la invitación';
-  }
+  String get failedToAcceptInvitation => 'Error al aceptar la invitación';
 
   @override
   String get unableToAcceptInvitation => 'No se puede aceptar la invitación';
@@ -878,9 +874,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get invitationDeclined => 'Invitación rechazada';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return 'Error al rechazar la invitación';
-  }
+  String get failedToDeclineInvitation => 'Error al rechazar la invitación';
 
   @override
   String get justNow => 'Justo ahora';

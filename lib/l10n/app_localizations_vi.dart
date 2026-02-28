@@ -253,9 +253,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileUpdatedSuccessfully => 'Hồ sơ đã được cập nhật thành công';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return 'Cập nhật hồ sơ thất bại: $error';
-  }
+  String get failedToUpdateProfile => 'Cập nhật hồ sơ thất bại';
 
   @override
   String get settingsComingSoon => 'Tính năng cài đặt sẽ sớm ra mắt';
@@ -822,7 +820,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get requests => 'Yêu cầu';
 
   @override
-  String get invitationDismissed => 'Đã bỏ qua lờimời';
+  String get invitationDismissed => 'Đã bỏ qua lờimờ';
 
   @override
   String get workspaceInvitation => 'Lờimời không gian làm việc';
@@ -847,26 +845,22 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get invitationAccepted => 'Đã chấp nhận lờimời!';
+  String get invitationAccepted => 'Đã chấp nhận lờimờ!';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return 'Chấp nhận lờimời thất bại: $error';
-  }
+  String get failedToAcceptInvitation => 'Chấp nhận lờimờ thất bại';
 
   @override
-  String get unableToAcceptInvitation => 'Không thể chấp nhận lờimời';
+  String get unableToAcceptInvitation => 'Không thể chấp nhận lờimờ';
 
   @override
-  String get unableToDeclineInvitation => 'Không thể từ chối lờimời';
+  String get unableToDeclineInvitation => 'Không thể từ chối lờimờ';
 
   @override
-  String get invitationDeclined => 'Đã từ chối lờimời';
+  String get invitationDeclined => 'Đã từ chối lờimờ';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return 'Từ chối lờimời thất bại: $error';
-  }
+  String get failedToDeclineInvitation => 'Từ chối lờimờ thất bại';
 
   @override
   String get justNow => 'Vừa xong';
@@ -1085,101 +1079,102 @@ class AppLocalizationsVi extends AppLocalizations {
   String get total => 'Tổng';
 
   @override
-  String get biometricLoginEnabled => 'Biometric login enabled';
+  String get biometricLoginEnabled => 'Đã bật đăng nhập sinh trắc học';
 
   @override
-  String get biometricLoginDisabled => 'Biometric login disabled';
+  String get biometricLoginDisabled => 'Đã tắt đăng nhập sinh trắc học';
 
   @override
-  String get editProfile => 'Edit Profile';
+  String get editProfile => 'Chỉnh sửa hồ sơ';
 
   @override
-  String get profileUpdated => 'Profile updated successfully';
+  String get profileUpdated => 'Hồ sơ đã được cập nhật';
 
   @override
-  String get logoutConfirmation => 'Are you sure you want to log out?';
+  String get logoutConfirmation => 'Bạn có chắc chắn muốn đăng xuất?';
 
   @override
-  String get notificationSettings => 'Notification Settings';
+  String get notificationSettings => 'Cài đặt thông báo';
 
   @override
-  String get settingsSaved => 'Settings saved';
+  String get settingsSaved => 'Đã lưu cài đặt';
 
   @override
-  String get pushNotifications => 'Push Notifications';
+  String get pushNotifications => 'Thông báo đẩy';
 
   @override
   String get pushNotificationsSubtitle =>
-      'Receive push notifications on your device';
+      'Nhận thông báo trên thiết bị của bạn';
 
   @override
-  String get emailNotifications => 'Email Notifications';
+  String get emailNotifications => 'Thông báo qua email';
 
   @override
-  String get emailNotificationsSubtitle => 'Receive email notifications';
+  String get emailNotificationsSubtitle => 'Nhận thông báo qua email';
 
   @override
   String get emailNotificationsProOnly =>
-      'Upgrade to Pro to enable email notifications';
+      'Nâng cấp lên Pro để bật thông báo qua email';
 
   @override
   String get pro => 'Pro';
 
   @override
-  String get notificationTypes => 'Notification Types';
+  String get notificationTypes => 'Loại thông báo';
 
   @override
-  String get requestUpdates => 'Request Updates';
+  String get requestUpdates => 'Cập nhật yêu cầu';
 
   @override
-  String get requestUpdatesSubtitle =>
-      'New requests, approvals, and rejections';
+  String get requestUpdatesSubtitle => 'Yêu cầu mới, phê duyệt và từ chối';
 
   @override
-  String get invitationUpdates => 'Workspace Invitations';
+  String get invitationUpdates => 'Lờimờkhông gian làm việc';
 
   @override
-  String get invitationUpdatesSubtitle => 'When you are invited to a workspace';
+  String get invitationUpdatesSubtitle =>
+      'Khi bạn được mờtham gia không gian làm việc';
 
   @override
-  String get mentionUpdates => 'Mentions';
+  String get mentionUpdates => 'Đề cập';
 
   @override
-  String get mentionUpdatesSubtitle => 'When someone mentions you in comments';
+  String get mentionUpdatesSubtitle =>
+      'Khi có ngườđề cập đến bạn trong bình luận';
 
   @override
-  String get proFeature => 'Pro Feature';
+  String get proFeature => 'Tính năng Pro';
 
   @override
   String get proFeatureMessage =>
-      'Email notifications are available for Pro users only. Upgrade to Pro to enable this feature.';
+      'Thông báo qua email chỉ dành cho ngườdùng Pro. Nâng cấp lên Pro để bật tính năng này.';
 
   @override
-  String get upgradeToPro => 'Upgrade to Pro';
+  String get upgradeToPro => 'Nâng cấp lên Pro';
 
   @override
   String get notificationSettingsInfo =>
-      'You can view all your notifications in the Notifications tab.';
+      'Bạn có thể xem tất cả thông báo trong tab Thông báo.';
 
   @override
-  String get workspaceCreated => 'Workspace created successfully';
+  String get workspaceCreated => 'Không gian làm việc đã được tạo';
 
   @override
   String joinedWorkspace(Object workspaceName) {
-    return 'Joined $workspaceName successfully!';
+    return 'Đã tham gia $workspaceName thành công!';
   }
 
   @override
-  String get deleteWorkspace => 'Delete Workspace';
+  String get deleteWorkspace => 'Xóa không gian làm việc';
 
   @override
-  String get workspaceDeleted => 'Workspace deleted successfully';
+  String get workspaceDeleted => 'Không gian làm việc đã được xóa';
 
   @override
-  String get failedToDeleteWorkspace => 'Failed to delete workspace';
+  String get failedToDeleteWorkspace => 'Xóa không gian làm việc thất bại';
 
   @override
-  String get permissionDenied => 'Permission Denied';
+  String get permissionDenied => 'Quyền bị từ chối';
 
   @override
   String get ok => 'OK';

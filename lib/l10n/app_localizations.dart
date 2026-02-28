@@ -604,7 +604,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Failed to update profile'**
-  String failedToUpdateProfile(Object error);
+  String get failedToUpdateProfile;
 
   /// No description provided for @settingsComingSoon.
   ///
@@ -1684,7 +1684,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Failed to accept invitation'**
-  String failedToAcceptInvitation(Object error);
+  String get failedToAcceptInvitation;
 
   /// No description provided for @unableToAcceptInvitation.
   ///
@@ -1708,7 +1708,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Failed to decline invitation'**
-  String failedToDeclineInvitation(Object error);
+  String get failedToDeclineInvitation;
 
   /// No description provided for @justNow.
   ///

@@ -254,9 +254,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUpdatedSuccessfully => 'Profile updated successfully';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return 'Failed to update profile';
-  }
+  String get failedToUpdateProfile => 'Failed to update profile';
 
   @override
   String get settingsComingSoon => 'Settings coming soon';
@@ -852,9 +850,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invitationAccepted => 'Invitation accepted!';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return 'Failed to accept invitation';
-  }
+  String get failedToAcceptInvitation => 'Failed to accept invitation';
 
   @override
   String get unableToAcceptInvitation => 'Unable to accept invitation';
@@ -866,9 +862,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invitationDeclined => 'Invitation declined';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return 'Failed to decline invitation';
-  }
+  String get failedToDeclineInvitation => 'Failed to decline invitation';
 
   @override
   String get justNow => 'Just now';

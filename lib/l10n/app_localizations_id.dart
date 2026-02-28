@@ -253,9 +253,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileUpdatedSuccessfully => 'Profil berhasil diperbarui';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return 'Gagal memperbarui profil';
-  }
+  String get failedToUpdateProfile => 'Gagal memperbarui profil';
 
   @override
   String get settingsComingSoon => 'Fitur pengaturan segera hadir';
@@ -853,9 +851,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get invitationAccepted => 'Undangan diterima';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return 'Gagal menerima undangan';
-  }
+  String get failedToAcceptInvitation => 'Gagal menerima undangan';
 
   @override
   String get unableToAcceptInvitation => 'Tidak dapat menerima undangan';
@@ -867,9 +863,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get invitationDeclined => 'Undangan ditolak';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return 'Gagal menolak undangan';
-  }
+  String get failedToDeclineInvitation => 'Gagal menolak undangan';
 
   @override
   String get justNow => 'Baru saja';

@@ -253,9 +253,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileUpdatedSuccessfully => '프로필이 성공적으로 업데이트되었습니다';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return '프로필 업데이트 실패';
-  }
+  String get failedToUpdateProfile => '프로필 업데이트 실패';
 
   @override
   String get settingsComingSoon => '설정 기능이 곧 제공됩니다';
@@ -835,9 +833,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get invitationAccepted => '초대가 수락되었습니다';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return '초대 수락 실패';
-  }
+  String get failedToAcceptInvitation => '초대 수락 실패';
 
   @override
   String get unableToAcceptInvitation => '초대를 수락할 수 없습니다';
@@ -849,9 +845,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get invitationDeclined => '초대가 거절되었습니다';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return '초대 거절 실패';
-  }
+  String get failedToDeclineInvitation => '초대 거절 실패';
 
   @override
   String get justNow => '방금';

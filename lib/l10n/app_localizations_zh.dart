@@ -252,9 +252,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileUpdatedSuccessfully => '个人资料更新成功';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return '更新个人资料失败';
-  }
+  String get failedToUpdateProfile => '更新个人资料失败';
 
   @override
   String get settingsComingSoon => '设置功能即将推出';
@@ -830,9 +828,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invitationAccepted => '邀请已接受';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return '接受邀请失败';
-  }
+  String get failedToAcceptInvitation => '接受邀请失败';
 
   @override
   String get unableToAcceptInvitation => '无法接受邀请';
@@ -844,9 +840,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invitationDeclined => '邀请已拒绝';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return '拒绝邀请失败';
-  }
+  String get failedToDeclineInvitation => '拒绝邀请失败';
 
   @override
   String get justNow => '刚刚';
@@ -1406,9 +1400,7 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get profileUpdatedSuccessfully => '个人资料更新成功';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return '更新个人资料失败';
-  }
+  String get failedToUpdateProfile => '更新个人资料失败';
 
   @override
   String get settingsComingSoon => '设置功能即将推出';
@@ -1984,9 +1976,7 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get invitationAccepted => '邀请已接受';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return '接受邀请失败';
-  }
+  String get failedToAcceptInvitation => '接受邀请失败';
 
   @override
   String get unableToAcceptInvitation => '无法接受邀请';
@@ -1998,9 +1988,7 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get invitationDeclined => '邀请已拒绝';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return '拒绝邀请失败';
-  }
+  String get failedToDeclineInvitation => '拒绝邀请失败';
 
   @override
   String get justNow => '刚刚';
@@ -2560,9 +2548,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get profileUpdatedSuccessfully => '個人資料更新成功';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return '更新個人資料失敗';
-  }
+  String get failedToUpdateProfile => '更新個人資料失敗';
 
   @override
   String get settingsComingSoon => '設定功能即將推出';
@@ -3138,9 +3124,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get invitationAccepted => '邀請已接受';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return '接受邀請失敗';
-  }
+  String get failedToAcceptInvitation => '接受邀請失敗';
 
   @override
   String get unableToAcceptInvitation => '無法接受邀請';
@@ -3152,9 +3136,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get invitationDeclined => '邀請已拒絕';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return '拒絕邀請失敗';
-  }
+  String get failedToDeclineInvitation => '拒絕邀請失敗';
 
   @override
   String get justNow => '剛剛';

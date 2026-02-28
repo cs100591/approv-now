@@ -254,9 +254,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileUpdatedSuccessfully => 'Profil berjaya dikemas kini';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return 'Gagal mengemas kini profil: $error';
-  }
+  String get failedToUpdateProfile => 'Gagal mengemas kini profil';
 
   @override
   String get settingsComingSoon => 'Tetapan akan datang tidak lama lagi';
@@ -309,7 +307,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Cipta ruang kerja pertama anda untuk bermula';
 
   @override
-  String get settingUpWorkspace => 'Sedang menyiapkan ruang kerja anda...';
+  String get settingUpWorkspace => 'Menyediakan ruang kerja anda...';
 
   @override
   String get loadingWorkspace => 'Memuatkan ruang kerja anda...';
@@ -355,7 +353,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get active => 'Aktif';
 
   @override
-  String get createNewWorkspace => 'Cipta Ruang Kerja Baru';
+  String get createNewWorkspace => 'Cipta Ruang Kerja Baharu';
 
   @override
   String get teamMembers => 'Ahli Pasukan';
@@ -364,7 +362,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get inviteNewMember => 'Jemput Ahli Baru';
 
   @override
-  String get noWorkspaceSelected => 'Tiada Ruang Kerja Dipilih';
+  String get noWorkspaceSelected => 'Tiada ruang kerja dipilih';
 
   @override
   String get selectWorkspaceFirst => 'Sila pilih ruang kerja terlebih dahulu';
@@ -826,7 +824,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get invitations => 'Jemputan';
 
   @override
-  String get requests => 'Requests';
+  String get requests => 'Permohonan';
 
   @override
   String get invitationDismissed => 'Jemputan dibuang';
@@ -857,9 +855,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get invitationAccepted => 'Jemputan diterima!';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return 'Gagal menerima jemputan: $error';
-  }
+  String get failedToAcceptInvitation => 'Gagal menerima jemputan';
 
   @override
   String get unableToAcceptInvitation => 'Tidak dapat menerima jemputan';
@@ -871,9 +867,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get invitationDeclined => 'Jemputan ditolak';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return 'Gagal menolak jemputan: $error';
-  }
+  String get failedToDeclineInvitation => 'Gagal menolak jemputan';
 
   @override
   String get justNow => 'Sebentar tadi';
@@ -1093,101 +1087,103 @@ class AppLocalizationsMs extends AppLocalizations {
   String get total => 'Jumlah';
 
   @override
-  String get biometricLoginEnabled => 'Biometric login enabled';
+  String get biometricLoginEnabled => 'Log masuk biometrik didayakan';
 
   @override
-  String get biometricLoginDisabled => 'Biometric login disabled';
+  String get biometricLoginDisabled => 'Log masuk biometrik dilumpuhkan';
 
   @override
-  String get editProfile => 'Edit Profile';
+  String get editProfile => 'Edit Profil';
 
   @override
-  String get profileUpdated => 'Profile updated successfully';
+  String get profileUpdated => 'Profil dikemas kini';
 
   @override
-  String get logoutConfirmation => 'Are you sure you want to log out?';
+  String get logoutConfirmation => 'Adakah anda pasti mahu log keluar?';
 
   @override
-  String get notificationSettings => 'Notification Settings';
+  String get notificationSettings => 'Tetapan Pemberitahuan';
 
   @override
-  String get settingsSaved => 'Settings saved';
+  String get settingsSaved => 'Tetapan disimpan';
 
   @override
-  String get pushNotifications => 'Push Notifications';
+  String get pushNotifications => 'Pemberitahuan Tolak';
 
   @override
   String get pushNotificationsSubtitle =>
-      'Receive push notifications on your device';
+      'Terima pemberitahuan tolak pada peranti anda';
 
   @override
-  String get emailNotifications => 'Email Notifications';
+  String get emailNotifications => 'Pemberitahuan Emel';
 
   @override
-  String get emailNotificationsSubtitle => 'Receive email notifications';
+  String get emailNotificationsSubtitle => 'Terima pemberitahuan emel';
 
   @override
   String get emailNotificationsProOnly =>
-      'Upgrade to Pro to enable email notifications';
+      'Naik taraf ke Pro untuk dayakan pemberitahuan emel';
 
   @override
   String get pro => 'Pro';
 
   @override
-  String get notificationTypes => 'Notification Types';
+  String get notificationTypes => 'Jenis Pemberitahuan';
 
   @override
-  String get requestUpdates => 'Request Updates';
+  String get requestUpdates => 'Kemas Kini Permohonan';
 
   @override
   String get requestUpdatesSubtitle =>
-      'New requests, approvals, and rejections';
+      'Permohonan baharu, kelulusan, dan penolakan';
 
   @override
-  String get invitationUpdates => 'Workspace Invitations';
+  String get invitationUpdates => 'Jemputan Ruang Kerja';
 
   @override
-  String get invitationUpdatesSubtitle => 'When you are invited to a workspace';
+  String get invitationUpdatesSubtitle =>
+      'Apabila anda dijemput ke ruang kerja';
 
   @override
-  String get mentionUpdates => 'Mentions';
+  String get mentionUpdates => 'Sebutan';
 
   @override
-  String get mentionUpdatesSubtitle => 'When someone mentions you in comments';
+  String get mentionUpdatesSubtitle =>
+      'Apabila seseorang menyebut anda dalam komen';
 
   @override
-  String get proFeature => 'Pro Feature';
+  String get proFeature => 'Ciri Pro';
 
   @override
   String get proFeatureMessage =>
-      'Email notifications are available for Pro users only. Upgrade to Pro to enable this feature.';
+      'Pemberitahuan emel hanya tersedia untuk pengguna Pro. Naik taraf ke Pro untuk dayakan ciri ini.';
 
   @override
-  String get upgradeToPro => 'Upgrade to Pro';
+  String get upgradeToPro => 'Naik Taraf ke Pro';
 
   @override
   String get notificationSettingsInfo =>
-      'You can view all your notifications in the Notifications tab.';
+      'Anda boleh melihat semua pemberitahuan anda dalam tab Pemberitahuan.';
 
   @override
-  String get workspaceCreated => 'Workspace created successfully';
+  String get workspaceCreated => 'Ruang kerja berjaya dicipta';
 
   @override
   String joinedWorkspace(Object workspaceName) {
-    return 'Joined $workspaceName successfully!';
+    return 'Berjaya menyertai $workspaceName!';
   }
 
   @override
-  String get deleteWorkspace => 'Delete Workspace';
+  String get deleteWorkspace => 'Padam Ruang Kerja';
 
   @override
-  String get workspaceDeleted => 'Workspace deleted successfully';
+  String get workspaceDeleted => 'Ruang kerja berjaya dipadam';
 
   @override
-  String get failedToDeleteWorkspace => 'Failed to delete workspace';
+  String get failedToDeleteWorkspace => 'Gagal memadam ruang kerja';
 
   @override
-  String get permissionDenied => 'Permission Denied';
+  String get permissionDenied => 'Kebenaran Ditolak';
 
   @override
   String get ok => 'OK';

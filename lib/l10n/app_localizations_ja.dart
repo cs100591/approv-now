@@ -252,9 +252,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileUpdatedSuccessfully => 'プロフィールが正常に更新されました';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return 'プロフィールの更新に失敗しました';
-  }
+  String get failedToUpdateProfile => 'プロフィールの更新に失敗しました';
 
   @override
   String get settingsComingSoon => '設定機能は近日公開予定です';
@@ -833,9 +831,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get invitationAccepted => '招待を承諾しました';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return '招待の承諾に失敗しました';
-  }
+  String get failedToAcceptInvitation => '招待の承諾に失敗しました';
 
   @override
   String get unableToAcceptInvitation => '招待を承諾できません';
@@ -847,9 +843,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get invitationDeclined => '招待を辞退しました';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return '招待の辞退に失敗しました';
-  }
+  String get failedToDeclineInvitation => '招待の辞退に失敗しました';
 
   @override
   String get justNow => 'たった今';

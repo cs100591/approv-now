@@ -253,9 +253,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get profileUpdatedSuccessfully => 'อัปเดตโปรไฟล์สำเร็จ';
 
   @override
-  String failedToUpdateProfile(Object error) {
-    return 'ไม่สามารถอัปเดตโปรไฟล์: $error';
-  }
+  String get failedToUpdateProfile => 'ไม่สามารถอัปเดตโปรไฟล์';
 
   @override
   String get settingsComingSoon => 'การตั้งค่าจะเปิดใช้งานเร็วๆ นี้';
@@ -815,7 +813,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get invitations => 'คำเชิญ';
 
   @override
-  String get requests => 'Requests';
+  String get requests => 'คำขอ';
 
   @override
   String get invitationDismissed => 'ปิดคำเชิญแล้ว';
@@ -846,9 +844,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get invitationAccepted => 'ยอมรับคำเชิญแล้ว!';
 
   @override
-  String failedToAcceptInvitation(Object error) {
-    return 'ไม่สามารถยอมรับคำเชิญ: $error';
-  }
+  String get failedToAcceptInvitation => 'ไม่สามารถยอมรับคำเชิญ';
 
   @override
   String get unableToAcceptInvitation => 'ไม่สามารถยอมรับคำเชิญได้';
@@ -860,9 +856,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get invitationDeclined => 'ปฏิเสธคำเชิญแล้ว';
 
   @override
-  String failedToDeclineInvitation(Object error) {
-    return 'ไม่สามารถปฏิเสธคำเชิญ: $error';
-  }
+  String get failedToDeclineInvitation => 'ไม่สามารถปฏิเสธคำเชิญ';
 
   @override
   String get justNow => 'เมื่อสักครู่';
@@ -1080,102 +1074,101 @@ class AppLocalizationsTh extends AppLocalizations {
   String get total => 'ทั้งหมด';
 
   @override
-  String get biometricLoginEnabled => 'Biometric login enabled';
+  String get biometricLoginEnabled => 'เปิดใช้งานการเข้าสู่ระบบด้วยชีวมิติแล้ว';
 
   @override
-  String get biometricLoginDisabled => 'Biometric login disabled';
+  String get biometricLoginDisabled => 'ปิดใช้งานการเข้าสู่ระบบด้วยชีวมิติแล้ว';
 
   @override
-  String get editProfile => 'Edit Profile';
+  String get editProfile => 'แก้ไขโปรไฟล์';
 
   @override
-  String get profileUpdated => 'Profile updated successfully';
+  String get profileUpdated => 'อัปเดตโปรไฟล์สำเร็จ';
 
   @override
-  String get logoutConfirmation => 'Are you sure you want to log out?';
+  String get logoutConfirmation => 'คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?';
 
   @override
-  String get notificationSettings => 'Notification Settings';
+  String get notificationSettings => 'การตั้งค่าการแจ้งเตือน';
 
   @override
-  String get settingsSaved => 'Settings saved';
+  String get settingsSaved => 'บันทึกการตั้งค่าแล้ว';
 
   @override
-  String get pushNotifications => 'Push Notifications';
+  String get pushNotifications => 'การแจ้งเตือนแบบพุช';
 
   @override
-  String get pushNotificationsSubtitle =>
-      'Receive push notifications on your device';
+  String get pushNotificationsSubtitle => 'รับการแจ้งเตือนบนอุปกรณ์ของคุณ';
 
   @override
-  String get emailNotifications => 'Email Notifications';
+  String get emailNotifications => 'การแจ้งเตือนทางอีเมล';
 
   @override
-  String get emailNotificationsSubtitle => 'Receive email notifications';
+  String get emailNotificationsSubtitle => 'รับการแจ้งเตือนทางอีเมล';
 
   @override
   String get emailNotificationsProOnly =>
-      'Upgrade to Pro to enable email notifications';
+      'อัปเกรดเป็น Pro เพื่อเปิดใช้งานการแจ้งเตือนทางอีเมล';
 
   @override
   String get pro => 'Pro';
 
   @override
-  String get notificationTypes => 'Notification Types';
+  String get notificationTypes => 'ประเภทการแจ้งเตือน';
 
   @override
-  String get requestUpdates => 'Request Updates';
+  String get requestUpdates => 'อัปเดตคำขอ';
 
   @override
-  String get requestUpdatesSubtitle =>
-      'New requests, approvals, and rejections';
+  String get requestUpdatesSubtitle => 'คำขอใหม่ การอนุมัติ และการปฏิเสธ';
 
   @override
-  String get invitationUpdates => 'Workspace Invitations';
+  String get invitationUpdates => 'คำเชิญเข้าร่วมพื้นที่ทำงาน';
 
   @override
-  String get invitationUpdatesSubtitle => 'When you are invited to a workspace';
+  String get invitationUpdatesSubtitle =>
+      'เมื่อคุณได้รับเชิญเข้าร่วมพื้นที่ทำงาน';
 
   @override
-  String get mentionUpdates => 'Mentions';
+  String get mentionUpdates => 'การกล่าวถึง';
 
   @override
-  String get mentionUpdatesSubtitle => 'When someone mentions you in comments';
+  String get mentionUpdatesSubtitle => 'เมื่อมีคนกล่าวถึงคุณในความคิดเห็น';
 
   @override
-  String get proFeature => 'Pro Feature';
+  String get proFeature => 'ฟีเจอร์ Pro';
 
   @override
   String get proFeatureMessage =>
-      'Email notifications are available for Pro users only. Upgrade to Pro to enable this feature.';
+      'การแจ้งเตือนทางอีเมลใช้ได้เฉพาะผู้ใช้ Pro เท่านั้น อัปเกรดเป็น Pro เพื่อเปิดใช้งานฟีเจอร์นี้';
 
   @override
-  String get upgradeToPro => 'Upgrade to Pro';
+  String get upgradeToPro => 'อัปเกรดเป็น Pro';
 
   @override
   String get notificationSettingsInfo =>
-      'You can view all your notifications in the Notifications tab.';
+      'คุณสามารถดูการแจ้งเตือนทั้งหมดได้ในแท็บการแจ้งเตือน';
 
   @override
-  String get workspaceCreated => 'Workspace created successfully';
+  String get workspaceCreated => 'สร้างพื้นที่ทำงานสำเร็จ';
 
   @override
   String joinedWorkspace(Object workspaceName) {
-    return 'Joined $workspaceName successfully!';
+    return 'เข้าร่วม $workspaceName สำเร็จ!';
   }
 
   @override
-  String get deleteWorkspace => 'Delete Workspace';
+  String get deleteWorkspace => 'ลบพื้นที่ทำงาน';
 
   @override
-  String get workspaceDeleted => 'Workspace deleted successfully';
+  String get workspaceDeleted => 'ลบพื้นที่ทำงานสำเร็จ';
 
   @override
-  String get failedToDeleteWorkspace => 'Failed to delete workspace';
+  String get failedToDeleteWorkspace => 'ไม่สามารถลบพื้นที่ทำงาน';
 
   @override
-  String get permissionDenied => 'Permission Denied';
+  String get permissionDenied => 'การอนุญาตถูกปฏิเสธ';
 
   @override
-  String get ok => 'OK';
+  String get ok => 'ตกลง';
 }
