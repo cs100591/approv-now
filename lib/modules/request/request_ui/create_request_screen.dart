@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -393,10 +396,55 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
   Widget _buildFilePicker(TemplateField field) {
     return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File upload coming soon')),
-        );
+      onTap: () async {
+        try {
+          final result = await FilePicker.platform.pickFiles(
+            type: FileType.any,
+            allowMultiple: false,
+          );
+          if (result != null && result.files.isNotEmpty) {
+            final file = result.files.first;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Uploading file...')),
+            );
+
+            final bytes = file.bytes;
+            final path = file.path;
+
+            final fileName =
+                '${DateTime.now().millisecondsSinceEpoch}_${file.name.replaceAll(RegExp(r'[^a-zA-Z0-9_\-\.]'), '_')}';
+            final supabase = Supabase.instance.client;
+
+            if (bytes != null) {
+              await supabase.storage.from('request-attachments').uploadBinary(
+                    fileName,
+                    bytes,
+                  );
+            } else if (path != null) {
+              await supabase.storage.from('request-attachments').upload(
+                    fileName,
+                    File(path),
+                  );
+            }
+
+            final url = supabase.storage
+                .from('request-attachments')
+                .getPublicUrl(fileName);
+
+            setState(() {
+              _fieldValues[field.name] = url;
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('File uploaded successfully')),
+            );
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error uploading file: $e')),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -410,9 +458,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
-                _fieldValues[field.name] ??
-                    field.placeholder ??
-                    'Attach a file',
+                _fieldValues[field.name] != null
+                    ? (_fieldValues[field.name] as String).split('/').last
+                    : field.placeholder ?? 'Attach a file',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: _fieldValues[field.name] != null
                       ? AppColors.textPrimary

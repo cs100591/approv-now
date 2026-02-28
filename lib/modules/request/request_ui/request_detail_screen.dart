@@ -13,6 +13,7 @@ import '../../auth/auth_provider.dart';
 import '../../subscription/subscription_provider.dart';
 import '../request_provider.dart';
 import '../request_models.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RequestDetailScreen extends StatefulWidget {
   final String requestId;
@@ -665,20 +666,39 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   Widget _buildFieldValue(FieldValue field) {
     if (field.fieldType == FieldType.file) {
       final value = field.value?.toString() ?? '';
-      return Row(
-        children: [
-          const Icon(Icons.attach_file, color: AppColors.primary, size: 20),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              value.isNotEmpty && value != 'null'
-                  ? value
-                  : 'Attachment provided',
-              style:
-                  AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+      return InkWell(
+        onTap: () async {
+          if (value.isNotEmpty && value != 'null') {
+            final uri = Uri.parse(value);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri);
+            } else {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not open file link')),
+                );
+              }
+            }
+          }
+        },
+        child: Row(
+          children: [
+            const Icon(Icons.attach_file, color: AppColors.primary, size: 20),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                value.isNotEmpty && value != 'null'
+                    ? value.split('/').last
+                    : 'Attachment provided',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.primary,
+                  decoration: TextDecoration.underline,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
 
