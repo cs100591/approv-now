@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/app_logger.dart';
@@ -192,35 +193,61 @@ class NotificationService {
     required String invitationToken,
     String? recipientEmail,
   }) async {
-    final notification = await _repository.createNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      type: NotificationType.workspaceInvitation,
-      title: 'Workspace Invitation',
-      message: '$inviterName invited you to join "$workspaceName"',
-      data: {
-        'workspace_name': workspaceName,
-        'inviter_name': inviterName,
-      },
-      actionType: NotificationActionType.acceptInvitation,
-      actionData: {
-        'invitation_token': invitationToken,
-        'workspace_id': workspaceId,
-      },
-    );
+    AppNotification? notification;
+
+    try {
+      notification = await _repository.createNotification(
+        userId: userId,
+        workspaceId: workspaceId,
+        type: NotificationType.workspaceInvitation,
+        title: 'Workspace Invitation',
+        message: '$inviterName invited you to join "$workspaceName"',
+        data: {
+          'workspace_name': workspaceName,
+          'inviter_name': inviterName,
+        },
+        actionType: NotificationActionType.acceptInvitation,
+        actionData: {
+          'invitation_token': invitationToken,
+          'workspace_id': workspaceId,
+        },
+      );
+    } catch (e) {
+      AppLogger.warning('⚠️ Failed to create database notification (RLS?): $e');
+    }
 
     await _pushService.sendPushNotification(
       userId: userId,
-      title: notification.title,
-      body: notification.message ?? '',
+      title: 'Workspace Invitation',
+      body: '$inviterName invited you to join "$workspaceName"',
       data: {
         'type': 'workspace_invitation',
         'workspace_id': workspaceId,
-        'notification_id': notification.id,
+        'notification_id': notification?.id,
       },
     );
 
-    return notification;
+    return notification ??
+        AppNotification(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: userId,
+          workspaceId: workspaceId,
+          type: NotificationType.workspaceInvitation,
+          title: 'Workspace Invitation',
+          message: '$inviterName invited you to join "$workspaceName"',
+          data: {
+            'workspace_name': workspaceName,
+            'inviter_name': inviterName,
+          },
+          actionType: NotificationActionType.acceptInvitation,
+          actionData: {
+            'invitation_token': invitationToken,
+            'workspace_id': workspaceId,
+          },
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          isRead: false,
+        );
   }
 
   /// Create pending request notification
@@ -232,35 +259,59 @@ class NotificationService {
     required String submitterName,
     required String workspaceName,
   }) async {
-    final notification = await _repository.createNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      type: NotificationType.pendingRequest,
-      title: 'New Approval Request',
-      message: '$submitterName submitted "$requestTitle" for approval',
-      data: {
-        'request_id': requestId,
-        'request_title': requestTitle,
-        'submitter_name': submitterName,
-      },
-      actionType: NotificationActionType.viewRequest,
-      actionData: {
-        'request_id': requestId,
-      },
-    );
+    AppNotification? notification;
+
+    try {
+      notification = await _repository.createNotification(
+        userId: userId,
+        workspaceId: workspaceId,
+        type: NotificationType.pendingRequest,
+        title: 'New Approval Request',
+        message: '$submitterName submitted "$requestTitle" for approval',
+        data: {
+          'request_id': requestId,
+          'request_title': requestTitle,
+          'submitter_name': submitterName,
+        },
+        actionType: NotificationActionType.viewRequest,
+        actionData: {
+          'request_id': requestId,
+        },
+      );
+    } catch (e) {
+      AppLogger.warning('⚠️ Failed to create database notification (RLS?): $e');
+    }
 
     await _pushService.sendPushNotification(
       userId: userId,
-      title: notification.title,
-      body: notification.message ?? '',
+      title: 'New Approval Request',
+      body: '$submitterName submitted "$requestTitle" for approval',
       data: {
         'type': 'pending_request',
         'request_id': requestId,
-        'notification_id': notification.id,
+        'notification_id': notification?.id,
       },
     );
 
-    return notification;
+    return notification ??
+        AppNotification(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: userId,
+          workspaceId: workspaceId,
+          type: NotificationType.pendingRequest,
+          title: 'New Approval Request',
+          message: '$submitterName submitted "$requestTitle" for approval',
+          data: {
+            'request_id': requestId,
+            'request_title': requestTitle,
+            'submitter_name': submitterName,
+          },
+          actionType: NotificationActionType.viewRequest,
+          actionData: {'request_id': requestId},
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          isRead: false,
+        );
   }
 
   /// Create request approved notification
@@ -272,35 +323,62 @@ class NotificationService {
     required String approverName,
     required String workspaceName,
   }) async {
-    final notification = await _repository.createNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      type: NotificationType.requestApproved,
-      title: 'Request Approved',
-      message: '$approverName approved "$requestTitle"',
-      data: {
-        'request_id': requestId,
-        'request_title': requestTitle,
-        'approver_name': approverName,
-      },
-      actionType: NotificationActionType.viewRequest,
-      actionData: {
-        'request_id': requestId,
-      },
-    );
+    AppNotification? notification;
 
+    // Try to create database notification (may fail due to RLS)
+    try {
+      notification = await _repository.createNotification(
+        userId: userId,
+        workspaceId: workspaceId,
+        type: NotificationType.requestApproved,
+        title: 'Request Approved',
+        message: '$approverName approved "$requestTitle"',
+        data: {
+          'request_id': requestId,
+          'request_title': requestTitle,
+          'approver_name': approverName,
+        },
+        actionType: NotificationActionType.viewRequest,
+        actionData: {
+          'request_id': requestId,
+        },
+      );
+    } catch (e) {
+      AppLogger.warning('⚠️ Failed to create database notification (RLS?): $e');
+      // Continue to send push even if database fails
+    }
+
+    // Always send push notification regardless of database success
     await _pushService.sendPushNotification(
       userId: userId,
-      title: notification.title,
-      body: notification.message ?? '',
+      title: 'Request Approved',
+      body: '$approverName approved "$requestTitle"',
       data: {
         'type': 'request_approved',
         'request_id': requestId,
-        'notification_id': notification.id,
+        'notification_id': notification?.id,
       },
     );
 
-    return notification;
+    return notification ??
+        AppNotification(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: userId,
+          workspaceId: workspaceId,
+          type: NotificationType.requestApproved,
+          title: 'Request Approved',
+          message: '$approverName approved "$requestTitle"',
+          data: {
+            'request_id': requestId,
+            'request_title': requestTitle,
+            'approver_name': approverName,
+          },
+          actionType: NotificationActionType.viewRequest,
+          actionData: {'request_id': requestId},
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          isRead: false,
+        );
   }
 
   /// Create request rejected notification
@@ -316,36 +394,61 @@ class NotificationService {
     final message =
         '$rejectorName rejected "$requestTitle"${reason != null ? ': $reason' : ''}';
 
-    final notification = await _repository.createNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      type: NotificationType.requestRejected,
-      title: 'Request Rejected',
-      message: message,
-      data: {
-        'request_id': requestId,
-        'request_title': requestTitle,
-        'rejector_name': rejectorName,
-        'reason': reason,
-      },
-      actionType: NotificationActionType.viewRequest,
-      actionData: {
-        'request_id': requestId,
-      },
-    );
+    AppNotification? notification;
+
+    try {
+      notification = await _repository.createNotification(
+        userId: userId,
+        workspaceId: workspaceId,
+        type: NotificationType.requestRejected,
+        title: 'Request Rejected',
+        message: message,
+        data: {
+          'request_id': requestId,
+          'request_title': requestTitle,
+          'rejector_name': rejectorName,
+          'reason': reason,
+        },
+        actionType: NotificationActionType.viewRequest,
+        actionData: {
+          'request_id': requestId,
+        },
+      );
+    } catch (e) {
+      AppLogger.warning('⚠️ Failed to create database notification (RLS?): $e');
+    }
 
     await _pushService.sendPushNotification(
       userId: userId,
-      title: notification.title,
-      body: notification.message ?? '',
+      title: 'Request Rejected',
+      body: message,
       data: {
         'type': 'request_rejected',
         'request_id': requestId,
-        'notification_id': notification.id,
+        'notification_id': notification?.id,
       },
     );
 
-    return notification;
+    return notification ??
+        AppNotification(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: userId,
+          workspaceId: workspaceId,
+          type: NotificationType.requestRejected,
+          title: 'Request Rejected',
+          message: message,
+          data: {
+            'request_id': requestId,
+            'request_title': requestTitle,
+            'rejector_name': rejectorName,
+            'reason': reason,
+          },
+          actionType: NotificationActionType.viewRequest,
+          actionData: {'request_id': requestId},
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          isRead: false,
+        );
   }
 
   /// Create request revision notification
@@ -356,36 +459,61 @@ class NotificationService {
     required String requestTitle,
     required String editorName,
   }) async {
-    final notification = await _repository.createNotification(
-      userId: userId,
-      workspaceId: workspaceId,
-      type: NotificationType.requestRevision,
-      title: 'Request Updated',
-      message:
-          '$editorName updated "$requestTitle". Approval process restarted.',
-      data: {
-        'request_id': requestId,
-        'request_title': requestTitle,
-        'editor_name': editorName,
-      },
-      actionType: NotificationActionType.viewRequest,
-      actionData: {
-        'request_id': requestId,
-      },
-    );
+    AppNotification? notification;
+
+    try {
+      notification = await _repository.createNotification(
+        userId: userId,
+        workspaceId: workspaceId,
+        type: NotificationType.requestRevision,
+        title: 'Request Updated',
+        message:
+            '$editorName updated "$requestTitle". Approval process restarted.',
+        data: {
+          'request_id': requestId,
+          'request_title': requestTitle,
+          'editor_name': editorName,
+        },
+        actionType: NotificationActionType.viewRequest,
+        actionData: {
+          'request_id': requestId,
+        },
+      );
+    } catch (e) {
+      AppLogger.warning('⚠️ Failed to create database notification (RLS?): $e');
+    }
 
     await _pushService.sendPushNotification(
       userId: userId,
-      title: notification.title,
-      body: notification.message ?? '',
+      title: 'Request Updated',
+      body: '$editorName updated "$requestTitle". Approval process restarted.',
       data: {
         'type': 'request_revision',
         'request_id': requestId,
-        'notification_id': notification.id,
+        'notification_id': notification?.id,
       },
     );
 
-    return notification;
+    return notification ??
+        AppNotification(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: userId,
+          workspaceId: workspaceId,
+          type: NotificationType.requestRevision,
+          title: 'Request Updated',
+          message:
+              '$editorName updated "$requestTitle". Approval process restarted.',
+          data: {
+            'request_id': requestId,
+            'request_title': requestTitle,
+            'editor_name': editorName,
+          },
+          actionType: NotificationActionType.viewRequest,
+          actionData: {'request_id': requestId},
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          isRead: false,
+        );
   }
 
   /// Create invitation accepted notification (for inviter)
@@ -395,22 +523,59 @@ class NotificationService {
     required String workspaceName,
     required String accepterName,
   }) async {
-    return await _repository.createNotification(
+    AppNotification? notification;
+
+    try {
+      notification = await _repository.createNotification(
+        userId: inviterId,
+        workspaceId: workspaceId,
+        type: NotificationType.invitationAccepted,
+        title: 'Invitation Accepted',
+        message:
+            '$accepterName accepted your invitation to join "$workspaceName"',
+        data: {
+          'workspace_name': workspaceName,
+          'accepter_name': accepterName,
+        },
+        actionType: NotificationActionType.viewWorkspace,
+        actionData: {
+          'workspace_id': workspaceId,
+        },
+      );
+    } catch (e) {
+      AppLogger.warning('⚠️ Failed to create database notification (RLS?): $e');
+    }
+
+    await _pushService.sendPushNotification(
       userId: inviterId,
-      workspaceId: workspaceId,
-      type: NotificationType.invitationAccepted,
       title: 'Invitation Accepted',
-      message:
-          '$accepterName accepted your invitation to join "$workspaceName"',
+      body: '$accepterName accepted your invitation to join "$workspaceName"',
       data: {
-        'workspace_name': workspaceName,
-        'accepter_name': accepterName,
-      },
-      actionType: NotificationActionType.viewWorkspace,
-      actionData: {
+        'type': 'invitation_accepted',
         'workspace_id': workspaceId,
+        'notification_id': notification?.id,
       },
     );
+
+    return notification ??
+        AppNotification(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: inviterId,
+          workspaceId: workspaceId,
+          type: NotificationType.invitationAccepted,
+          title: 'Invitation Accepted',
+          message:
+              '$accepterName accepted your invitation to join "$workspaceName"',
+          data: {
+            'workspace_name': workspaceName,
+            'accepter_name': accepterName,
+          },
+          actionType: NotificationActionType.viewWorkspace,
+          actionData: {'workspace_id': workspaceId},
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          isRead: false,
+        );
   }
 }
 
@@ -446,14 +611,18 @@ class PushService {
       AppLogger.info('📨 Calling Edge Function: send-push-notification');
 
       // Call Supabase Edge Function to send FCM notification
+      final payload = {
+        'userId': userId,
+        'title': title,
+        'body': body,
+        'data': data ?? {},
+      };
+
+      AppLogger.info('📨 Sending payload: ${jsonEncode(payload)}');
+
       final response = await _supabase.client.functions.invoke(
         'send-push-notification',
-        body: {
-          'userId': userId,
-          'title': title,
-          'body': body,
-          'data': data ?? {},
-        },
+        body: payload,
       );
 
       AppLogger.info('📨 Edge Function Response Status: ${response.status}');

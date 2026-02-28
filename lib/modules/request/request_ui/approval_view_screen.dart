@@ -407,9 +407,15 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
                   final userId = authProvider.user?.id;
 
                   if (template != null && userId != null) {
-                    final currentStep = template.approvalSteps.firstWhere(
-                        (s) => s.level == request.currentLevel,
-                        orElse: () => template.approvalSteps.first);
+                    List<String> effectiveApproverIds =
+                        request.currentApproverIds;
+                    if (effectiveApproverIds.isEmpty &&
+                        template.approvalSteps.isNotEmpty) {
+                      final currentStep = template.approvalSteps.firstWhere(
+                          (s) => s.level == request.currentLevel,
+                          orElse: () => template.approvalSteps.first);
+                      effectiveApproverIds = currentStep.approvers;
+                    }
 
                     final hasApproved = request.currentApprovalActions.any(
                         (a) =>
@@ -417,8 +423,7 @@ class _ApprovalViewScreenState extends State<ApprovalViewScreen> {
                             a.approverId == userId &&
                             a.approved);
 
-                    if (currentStep.approvers.contains(userId) &&
-                        !hasApproved) {
+                    if (effectiveApproverIds.contains(userId) && !hasApproved) {
                       isApprover = true;
                     }
                   }

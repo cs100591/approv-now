@@ -126,18 +126,23 @@ void main() async {
     AppLogger.info('✅ OneSignal initialized successfully');
 
     // Listen for subscription changes and save to database
-    OneSignal.User.pushSubscription.addObserver((state) {
+    OneSignal.User.pushSubscription.addObserver((state) async {
       final current = state.current;
-      if (current?.id != null) {
-        AppLogger.info('🔔 OneSignal Player ID: ${current?.id}');
+      AppLogger.info(
+          '🔔 OneSignal subscription changed: ${current.id} (optedIn: ${current.optedIn})');
+
+      if (current.id != null && current.id!.isNotEmpty) {
+        final playerId = current.id!;
+        AppLogger.info('🔔 OneSignal Player ID available: $playerId');
         // Save to database when user is logged in
-        _savePlayerIdToDatabase(current!.id!);
+        await _savePlayerIdToDatabase(playerId);
+      } else {
+        AppLogger.info('🔔 OneSignal Player ID not available yet');
       }
     });
 
     // Request permission (will show prompt to user)
-    // In production, you should use In-App Messages to prompt instead
-    OneSignal.Notifications.requestPermission(false).then((granted) {
+    OneSignal.Notifications.requestPermission(true).then((granted) {
       AppLogger.info('🔔 OneSignal notification permission: $granted');
     });
   }

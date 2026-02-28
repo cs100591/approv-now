@@ -1,19 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-/**
- * Send Push Notification via OneSignal
- * 
- * OneSignal is more reliable than FCM/Pusher for iOS
- * Free tier: 10k subscribers, unlimited notifications
- */
-
-interface NotificationPayload {
-  userId: string;
-  title: string;
-  body: string;
-  data?: Record<string, any>;
-}
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -25,77 +11,45 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  console.log('========================================')
-  console.log('ONESIGNAL: Starting push notification')
-  console.log('========================================')
-
   try {
-    // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const oneSignalAppId = Deno.env.get('ONESIGNAL_APP_ID')
     const oneSignalRestApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY')
 
-    console.log('Environment check:')
-    console.log('- SUPABASE_URL:', supabaseUrl ? 'Set' : 'MISSING')
-    console.log('- ONESIGNAL_APP_ID:', oneSignalAppId ? 'Set' : 'MISSING')
-    console.log('- ONESIGNAL_REST_API_KEY:', oneSignalRestApiKey ? 'Set' : 'MISSING')
+    // We explicitly use the SERVICE_ROLE_KEY so we bypass RLS and can fetch ANY user's push token.
+    const supabase = createClient(supabaseUrl!, supabaseServiceKey!)
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Missing Supabase configuration')
-    }
-
-    if (!oneSignalAppId || !oneSignalRestApiKey) {
-      throw new Error('Missing OneSignal configuration. Please set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY in Supabase Secrets.')
-    }
-
-    // Parse request
-    const payload: NotificationPayload = await req.json()
-    const { userId, title, body, data = {} } = payload
-
-    console.log('Request:', { userId, title, body: body?.substring(0, 50) })
-
-    if (!userId || !title || !body) {
+    let payload;
+    try {
+      payload = await req.json()
+    } catch (e) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Failed to parse JSON body' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Get user's OneSignal Player IDs from database
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    const { data: playerData, error: playerError } = await supabase
+    if (!payload?.userId || !payload?.title || !payload?.body) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields (userId, title, body)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const { userId, title, body, data = {} } = payload
+
+    const { data: playerData } = await supabase
       .from('user_push_tokens')
       .select('player_id')
       .eq('user_id', userId)
       .eq('enabled', true)
 
-    if (playerError) {
-      console.error('Error fetching player IDs:', playerError)
-      throw new Error('Failed to fetch user push tokens')
-    }
+    const subscriptionIds = (playerData ?? []).map((p: any) => p.player_id)
 
-    if (!playerData || playerData.length === 0) {
-      console.log('No push tokens found for user:', userId)
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'No push tokens found for user',
-          sent: false 
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const playerIds = playerData.map(p => p.player_id)
-    console.log('Found Player IDs:', playerIds)
-
-    // Send notification via OneSignal
     const oneSignalUrl = 'https://onesignal.com/api/v1/notifications'
-    
-    const oneSignalPayload = {
+    const oneSignalPayload: any = {
       app_id: oneSignalAppId,
-      include_player_ids: playerIds,
       headings: { en: title },
       contents: { en: body },
       data: data,
@@ -104,8 +58,12 @@ Deno.serve(async (req) => {
       priority: 10,
     }
 
-    console.log('Sending to OneSignal:', oneSignalUrl)
-    console.log('Payload:', JSON.stringify(oneSignalPayload, null, 2))
+    if (subscriptionIds.length > 0) {
+      oneSignalPayload.include_subscription_ids = subscriptionIds
+    } else {
+      oneSignalPayload.include_aliases = { external_id: [userId] }
+      oneSignalPayload.target_channel = 'push'
+    }
 
     const oneSignalResponse = await fetch(oneSignalUrl, {
       method: 'POST',
@@ -116,53 +74,22 @@ Deno.serve(async (req) => {
       body: JSON.stringify(oneSignalPayload),
     })
 
-    console.log('OneSignal Response Status:', oneSignalResponse.status)
+    const errorText = await oneSignalResponse.text()
 
-    if (!oneSignalResponse.ok) {
-      const errorText = await oneSignalResponse.text()
-      console.error('OneSignal Error:', errorText)
-      throw new Error(`OneSignal failed: ${errorText}`)
-    }
-
-    const result = await oneSignalResponse.json()
-    console.log('OneSignal Success:', result)
-
-    // Log analytics (async, don't block response)
-    try {
-      await supabase.from('notification_logs').insert({
-        user_id: userId,
-        type: 'push',
-        title,
-        body,
-        status: 'sent',
-        provider: 'onesignal',
-        recipients: result.recipients || 0,
-        response_id: result.id,
-      })
-    } catch (logError) {
-      console.error('Failed to log notification:', logError)
-    }
+    let resjson = {}
+    try { resjson = JSON.parse(errorText) } catch (e) { }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Notification sent via OneSignal',
-        recipients: result.recipients,
-        notificationId: result.id 
+      JSON.stringify({
+        success: oneSignalResponse.ok,
+        message: 'Notification sent',
+        result: resjson
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-
-  } catch (error) {
-    console.error('========================================')
-    console.error('ONESIGNAL ERROR:', error)
-    console.error('========================================')
-    
+  } catch (error: any) {
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
-      }),
+      JSON.stringify({ success: false, error: String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

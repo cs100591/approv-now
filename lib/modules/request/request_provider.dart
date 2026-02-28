@@ -424,24 +424,40 @@ class RequestProvider extends ChangeNotifier {
       // reflect the change without waiting for the 30s polling stream.
       await refreshPendingRequests();
 
-      // Send email notifications
+      // Send notifications (both in-app and push)
+      final workspaceName = await _getWorkspaceName(template.workspaceId);
+      final submitterName = await _getUserDisplayName(request.submittedBy);
+
       if (result.finalized) {
         // Request fully approved - notify submitter
-        await _notifyRequestApproved(
-          workspaceId: template.workspaceId,
-          requestId: requestId,
-          requestTitle: template.name,
-          submitterId: request.submittedBy,
-        );
+        try {
+          await _notificationService.createRequestApprovedNotification(
+            userId: request.submittedBy,
+            workspaceId: template.workspaceId,
+            requestId: requestId,
+            requestTitle: template.name,
+            approverName: approverName,
+            workspaceName: workspaceName,
+          );
+        } catch (e) {
+          AppLogger.error('🔔 Notification failed: $e');
+        }
       } else if (result.advanced && newApprovers.isNotEmpty) {
         // Advanced to next level - notify new approvers
-        await _notifyApprovers(
-          workspaceId: template.workspaceId,
-          requestId: requestId,
-          requestTitle: template.name,
-          submitterId: request.submittedBy,
-          approverIds: newApprovers,
-        );
+        for (final apprvId in newApprovers) {
+          try {
+            await _notificationService.createPendingRequestNotification(
+              userId: apprvId,
+              workspaceId: template.workspaceId,
+              requestId: requestId,
+              requestTitle: template.name,
+              submitterName: submitterName,
+              workspaceName: workspaceName,
+            );
+          } catch (e) {
+            AppLogger.error('🔔 Notification failed for $apprvId: $e');
+          }
+        }
       }
 
       AppLogger.info('Approved request: $requestId');
@@ -502,14 +518,21 @@ class RequestProvider extends ChangeNotifier {
       // reflect the change without waiting for the 30s polling stream.
       await refreshPendingRequests();
 
-      // Send email notification to submitter
-      await _notifyRequestRejected(
-        workspaceId: template.workspaceId,
-        requestId: requestId,
-        requestTitle: template.name,
-        submitterId: request.submittedBy,
-        reason: comment,
-      );
+      // Send notification to submitter
+      try {
+        final workspaceName = await _getWorkspaceName(template.workspaceId);
+        await _notificationService.createRequestRejectedNotification(
+          userId: request.submittedBy,
+          workspaceId: template.workspaceId,
+          requestId: requestId,
+          requestTitle: template.name,
+          rejectorName: approverName,
+          workspaceName: workspaceName,
+          reason: comment,
+        );
+      } catch (e) {
+        AppLogger.error('🔔 Rejection notification failed: $e');
+      }
 
       AppLogger.info('Rejected request: $requestId');
     } catch (e) {
@@ -594,9 +617,9 @@ class RequestProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ============ Email Notification Helpers ============
+  // ============ Notification Helpers ============
 
-  /// Notify approvers when a request is submitted
+  /// Notify approvers when a request is submitted (in-app + push)
   Future<void> _notifyApprovers({
     required String workspaceId,
     required String requestId,
@@ -606,7 +629,7 @@ class RequestProvider extends ChangeNotifier {
   }) async {
     try {
       AppLogger.info(
-          '📧 [RequestProvider] Notifying ${approverIds.length} approvers for request: $requestId');
+          '🔔 [RequestProvider] Notifying ${approverIds.length} approvers for request: $requestId');
 
       // Get submitter name and workspace name
       final submitterName = await _getUserDisplayName(submitterId);
@@ -614,6 +637,7 @@ class RequestProvider extends ChangeNotifier {
 
       // Send notification to each approver
       for (final approverId in approverIds) {
+        // 1. Create in-app notification record & send push
         try {
           await _notificationService.createPendingRequestNotification(
             userId: approverId,
@@ -623,79 +647,14 @@ class RequestProvider extends ChangeNotifier {
             submitterName: submitterName,
             workspaceName: workspaceName,
           );
-          AppLogger.info(
-              '📧 [RequestProvider] Notification sent to approver: $approverId');
         } catch (e) {
           AppLogger.warning(
-              '📧 [RequestProvider] Failed to notify approver $approverId: $e');
-          // Continue with other approvers even if one fails
+              '🔔 [RequestProvider] Failed to create notification for $approverId: $e');
         }
       }
     } catch (e) {
-      AppLogger.error('📧 [RequestProvider] Error in _notifyApprovers: $e');
+      AppLogger.error('🔔 [RequestProvider] Error in _notifyApprovers: $e');
       // Don't throw - notification failure shouldn't break the request flow
-    }
-  }
-
-  /// Notify request submitter when request is approved
-  Future<void> _notifyRequestApproved({
-    required String workspaceId,
-    required String requestId,
-    required String requestTitle,
-    required String submitterId,
-  }) async {
-    try {
-      AppLogger.info(
-          '📧 [RequestProvider] Notifying submitter of approval: $submitterId');
-
-      final workspaceName = await _getWorkspaceName(workspaceId);
-
-      await _notificationService.createRequestApprovedNotification(
-        userId: submitterId,
-        workspaceId: workspaceId,
-        requestId: requestId,
-        requestTitle: requestTitle,
-        approverName: 'System', // Could be improved to show actual approver
-        workspaceName: workspaceName,
-      );
-
-      AppLogger.info(
-          '📧 [RequestProvider] Approval notification sent to submitter: $submitterId');
-    } catch (e) {
-      AppLogger.error(
-          '📧 [RequestProvider] Error in _notifyRequestApproved: $e');
-    }
-  }
-
-  /// Notify request submitter when request is rejected
-  Future<void> _notifyRequestRejected({
-    required String workspaceId,
-    required String requestId,
-    required String requestTitle,
-    required String submitterId,
-    String? reason,
-  }) async {
-    try {
-      AppLogger.info(
-          '📧 [RequestProvider] Notifying submitter of rejection: $submitterId');
-
-      final workspaceName = await _getWorkspaceName(workspaceId);
-
-      await _notificationService.createRequestRejectedNotification(
-        userId: submitterId,
-        workspaceId: workspaceId,
-        requestId: requestId,
-        requestTitle: requestTitle,
-        rejectorName: 'System', // Could be improved to show actual rejector
-        workspaceName: workspaceName,
-        reason: reason,
-      );
-
-      AppLogger.info(
-          '📧 [RequestProvider] Rejection notification sent to submitter: $submitterId');
-    } catch (e) {
-      AppLogger.error(
-          '📧 [RequestProvider] Error in _notifyRequestRejected: $e');
     }
   }
 

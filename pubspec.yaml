@@ -1,7 +1,7 @@
 name: approve_now
 description: "Mobile-first deterministic approval engine with multi-workspace architecture - Approv Now"
 publish_to: 'none'
-version: 1.2.3
+version: 1.2.5+1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

@@ -30,7 +30,8 @@ class RequestRepository {
                     'step_id': step['id'] ?? step['step_id'],
                     'name': step['name'],
                     'approvers': step['approvers'],
-                    'require_all': step['require_all'] ?? false,
+                    'require_all':
+                        step['requireAll'] ?? step['require_all'] ?? false,
                     'condition': step['condition'],
                   })
               .toList();

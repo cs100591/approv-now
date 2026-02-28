@@ -31,7 +31,7 @@ class AuthProvider extends ChangeNotifier {
   // ─── Stream-driven state ──────────────────────────────────────────────────
 
   void _listenToAuthChanges() {
-    _authStateSubscription = _authService.authStateChanges.listen((user) {
+    _authStateSubscription = _authService.authStateChanges.listen((user) async {
       AppLogger.info('Auth state changed: ${user?.email ?? "null"}');
 
       if (user != null) {
@@ -43,7 +43,18 @@ class AuthProvider extends ChangeNotifier {
         // Initialize RevenueCat with user ID
         _initializeRevenueCat(user.id);
 
-        // Save OneSignal Player ID when user logs in
+        // OneSignal v5: login() associates the device subscription with this user.
+        // This is REQUIRED for external_id targeting to work.
+        if (!kIsWeb) {
+          try {
+            await OneSignal.login(user.id);
+            AppLogger.info('🔔 OneSignal login called for user: ${user.id}');
+          } catch (e) {
+            AppLogger.error('🔔 OneSignal login failed: $e');
+          }
+        }
+
+        // Save OneSignal Player ID (subscription ID) when user logs in
         _savePlayerIdOnLogin(user.id);
       } else {
         // Signed out, session expired, or intermediate null during account-switch.
@@ -58,6 +69,18 @@ class AuthProvider extends ChangeNotifier {
 
         // Log out from RevenueCat when user signs out
         RevenueCatService.instance.logout();
+
+        // OneSignal v5: logout() disassociates the subscription from the user.
+        // This prevents another user logging in on the same device from receiving
+        // notifications meant for the previous user.
+        if (!kIsWeb) {
+          try {
+            await OneSignal.logout();
+            AppLogger.info('🔔 OneSignal logout called');
+          } catch (e) {
+            AppLogger.error('🔔 OneSignal logout failed: $e');
+          }
+        }
       }
 
       notifyListeners();
@@ -77,35 +100,72 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Save OneSignal Player ID to database when user logs in
+  /// Save OneSignal Player ID to database when user logs in
   Future<void> _savePlayerIdOnLogin(String userId) async {
-    try {
-      if (kIsWeb) return; // Skip for web
+    const maxRetries = 5;
+    const retryDelay = Duration(seconds: 3);
 
-      // Get current Player ID from OneSignal
-      final subscription = OneSignal.User.pushSubscription;
-      final playerId = subscription.id;
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        if (kIsWeb) {
+          AppLogger.info('🔔 Skipping Player ID save for web platform');
+          return;
+        }
 
-      if (playerId == null) {
-        AppLogger.info('🔔 No Player ID available yet, skipping save');
-        return;
+        AppLogger.info('🔔 Attempt $attempt/$maxRetries: Getting Player ID...');
+
+        final subscription = OneSignal.User.pushSubscription;
+        final playerId = subscription.id;
+
+        if (playerId == null || playerId.isEmpty) {
+          AppLogger.info('🔔 Attempt $attempt: Player ID is null, waiting...');
+          if (attempt < maxRetries) {
+            await Future.delayed(retryDelay);
+            continue;
+          }
+          AppLogger.error(
+              '🔔 Failed: Player ID never became available after $maxRetries attempts');
+          return;
+        }
+
+        AppLogger.info(
+            '🔔 Attempt $attempt: Got Player ID: $playerId for user: $userId');
+
+        // Verify user is still logged in
+        final supabase = SupabaseService();
+        final currentUserId = supabase.currentUserId;
+        if (currentUserId != userId) {
+          AppLogger.error(
+              '🔔 Attempt $attempt: User ID mismatch! Expected $userId, got $currentUserId');
+          return;
+        }
+
+        AppLogger.info('🔔 Attempt $attempt: Saving to database...');
+
+        // Save to database
+        await supabase.client.from('user_push_tokens').upsert({
+          'user_id': userId,
+          'player_id': playerId,
+          'platform': 'ios',
+          'enabled': true,
+          'updated_at': DateTime.now().toIso8601String(),
+        }, onConflict: 'user_id,player_id');
+
+        AppLogger.info(
+            '🔔 ✅ SUCCESS: Player ID $playerId saved on attempt $attempt');
+        return; // Success, exit
+      } catch (e, stackTrace) {
+        AppLogger.error('🔔 Attempt $attempt FAILED: $e');
+        AppLogger.error('🔔 Stack trace: $stackTrace');
+
+        if (attempt < maxRetries) {
+          AppLogger.info('🔔 Retrying in ${retryDelay.inSeconds} seconds...');
+          await Future.delayed(retryDelay);
+        } else {
+          AppLogger.error(
+              '🔔 ❌ FAILED: Could not save Player ID after $maxRetries attempts');
+        }
       }
-
-      AppLogger.info(
-          '🔔 Saving Player ID on login: $playerId for user: $userId');
-
-      // Save to database
-      final supabase = SupabaseService();
-      await supabase.client.from('user_push_tokens').upsert({
-        'user_id': userId,
-        'player_id': playerId,
-        'platform': 'ios',
-        'enabled': true,
-        'updated_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id,player_id');
-
-      AppLogger.info('🔔 Player ID saved successfully on login');
-    } catch (e) {
-      AppLogger.error('🔔 Failed to save Player ID on login: $e');
     }
   }
 

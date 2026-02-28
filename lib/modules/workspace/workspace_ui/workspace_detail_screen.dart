@@ -671,7 +671,7 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
         );
 
         final workspaceProvider = context.read<WorkspaceProvider>();
-        await workspaceProvider.deleteWorkspace();
+        await workspaceProvider.deleteWorkspace(workspace.id);
 
         Navigator.pop(context); // Close loading
         Navigator.pop(context); // Go back to manage screen

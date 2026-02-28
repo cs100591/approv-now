@@ -901,7 +901,13 @@ class _AddFieldSheetState extends State<AddFieldSheet> {
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  padding: EdgeInsets.only(
+                    left: AppSpacing.lg,
+                    right: AppSpacing.lg,
+                    top: AppSpacing.lg,
+                    bottom: MediaQuery.of(context).viewInsets.bottom +
+                        AppSpacing.xl,
+                  ),
                   children: [
                     Text(
                       widget.field != null ? 'Edit Field' : 'Add Field',
@@ -1224,7 +1230,13 @@ class _AddApprovalStepSheetState extends State<AddApprovalStepSheet> {
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  padding: EdgeInsets.only(
+                    left: AppSpacing.lg,
+                    right: AppSpacing.lg,
+                    top: AppSpacing.lg,
+                    bottom: MediaQuery.of(context).viewInsets.bottom +
+                        AppSpacing.xl,
+                  ),
                   children: [
                     Text(
                       'Approval Step ${widget.level}',

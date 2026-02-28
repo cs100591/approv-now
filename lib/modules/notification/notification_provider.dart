@@ -38,9 +38,7 @@ class NotificationProvider extends ChangeNotifier {
         '🔔 NotificationProvider.initialize() called for user: $userId');
     _currentUserId = userId;
 
-    // Note: Push notifications are handled by Pusher Beams (native iOS)
-    // No Flutter-side FCM initialization needed
-    AppLogger.info('🔔 Using Pusher Beams for push notifications (native iOS)');
+    AppLogger.info('🔔 Using OneSignal for push notifications');
 
     _pushService.initialize(userId);
     _subscribeToNotifications(userId);

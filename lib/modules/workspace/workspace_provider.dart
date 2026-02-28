@@ -710,28 +710,33 @@ class WorkspaceProvider extends ChangeNotifier {
     }
   }
 
-  /// Delete current workspace (only owner can delete)
-  Future<void> deleteWorkspace() async {
-    if (_state.currentWorkspace == null) {
-      throw StateError('No workspace selected');
+  /// Delete workspace (only owner can delete)
+  Future<void> deleteWorkspace([String? workspaceId]) async {
+    final targetId = workspaceId ?? _state.currentWorkspace?.id;
+    if (targetId == null) {
+      throw StateError('No workspace selected or provided');
     }
 
     _setLoading(true);
 
     try {
-      final workspaceId = _state.currentWorkspace!.id;
-      await _workspaceRepository.deleteWorkspace(workspaceId);
+      await _workspaceRepository.deleteWorkspace(targetId);
 
       // Remove from local state
       final workspaces =
-          _state.workspaces.where((w) => w.id != workspaceId).toList();
+          _state.workspaces.where((w) => w.id != targetId).toList();
+
+      final currentStillExists =
+          workspaces.any((w) => w.id == _state.currentWorkspace?.id);
 
       _state = _state.copyWith(
         workspaces: workspaces,
-        currentWorkspace: workspaces.isNotEmpty ? workspaces.first : null,
+        currentWorkspace: currentStillExists
+            ? _state.currentWorkspace
+            : (workspaces.isNotEmpty ? workspaces.first : null),
       );
 
-      AppLogger.info('Deleted workspace: $workspaceId');
+      AppLogger.info('Deleted workspace: $targetId');
     } catch (e) {
       AppLogger.error('Error deleting workspace', e);
       _state = _state.copyWith(error: e.toString());

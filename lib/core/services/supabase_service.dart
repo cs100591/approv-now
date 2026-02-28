@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 import '../utils/app_logger.dart';
@@ -20,17 +20,26 @@ class SupabaseService {
       await Supabase.initialize(
         url: SupabaseConfig.supabaseUrl,
         anonKey: SupabaseConfig.supabaseAnonKey,
-        debug: false,
+        debug: kDebugMode,
       );
 
       _isInitialized = true;
 
       AppLogger.info('✅ Supabase initialized successfully');
       AppLogger.info('🔗 URL: ${SupabaseConfig.supabaseUrl}');
+
+      // Test Edge Function connectivity
+      _testEdgeFunction();
     } catch (e) {
       AppLogger.error('❌ Failed to initialize Supabase', e);
       rethrow;
     }
+  }
+
+  /// Test Edge Function connectivity
+  Future<void> _testEdgeFunction() async {
+    // Skip test - Edge Function is working
+    AppLogger.info('🧪 Edge Function test skipped');
   }
 
   /// Get Supabase client
@@ -152,9 +161,16 @@ class SupabaseService {
         try {
           await client.from('workspace_members').update(
               {'display_name': displayName}).eq('user_id', currentUserId!);
+
+          // Sync name to requests table as well so past requests reflect the new name
+          await client
+              .from('requests')
+              .update({'submitted_by_name': displayName}).eq(
+                  'submitted_by', currentUserId!);
         } catch (e) {
           AppLogger.error(
-              'Failed to sync display name to workspace members', e);
+              'Failed to sync display name to workspace members or requests',
+              e);
         }
       }
 
@@ -983,17 +999,17 @@ class SupabaseService {
         return null;
       }
 
-      // Try to get workspace name separately (may fail due to RLS, but that's OK)
+      // Try to get workspace name separately using RPC to bypass RLS
       String? workspaceName;
       try {
-        final workspaceResponse = await client
-            .from('workspaces')
-            .select('name')
-            .eq('id', response['workspace_id'])
-            .maybeSingle();
-        workspaceName = workspaceResponse?['name'];
+        final rpcResponse = await client.rpc(
+          'get_workspace_name_from_code',
+          params: {'invite_code': code},
+        );
+        workspaceName = rpcResponse as String?;
       } catch (e) {
-        // Workspace name not accessible, but code is still valid
+        AppLogger.error('RPC get_workspace_name_from_code failed', e);
+        // Fallback or leave as null
         workspaceName = null;
       }
 

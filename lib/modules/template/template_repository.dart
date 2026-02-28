@@ -77,6 +77,15 @@ class TemplateRepository {
           'is_active': template.isActive,
         },
       );
+
+      // Sync the updated template name to all existing requests so other users see the latest name
+      try {
+        await _supabase.client.from('requests').update(
+            {'template_name': template.name}).eq('template_id', template.id);
+      } catch (e) {
+        AppLogger.warning(
+            'Failed to sync template_name to existing requests: $e');
+      }
     } catch (e) {
       AppLogger.error('Error updating template', e);
       rethrow;

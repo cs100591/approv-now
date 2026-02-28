@@ -1,9 +1,12 @@
 import UIKit
 import Flutter
 import UserNotifications
+import OneSignalFramework
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
+  
+  private var flutterResult: FlutterResult?
   
   override func application(
     _ application: UIApplication,
@@ -15,11 +18,50 @@ import UserNotifications
     // Set UNUserNotificationCenter delegate for iOS 10+
     UNUserNotificationCenter.current().delegate = self
     
-    // Initialize Flutter
+    // Initialize Flutter FIRST so window/rootViewController is available
     GeneratedPluginRegistrant.register(with: self)
     NSLog("🚀 [AppDelegate] Flutter plugins registered")
     
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    
+    // Set up MethodChannel AFTER super.application() so window is ready
+    setupOneSignalMethodChannel()
+    
+    return result
+  }
+  
+  private func setupOneSignalMethodChannel() {
+    guard let controller = window?.rootViewController as? FlutterViewController else {
+      NSLog("❌ [AppDelegate] Failed to get FlutterViewController")
+      return
+    }
+    
+    let channel = FlutterMethodChannel(
+      name: "com.approvenow.onesignal",
+      binaryMessenger: controller.binaryMessenger
+    )
+    
+    channel.setMethodCallHandler { [weak self] (call, result) in
+      switch call.method {
+      case "getPlayerId":
+        self?.handleGetPlayerId(result: result)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+    
+    NSLog("✅ [AppDelegate] OneSignal MethodChannel registered")
+  }
+  
+  private func handleGetPlayerId(result: @escaping FlutterResult) {
+    // Get the Player ID directly from OneSignal native SDK
+    if let playerId = OneSignal.User.pushSubscription.id {
+      NSLog("✅ [AppDelegate] Returning Player ID to Flutter: \(playerId)")
+      result(playerId)
+    } else {
+      NSLog("⚠️ [AppDelegate] Player ID not available yet")
+      result(nil)
+    }
   }
   
   override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
